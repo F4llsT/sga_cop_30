@@ -1,0 +1,210 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SGA COP 30</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+    <style>
+        .alert {
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #fff;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .alert-info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .input-box {
+            position: relative;
+            margin: 25px 0;
+        }
+        .input-box input {
+            width: 100%;
+            padding: 12px 45px 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .input-box input:focus {
+            border-color: #7494ec;
+            box-shadow: 0 0 5px rgba(116, 148, 236, 0.5);
+        }
+        .input-box i {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Formulário de Login -->
+        <div class="forma-box login">
+            <form method="post" action="{% url 'usuarios:login' %}">
+                {% csrf_token %}
+                <h1>Entrar</h1>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        {% if 'login' in message.tags or not 'register' in message.tags %}
+                        <div class="alert alert-{{ message.tags|cut:'register-' }}">
+                            {{ message }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                
+                {% if login_form.non_field_errors %}
+                    <div class="alert alert-error">
+                        {% for error in login_form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                <div class="input-box">
+                    {{ login_form.username }}
+                    <i class='bx bxs-envelope'></i>
+                    {% if login_form.username.errors %}
+                        <div class="text-danger">{{ login_form.username.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="input-box">
+                    {{ login_form.password }}
+                    <i class='bx bxs-lock'></i>
+                    {% if login_form.password.errors %}
+                        <div class="text-danger">{{ login_form.password.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="esqueceu-link">
+                    <a href="#">Esqueceu a senha?</a>
+                </div>
+                
+                <button type="submit" class="btn">Entrar</button>
+                
+                <p>Entrar com outras plataformas</p>
+                <div class="outrasP-icons">
+                    <a href="#"><i class='bx bxl-google'></i></a>
+                    <a href="#"><i class='bx bxl-facebook'></i></a>
+                </div>
+            </form>
+        </div> 
+        
+        <!-- Formulário de Registro -->
+        <div class="forma-box registro">
+            <form method="post" action="{% url 'usuarios:register' %}">
+                {% csrf_token %}
+                <h1>Registro</h1>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        {% if 'register' in message.tags %}
+                        <div class="alert alert-{{ message.tags|cut:'register-' }}">
+                            {{ message }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+                
+                {% if register_form.errors %}
+                    <div class="alert alert-error">
+                        Por favor, corrija os erros abaixo.
+                    </div>
+                {% endif %}
+                
+                <div class="input-box">
+                    {{ register_form.nome }}
+                    <i class='bx bxs-user'></i>
+                    {% if register_form.nome.errors %}
+                        <div class="text-danger">{{ register_form.nome.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="input-box">
+                    {{ register_form.email }}
+                    <i class='bx bxs-envelope'></i>
+                    {% if register_form.email.errors %}
+                        <div class="text-danger">{{ register_form.email.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="input-box">
+                    {{ register_form.password1 }}
+                    <i class='bx bxs-lock'></i>
+                    {% if register_form.password1.errors %}
+                        <div class="text-danger">{{ register_form.password1.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <div class="input-box">
+                    {{ register_form.password2 }}
+                    <i class='bx bxs-lock-alt'></i>
+                    {% if register_form.password2.errors %}
+                        <div class="text-danger">{{ register_form.password2.errors }}</div>
+                    {% endif %}
+                </div>
+                
+                <button type="submit" class="btn">Registrar</button>
+                
+                <p>Registrar com outras plataformas</p>
+                <div class="outrasP-icons">
+                    <a href="#"><i class='bx bxl-google'></i></a>
+                    <a href="#"><i class='bx bxl-facebook'></i></a>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Botões de Alternância -->
+        <div class="alternar-box">
+            <div class="alternar-card alternar-left">
+                <h1>Olá, bem-vindo</h1>
+                <p>Não tem acesso à conta?</p>
+                <button class="btn registrar-btn">Registrar</button>
+            </div>
+            <div class="alternar-card alternar-right">
+                <h1>Bem-vindo!</h1>
+                <p>Já tem uma conta?</p>
+                <button class="btn entrar-btn">Entrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const container = document.querySelector('.container');
+        const registrarBtn = document.querySelector('.registrar-btn');
+        const entrarBtn = document.querySelector('.entrar-btn');
+
+        registrarBtn.addEventListener('click', () => {
+            container.classList.add('ativo');
+        });
+
+        entrarBtn.addEventListener('click', () => {
+            container.classList.remove('ativo');
+        });
+    </script>
+</body>
+</html>

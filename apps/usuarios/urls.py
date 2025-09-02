@@ -1,10 +1,39 @@
 from django.urls import path
-from . import views # Importa as views do app 'usuarios'
+from django.contrib.auth import views as auth_views
+from .views import LoginView, RegisterView, logout_view, ProfileView
 
-# O namespace definido no urls.py principal se aplica a este arquivo.
 app_name = 'usuarios'
 
 urlpatterns = [
-    # Adicione suas URLs para o app 'usuarios' aqui.
-    # Exemplo: path('login/', views.login_view, name='login'),
+    # URLs de autenticação
+    path('login/', LoginView.as_view(), name='login'),
+    path('registrar/', RegisterView.as_view(), name='register'),
+    path('sair/', logout_view, name='logout'),
+    
+    # Perfil do usuário
+    path('perfil/', ProfileView.as_view(), name='profile'),
+    
+    # URLs de redefinição de senha (opcional)
+    path('password_reset/', 
+         auth_views.PasswordResetView.as_view(
+             template_name='registration/password_reset_form.html',
+             email_template_name='registration/password_reset_email.html',
+             subject_template_name='registration/password_reset_subject.txt'
+         ),
+         name='password_reset'),
+    path('password_reset/done/', 
+         auth_views.PasswordResetDoneView.as_view(
+             template_name='registration/password_reset_done.html'
+         ),
+         name='password_reset_done'),
+    path('reset/<uidb64>/<token>/',
+         auth_views.PasswordResetConfirmView.as_view(
+             template_name='registration/password_reset_confirm.html'
+         ),
+         name='password_reset_confirm'),
+    path('reset/done/',
+         auth_views.PasswordResetCompleteView.as_view(
+             template_name='registration/password_reset_complete.html'
+         ),
+         name='password_reset_complete'),
 ]

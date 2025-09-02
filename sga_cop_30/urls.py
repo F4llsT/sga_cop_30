@@ -23,5 +23,6 @@ from django.urls import include
 urlpatterns = [
     path("admin/", admin.site.urls),
     path('', core_views.pagina_inicial, name='home'),
-    path('contas/', include('apps.usuarios.urls', namespace='usuarios')),
+    path('usuarios/', include('apps.usuarios.urls', namespace='usuarios')),
+    path('accounts/', include('django.contrib.auth.urls')),  # URLs de autenticação padrão do Django
 ]
