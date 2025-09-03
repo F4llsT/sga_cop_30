@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Oficial</title>
+    <!-- Inclui o Tailwind CSS para estilização rápida e moderna -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(90deg, #e2e2e2, #c9d6ff); /* Mesma cor de fundo da página de login */
+        }
+        .container-agenda {
+            background-color: #fff;
+            border-radius: 30px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, .2);
+            padding: 2.5rem;
+        }
+        .event-card {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+        }
+        .btn-add-agenda {
+            background-color: #7494ec; /* Cor do botão de login */
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .btn-add-agenda:hover {
+            background-color: #5d7ac5;
+            transform: scale(1.05);
+        }
+        .pagination-link {
+            transition: all 0.2s ease;
+        }
+        .pagination-link:hover {
+            background-color: #e5e7eb;
+        }
+        .pagination-current {
+            background-color: #7494ec;
+            color: #fff;
+            box-shadow: 0 4px 6px rgba(116, 148, 236, 0.3);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center py-10">
+    <header class="bg-white shadow-md mb-8 w-full">
+        <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="{% url 'agenda:agenda_oficial' %}" class="text-2xl font-bold text-gray-800 hover:text-indigo-600 transition-colors">
+                Agenda Oficial
+            </a>
+            <div>
+                <a href="{% url 'agenda:agenda_pessoal' %}" class="px-5 py-2 bg-indigo-500 text-white font-medium rounded-lg shadow-md hover:bg-indigo-600 transition-colors">
+                    Minha Agenda
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 md:px-8">
+        <div class="container-agenda">
+            <!-- Título principal -->
+            <h1 class="text-3xl md:text-5xl font-bold text-center text-gray-800 mb-6">Agenda de Eventos</h1>
+    
+            <!-- Seção de Filtros -->
+            <div class="flex flex-wrap gap-4 justify-center mb-8 p-4 bg-gray-100 rounded-lg shadow-inner">
+                <form action="{% url 'agenda:agenda_oficial' %}" method="get" class="flex flex-wrap gap-4 items-center">
+                    <!-- Filtro por Tema -->
+                    <div class="flex items-center gap-2">
+                        <label for="theme_filter" class="text-gray-700 font-medium">Tema:</label>
+                        <input type="text" name="theme" id="theme_filter" placeholder="Ex: Tecnologia" value="{{ theme_filter }}" class="px-3 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 transition-colors">
+                    </div>
+                    
+                    <!-- Botão de submissão -->
+                    <button type="submit" class="px-5 py-2 bg-indigo-500 text-white font-medium rounded-lg shadow-md hover:bg-indigo-600 transition-colors">
+                        Filtrar
+                    </button>
+                    <!-- Botão para limpar o filtro -->
+                    <a href="{% url 'agenda:agenda_oficial' %}" class="px-5 py-2 bg-gray-300 text-gray-700 font-medium rounded-lg shadow-md hover:bg-gray-400 transition-colors">
+                        Limpar
+                    </a>
+                </form>
+            </div>
+    
+            <!-- Mensagens de Feedback -->
+            {% if messages %}
+            <ul class="mb-4">
+                {% for message in messages %}
+                <li class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                    {{ message }}
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+    
+            <!-- Conteúdo principal da agenda (lista de eventos) -->
+            {% if eventos %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Loop para exibir cada evento -->
+                    {% for evento in eventos %}
+                        <div class="event-card bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-2">{{ evento.titulo }}</h2>
+                            <p class="text-sm text-gray-600 mb-2">
+                                <span class="font-medium">Horário:</span> {{ evento.start_time|date:"d/m/Y H:i" }} - {{ evento.end_time|date:"H:i" }}
+                            </p>
+                            <p class="text-sm text-gray-600 mb-4">
+                                <span class="font-medium">Local:</span> {{ evento.local }}
+                            </p>
+                            
+                            {% if evento.palestrantes %}
+                                <p class="text-sm text-gray-600 mb-4">
+                                    <span class="font-medium">Palestrantes:</span> {{ evento.palestrantes }}
+                                </p>
+                            {% endif %}
+                            
+                            <p class="text-gray-600 mb-6">{{ evento.descricao|truncatechars:150 }}</p>
+
+                            <!-- Adiciona o botão de favoritar, mas só se o usuário não o tiver na agenda -->
+                            {% if not evento.id in user_events %}
+                            <a href="{% url 'agenda:add_to_agenda' evento.id %}"
+                               class="btn-add-agenda text-white font-medium py-3 px-6 rounded-full inline-block text-center shadow-lg">
+                                Adicionar à Minha Agenda
+                            </a>
+                            {% else %}
+                            <p class="text-sm text-green-600 font-bold flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                </svg>
+                                Adicionado à sua agenda
+                            </p>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- Mensagem exibida quando não há eventos -->
+                <div class="text-center p-8 bg-white rounded-xl shadow-md max-w-xl mx-auto">
+                    <h2 class="text-2xl font-bold text-gray-700 mb-2">Nenhum evento encontrado.</h2>
+                    <p class="text-gray-500 text-md">Tente um filtro diferente ou volte mais tarde.</p>
+                </div>
+            {% endif %}
+    
+            <!-- Paginação -->
+            <div class="flex justify-center mt-8">
+                <nav class="flex items-center space-x-2">
+                    {% if eventos.has_previous %}
+                        <a href="?page=1&day={{ day_filter }}&theme={{ theme_filter }}" class="pagination-link px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">
+                            &laquo; Primeira
+                        </a>
+                        <a href="?page={{ eventos.previous_page_number }}&day={{ day_filter }}&theme={{ theme_filter }}" class="pagination-link px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">
+                            Anterior
+                        </a>
+                    {% endif %}
+    
+                    <span class="px-4 py-2 text-sm font-semibold rounded-lg pagination-current">
+                        Página {{ eventos.number }} de {{ eventos.paginator.num_pages }}.
+                    </span>
+    
+                    {% if eventos.has_next %}
+                        <a href="?page={{ eventos.next_page_number }}&day={{ day_filter }}&theme={{ theme_filter }}" class="pagination-link px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">
+                            Próxima
+                        </a>
+                        <a href="?page={{ eventos.paginator.num_pages }}&day={{ day_filter }}&theme={{ theme_filter }}" class="pagination-link px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">
+                            Última &raquo;
+                        </a>
+                    {% endif %}
+                </nav>
+            </div>
+    
+        </div>
+    </main>
+</body>
+</html>

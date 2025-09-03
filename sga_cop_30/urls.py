@@ -1,28 +1,19 @@
-"""
-URL configuration for sga_cop_30 project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from apps.core import views as core_views
-from django.urls import include
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path('', core_views.pagina_inicial, name='home'),
-    path('usuarios/', include('apps.usuarios.urls', namespace='usuarios')),
-    path('accounts/', include('django.contrib.auth.urls')),  # URLs de autenticação padrão do Django
+
+    # Página inicial
+    path("", core_views.pagina_inicial, name="home"),
+
+    # Autenticação customizada (do app usuarios)
+    path("usuarios/", include("apps.usuarios.urls", namespace="usuarios")),
+
+    # Autenticação padrão do Django (/accounts/login etc.)
+    path("accounts/", include("django.contrib.auth.urls")),
+
+    # Agenda (corrigido para ter o namespace)
+    path("agenda/", include("apps.agenda.urls", namespace="agenda")),
 ]

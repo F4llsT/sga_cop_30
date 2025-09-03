@@ -1,13 +1,60 @@
-from django.shortcuts import render
-from django.http import HttpResponse # <-- ESTA LINHA É A CORREÇÃO
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Event, UserAgenda
 
-# 2. Crie suas views (funções) aqui
-
-def pagina_inicial(request):
+@login_required
+def agenda_oficial(request):
     """
-    Esta função é chamada quando um usuário acessa a página inicial.
-    Ela retorna um objeto HttpResponse.
+    Exibe a agenda oficial com todos os eventos e permite filtrar por tema.
     """
-    # 3. Use a ferramenta importada para retornar o conteúdo
-    return HttpResponse("<h1>Bem-vindo!</h1><p>Seu projeto Django está no ar.</p>")
+    eventos = Event.objects.all().order_by('start_time')
+    user_events = UserAgenda.objects.filter(user=request.user).values_list('event_id', flat=True)
 
+    theme_filter = request.GET.get('theme', '')
+    if theme_filter:
+        eventos = eventos.filter(tags__icontains=theme_filter)
+
+    return render(request, 'agenda/agenda_oficial.html', {
+        'eventos': eventos,
+        'user_events': list(user_events),
+        'theme_filter': theme_filter,
+    })
+
+@login_required
+def add_to_agenda(request, event_id):
+    """
+    Adiciona um evento à agenda pessoal do usuário.
+    """
+    event = get_object_or_404(Event, pk=event_id)
+    # Verifica se o evento já existe na agenda do usuário para evitar duplicatas
+    if not UserAgenda.objects.filter(user=request.user, event=event).exists():
+        UserAgenda.objects.create(user=request.user, event=event)
+        messages.success(request, f'O evento "{event.titulo}" foi adicionado à sua agenda pessoal.')
+    else:
+        messages.info(request, f'O evento "{event.titulo}" já está na sua agenda.')
+    return redirect('agenda:agenda_oficial')
+
+@login_required
+def agenda_pessoal(request):
+    """
+    Exibe a agenda pessoal com os eventos favoritados pelo usuário.
+    """
+    # Filtra os eventos favoritados para o usuário logado
+    agenda_items = UserAgenda.objects.filter(user=request.user).order_by('event__start_time')
+    return render(request, 'agenda/agenda_pessoal.html', {'agenda_items': agenda_items})
+
+@login_required
+def remove_from_agenda(request, event_id):
+    """
+    Remove um evento da agenda pessoal do usuário.
+    """
+    # Garantir que a requisição é do tipo POST para segurança
+    if request.method == 'POST':
+        # Encontra o item da agenda para o usuário e evento específicos
+        agenda_item = get_object_or_404(UserAgenda, user=request.user, event_id=event_id)
+        # Deleta o item
+        agenda_item.delete()
+        messages.success(request, 'Evento removido da sua agenda pessoal com sucesso.')
+    # Redireciona de volta para a agenda pessoal
+    return redirect('agenda:agenda_pessoal')

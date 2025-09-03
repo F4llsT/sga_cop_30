@@ -1,10 +1,11 @@
 from django.urls import path
-from . import views # Importa as views do app 'usuarios'
+from . import views
 
-# O namespace definido no urls.py principal se aplica a este arquivo.
 app_name = 'agenda'
-
 urlpatterns = [
-    # Adicione suas URLs para o app 'usuarios' aqui.
-    # Exemplo: path('login/', views.login_view, name='login'),
+    path('', views.agenda_oficial, name='agenda_oficial'),
+    path('minha_agenda/', views.agenda_pessoal, name='agenda_pessoal'),
+    path('add/<int:event_id>/', views.add_to_agenda, name='add_to_agenda'),
+    # Adicionando a nova URL para remover eventos
+    path('remove/<int:event_id>/', views.remove_from_agenda, name='remove_from_agenda'),
 ]

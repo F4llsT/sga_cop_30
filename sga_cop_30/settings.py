@@ -37,10 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'bootstrap5',
     'apps.core.apps.CoreConfig',
     'apps.usuarios.apps.UsuariosConfig',
     'apps.agenda.apps.AgendaConfig',
+    'django_bootstrap5',
 ]
 
 # Configuração do modelo de usuário personalizado
