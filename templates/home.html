@@ -1,13 +1,64 @@
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}COP30 Dashboard - Home{% endblock %}
 
 {% block content %}
-<div class="mt-5">
-    <h1>Esta é a página inicial</h1>
-    <p>Conteúdo da página inicial vai aqui.</p>
-
-    <!-- Link para a Agenda Oficial -->
-    <a href="{% url 'agenda:agenda_oficial' %}" class="btn btn-primary">
-        Ver Agenda Oficial
-    </a>
+<div class="container">
+    <main>
+        <section class="alert-section">
+            <h2>Avisos Importantes</h2>
+            <div class="alert-cards-container">
+                <div class="alert-card blue-alert">
+                    <i class="fa-solid fa-cloud-sun"></i>
+                    <p>Previsão de tempo estável para a manhã. Aproveite!</p>
+                </div>
+                <div class="alert-card red-alert">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p>O fluxo de acesso ao Pavilhão 5 está alterado. Use a entrada B.</p>
+                </div>
+                <div class="alert-card green-alert">
+                    <i class="fa-solid fa-leaf"></i>
+                    <p>Ajude a manter o evento verde. Use as lixeiras seletivas.</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="upcoming-section">
+            <h2>Próximos Eventos</h2>
+            <div class="horizontal-scroll-container">
+                <a href="#" class="event-item-horizontal">
+                    <div class="time-block">
+                        <span class="hour">14:00</span>
+                        <span class="period">Hoje</span>
+                    </div>
+                    <div class="details">
+                        <h3>Painel: Amazônia e Clima</h3>
+                        <p><i class="fa-solid fa-location-dot"></i> Auditório Principal</p>
+                    </div>
+                </a>
+                <a href="#" class="event-item-horizontal">
+                    <div class="time-block">
+                        <span class="hour">09:30</span>
+                        <span class="period">Amanhã</span>
+                    </div>
+                    <div class="details">
+                        <h3>Workshop: Energias Renováveis</h3>
+                        <p><i class="fa-solid fa-location-dot"></i> Sala Verde - Bloco B</p>
+                    </div>
+                </a>
+                <a href="#" class="event-item-horizontal">
+                    <div class="time-block">
+                        <span class="hour">16:00</span>
+                        <span class="period">Amanhã</span>
+                    </div>
+                    <div class="details">
+                        <h3>Sessão de Pôsteres</h3>
+                        <p><i class="fa-solid fa-location-dot"></i> Área de Exposição</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+    </main>
 </div>
-{% endblock %}
+{% endblock content %}

@@ -1,0 +1,465 @@
+/* ===== CONFIGURAÇÕES GLOBAIS E VARIÁVEIS ===== */
+:root {
+    --primary-blue: #0A74DA;
+    --dark-blue: #004A99;
+    --light-blue-bg: #EAF6FF;
+    --white-bg: #FFFFFF;
+    --text-primary: #1c1c1c;
+    --text-secondary: #65676b;
+    --border-color: #e0e0e0;
+    --notification-red: #e74c3c;
+    
+    --radius-md: 16px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(90deg, #e2e2e2, #c9d6ff); 
+    color: var(--text-primary);
+    min-height: 100vh;
+}
+
+h2 { font-size: 1.25rem; margin-bottom: 1.5rem; }
+section { margin-bottom: 3.5rem; }
+a { text-decoration: none; color: inherit; transition: all 0.2s ease-in-out; }
+
+/* ===== ESTRUTURA PRINCIPAL ===== */
+.container { max-width: 800px; margin: 0 auto; }
+main { padding: 2rem 1.5rem; }
+
+/* ===== 1. NAVBAR SUPERIOR ===== */
+.top-nav {
+    width: 100%;
+    background-color: var(--white-bg);
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+.top-bar .nav-content-wrapper, .bottom-bar .nav-content-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    height: 72px;
+}
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-blue);
+    font-weight: 700;
+    position: relative;
+    overflow: hidden;
+    padding: 0.5rem;
+    cursor: pointer;
+}
+.planet-icon {
+    font-size: 1.5rem;
+    position: relative;
+    z-index: 2;
+    transition: transform 0.3s ease-in-out;
+}
+.logo-text { display: inline-flex; }
+h1.logo-text {
+    margin: 0;
+    padding: 0;
+    font-size: 1.5rem;
+}
+.letter {
+    display: inline-block;
+    font-size: inherit;
+    font-weight: inherit;
+    transition: all 0.2s ease-out;
+}
+.user-area {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+.notification-bell {
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    position: relative;
+    cursor: pointer;
+}
+.notification-bell:hover { color: var(--text-primary); }
+.notification-dot {
+    width: 8px; height: 8px; background-color: var(--notification-red); border-radius: 50%;
+    border: 1px solid var(--white-bg); position: absolute; top: 0; right: 0;
+}
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+.user-profile span { font-weight: 500; }
+.user-profile i { font-size: 0.8rem; }
+.hub-button {
+    background: none; border: none; font-size: 1.5rem; color: var(--text-primary);
+    cursor: pointer; z-index: 30;
+}
+.bottom-bar {
+    width: 100%;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--white-bg);
+}
+.desktop-nav-links {
+    display: flex;
+    justify-content: center;
+    gap: 2.5rem;
+}
+.desktop-nav-links a {
+    font-weight: 500; color: var(--text-secondary); padding: 1rem 0;
+    position: relative;
+    border-bottom: 3px solid transparent;
+}
+.desktop-nav-links a:hover {
+    color: var(--primary-blue);
+    transform: translateY(-2px);
+}
+.desktop-nav-links a.active-link {
+    color: var(--primary-blue);
+}
+.desktop-nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: var(--primary-blue);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.3s ease;
+}
+.desktop-nav-links a:hover::after,
+.desktop-nav-links a.active-link::after {
+    transform: scaleX(1);
+}
+
+/* ===== MENU LATERAL DESLIZANTE DE DOIS NÍVEIS ===== */
+.mobile-nav {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 280px;
+    height: 100%;
+    background-color: var(--white-bg);
+    box-shadow: -4px 0 15px rgba(0,0,0,0.1);
+    z-index: 100;
+    overflow: hidden;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+}
+.mobile-nav.active {
+    transform: translateX(0);
+}
+.mobile-nav-slider {
+    display: flex;
+    width: 200%;
+    height: 100%;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.mobile-nav-slider.show-profile {
+    transform: translateX(-50%);
+}
+.mobile-nav-panel {
+    width: 50%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+}
+.mobile-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.mobile-user-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+.mobile-user-profile i {
+    font-size: 1.8rem;
+    color: var(--primary-blue);
+}
+.close-button {
+    font-size: 2.2rem;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.mobile-main-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.mobile-main-links a {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 500;
+    padding: 1rem;
+    border-radius: 8px;
+}
+.mobile-main-links a:hover {
+    color: var(--primary-blue);
+    background-color: var(--light-blue-bg);
+}
+.back-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-blue);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.mobile-profile-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.mobile-profile-links a {
+    font-size: 1.1rem;
+    font-weight: 500;
+    padding: 1rem;
+    border-radius: 8px;
+}
+.mobile-profile-links a:hover {
+    color: var(--primary-blue);
+    background-color: var(--light-blue-bg);
+}
+.overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.4);
+    opacity: 0; visibility: hidden; transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out; z-index: 99;
+}
+.overlay.active { opacity: 1; visibility: visible; }
+
+/* ===== RESPONSIVIDADE DA NAVBAR ===== */
+.bottom-bar, .user-profile, .notification-bell { display: none; }
+.hub-button { display: block; }
+@media (min-width: 768px) {
+    .bottom-bar, .user-profile, .notification-bell { display: flex; }
+    .hub-button { display: none; }
+}
+
+/* ===== SEÇÕES DE CONTEÚDO ===== */
+.alert-cards-container {
+    display: flex; flex-direction: column; gap: 1rem; padding: 0 1.5rem;
+}
+.alert-card {
+    display: flex; align-items: center; gap: 1rem; padding: 1.25rem;
+    border-radius: var(--radius-md); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.alert-card:hover { transform: scale(1.05); box-shadow: var(--shadow-hover); }
+.alert-card i { font-size: 1.5rem; flex-shrink: 0; }
+.alert-card p { font-weight: 500; line-height: 1.4; margin: 0; }
+.blue-alert { background-color: var(--light-blue-bg); color: var(--dark-blue); }
+.blue-alert i { color: var(--primary-blue); }
+.red-alert { background-color: #fce7e7; color: #c0392b; }
+.red-alert i { color: var(--notification-red); }
+.green-alert { background-color: #e8f9e8; color: #27ae60; }
+.green-alert i { color: #2ecc71; }
+@media (min-width: 768px) {
+    .alert-cards-container { flex-direction: row; justify-content: center; flex-wrap: wrap; }
+    .alert-card { flex: 1; max-width: 30%; }
+}
+
+.horizontal-scroll-container {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem; overflow-x: visible; padding: 0 1.5rem;
+}
+.event-item-horizontal {
+    display: flex; flex-direction: column; align-items: flex-start;
+    padding: 1rem 1.25rem; background-color: var(--white-bg);
+    border-radius: var(--radius-md); box-shadow: var(--shadow); border: 1px solid transparent;
+    transition: all 0.2s ease-in-out;
+}
+.event-item-horizontal:hover { border-color: var(--primary-blue); transform: translateY(-2px); }
+.event-item-horizontal .time-block { display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 0.5rem; line-height: 1; }
+.event-item-horizontal .time-block .hour { font-size: 1.8rem; font-weight: 700; color: var(--text-primary); }
+.event-item-horizontal .time-block .period { font-size: 0.9rem; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; }
+.event-item-horizontal .details { flex-grow: 1; display: flex; flex-direction: column; align-items: flex-start; }
+.event-item-horizontal .details h3 { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.4rem; line-height: 1.3; }
+.event-item-horizontal .details p { font-size: 0.9rem; color: var(--text-secondary); margin: 0; display: flex; align-items: center; gap: 0.4rem; }
+.event-item-horizontal .details p i { font-size: 0.8rem; }
+
+/* ===== RODAPÉ ===== */
+.main-footer {
+    background-color: var(--dark-blue); color: var(--light-blue-bg);
+    padding: 3rem 1.5rem; font-size: 0.9rem;
+}
+.footer-content-wrapper { display: flex; flex-direction: column; gap: 2rem; max-width: 800px; margin: 0 auto; }
+.footer-logo { display: flex; align-items: center; gap: 0.5rem; color: var(--white-bg); }
+.footer-logo i { font-size: 1.5rem; }
+.footer-logo h3 { font-size: 1.5rem; margin: 0; }
+.footer-links, .footer-socials, .footer-info { display: flex; flex-direction: column; gap: 0.5rem; }
+.footer-links a, .footer-socials a, .footer-info p { color: var(--light-blue-bg); opacity: 0.8; }
+.footer-links a:hover, .footer-socials a:hover { opacity: 1; text-decoration: underline; }
+.footer-links h4, .footer-socials h4, .footer-info h4 { color: var(--white-bg); font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+.social-icons { display: flex; gap: 1rem; font-size: 1.25rem; }
+.social-icons a { color: var(--white-bg); }
+@media (min-width: 768px) {
+    .footer-content-wrapper { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+}
+
+/* ===== ANIMAÇÕES ESPECIAIS ===== */
+@keyframes swing {
+    15% { transform: rotate(15deg); }
+    30% { transform: rotate(-10deg); }
+    45% { transform: rotate(5deg); }
+    60% { transform: rotate(-5deg); }
+    75% { transform: rotate(2deg); }
+    100% { transform: rotate(0deg); }
+}
+.notification-bell.is-swinging {
+    animation: swing 0.8s ease-in-out;
+}
+@keyframes planet-eat {
+    0% { transform: translateX(0) rotate(0deg) scale(1); }
+    50% { transform: translateX(60px) rotate(360deg) scale(1.2); }
+    100% { transform: translateX(0) rotate(720deg) scale(1); }
+}
+
+/* ======================================================================= */
+/* === ESTILOS DO DROPDOWN DO PERFIL DE USUÁRIO (DESKTOP) === */
+/* ======================================================================= */
+
+/* A área do usuário precisa de position: relative para ancorar o dropdown */
+.user-area {
+    position: relative;
+}
+
+/* Estilo do container do dropdown (escondido por padrão) */
+.profile-dropdown {
+    position: absolute;
+    top: calc(100% + 15px); /* Posição: 100% para baixo + 15px de espaço */
+    right: 0; /* Alinhado à direita da user-area */
+    background-color: var(--white-bg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-hover);
+    width: 200px; /* Largura do dropdown */
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    
+    /* Lógica para esconder/mostrar com animação */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+    z-index: 50;
+}
+
+/* Quando o dropdown estiver ativo, ele se torna visível */
+.profile-dropdown.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Estilo dos links dentro do dropdown */
+.profile-dropdown a {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.profile-dropdown a:hover {
+    background-color: var(--light-blue-bg);
+    color: var(--primary-blue);
+}
+
+/* ANIMAÇÃO DA SETA (CHEVRON) DO DROPDOWN (DESKTOP) */
+.profile-chevron {
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Quando o .user-profile tiver a classe .active, a seta dentro dele gira */
+.user-profile.active .profile-chevron {
+    transform: rotate(-90deg);
+}
+
+/* ======================================================================= */
+/* === ESTILOS E ANIMAÇÃO DO DROPDOWN DO PERFIL (DESKTOP) === */
+/* ======================================================================= */
+
+/* A área do usuário precisa de position: relative para ancorar o dropdown */
+.user-area {
+    position: relative;
+}
+
+/* Estilo do container do dropdown (escondido por padrão) */
+.profile-dropdown {
+    position: absolute;
+    top: calc(100% + 15px); /* Posição: 100% para baixo + 15px de espaço */
+    right: 0; /* Alinhado à direita da user-area */
+    background-color: var(--white-bg);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-hover);
+    width: 200px;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
+    z-index: 50;
+}
+
+/* Quando o dropdown estiver ativo, ele se torna visível */
+.profile-dropdown.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* Estilo dos links dentro do dropdown */
+.profile-dropdown a {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    font-weight: 500;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+
+.profile-dropdown a:hover {
+    background-color: var(--light-blue-bg);
+    color: var(--primary-blue);
+}
+
+/* ANIMAÇÃO DA SETA (CHEVRON) DO DROPDOWN */
+.profile-chevron {
+    transition: transform 0.3s ease-in-out;
+}
+
+/* Quando o .user-profile tiver a classe .active, a seta dentro dele gira */
+.user-profile.active .profile-chevron {
+    transform: rotate(-90deg); /* Gira 90 graus no sentido anti-horário */
+}

@@ -1,32 +1,131 @@
+{% load static %}
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Base Template</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    {% load static %}
-<link rel="stylesheet" href="{% static 'css/agenda.css' %}">
-<script src="{% static 'js/agenda.js' %}" defer></script>
- <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>COP30 - Agenda Oficial</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/agenda.css' %}">
+    <title>{% block title %}COP30 Dashboard{% endblock %}</title>
+    
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
-    <div class="container mt-5">
-        {% block content %}{% endblock %}
-    </div>
-    <header class="text-center p-3 shadow-sm bg-light">
-        <img src="{% static 'images/logo.png' %}" alt="COP30 Logo" class="logo mb-2">
-        <h1 class="site-title">Agenda Oficial COP30</h1>
+
+    <header class="top-nav">
+        <div class="top-bar">
+            <div class="nav-content-wrapper">
+                <a href="#" class="logo" id="main-logo">
+                    <i class="fa-solid fa-earth-americas planet-icon"></i>
+                    <h1 class="logo-text">
+                        <span class="letter">C</span><span class="letter">O</span><span class="letter">P</span><span class="letter">3</span><span class="letter">0</span>
+                    </h1>
+                </a>
+                <div class="user-area">
+                    <a href="#" class="notification-bell">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="notification-dot"></span>
+                    </a>
+                    <div class="user-profile" id="profile-toggle">
+                        <span>Visitante</span>
+                        <i class="fa-solid fa-chevron-down profile-chevron"></i>
+                        
+                        <div class="profile-dropdown" id="profile-dropdown">
+                            <a href="#">Registrar</a>
+                            <a href="#">Entrar</a>
+                        </div>
+                    </div>
+                    <button class="hub-button" id="menu-button" aria-label="Abrir menu">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <div class="nav-content-wrapper">
+                <div class="desktop-nav-links">
+                    <a href="#" class="active-link">Home</a>
+                    <a href="#">Mapa Interativo</a>
+                    <a href="#">Transporte</a>
+                    <a href="#">Agenda Oficial</a>
+                    <a href="#">Agenda Pessoal</a>
+                </div>
+            </div>
+        </div>
     </header>
-<footer class="text-center py-3 bg-light mt-4">
-        <p class="mb-0">© 2025 COP30 - Projeto Acadêmico</p>
-    </footer>
-    <main class="container my-4">
-        
-    </main>
+
+    <nav class="mobile-nav" id="mobile-nav">
+        <div class="mobile-nav-slider" id="mobile-nav-slider">
+            <div class="mobile-nav-panel main-panel">
+                <div class="mobile-nav-header">
+                    <div class="mobile-user-profile" id="mobile-profile-toggle">
+                        <i class="fa-solid fa-user-circle"></i>
+                        <span>Visitante</span>
+                    </div>
+                    <button class="close-button" id="close-button" aria-label="Fechar menu">&times;</button>
+                </div>
+                <div class="mobile-main-links">
+                    <a href="#">Home</a>
+                    <a href="#">Mapa Interativo</a>
+                    <a href="#">Transporte</a>
+                    <a href="#">Agenda Oficial</a>
+                    <a href="#">Agenda Pessoal</a>
+                    <a href="#">Configurações</a>
+                </div>
+            </div>
+            <div class="mobile-nav-panel profile-panel" id="mobile-profile-panel">
+                <div class="mobile-nav-header">
+                    <button class="back-button" id="back-to-main-menu">
+                        <i class="fa-solid fa-chevron-left"></i>
+                        <span>Voltar</span>
+                    </button>
+                </div>
+                <div class="mobile-profile-links">
+                    <a href="#">Registrar</a>
+                    <a href="#">Entrar</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <div class="overlay" id="overlay"></div>
+
+    {% block content %}
+    {% endblock content %}
+
+
+    <footer class="main-footer">
+        <div class="footer-content-wrapper">
+            <div class="footer-logo">
+                <i class="fa-solid fa-earth-americas"></i>
+                <h3>COP30</h3>
+            </div>
+            <div class="footer-links">
+                <h4>Navegação</h4>
+                <a href="#">Home</a>
+                <a href="#">Mapa Interativo</a>
+                <a href="#">Notícias</a>
+            </div>
+            <div class="footer-socials">
+                <h4>Siga-nos</h4>
+                <div class="social-icons">
+                    <a href="#"><i class="fa-brands fa-x-twitter"></i></a>
+                    <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+                </div>
+            </div>
+            <div class="footer-info">
+                <h4>Contato</h4>
+                <p>contato@cop30.com.br</p>
+                <p>&copy; 2025 COP30. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>    
+
+    <script src="{% static 'js/home.js' %}"></script>
 </body>
 </html>
