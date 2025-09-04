@@ -12,6 +12,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.cache import never_cache
 from django.utils.translation import gettext_lazy as _
+from django.http import JsonResponse
 
 from .models import Usuario, Perfil
 from .forms import UserRegistrationForm, UserLoginForm, UserUpdateForm, ProfileUpdateForm
@@ -95,7 +96,14 @@ class RegisterView(FormView):
         # Faz o login do usuário
         login(self.request, user)
         
-        # Mensagem de sucesso
+        # Se for uma requisição AJAX, retorna JSON
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'redirect_url': str(self.get_success_url())
+            })
+            
+        # Mensagem de sucesso para requisições normais
         messages.success(
             self.request, 
             f'Conta criada com sucesso! Bem-vindo(a), {user.nome}!',
@@ -108,11 +116,14 @@ class RegisterView(FormView):
         """
         O formulário é inválido.
         """
-        # Limpa mensagens anteriores para evitar duplicação
-        storage = messages.get_messages(self.request)
-        storage.used = True
-        
-        # Adiciona as mensagens de erro
+        # Se for uma requisição AJAX, retorna erros em JSON
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors
+            }, status=400)
+            
+        # Para requisições normais, mantém o comportamento original
         for field, errors in form.errors.items():
             for error in errors:
                 messages.error(
@@ -121,7 +132,6 @@ class RegisterView(FormView):
                     extra_tags='register-error'
                 )
         
-        # Força o redirecionamento para a mesma página com o formulário inválido
         return self.render_to_response(self.get_context_data(register_form=form))
     
     def get_context_data(self, **kwargs):

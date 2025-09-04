@@ -111,62 +111,47 @@
         
         <!-- Formulário de Registro -->
         <div class="forma-box registro">
-            <form method="post" action="{% url 'usuarios:register' %}">
+            <form id="registerForm" method="post" action="{% url 'usuarios:register' %}">
                 {% csrf_token %}
                 <h1>Registro</h1>
                 
-                {% if messages %}
-                    {% for message in messages %}
-                        {% if 'register' in message.tags %}
-                        <div class="alert alert-{{ message.tags|cut:'register-' }}">
-                            {{ message }}
-                        </div>
-                        {% endif %}
-                    {% endfor %}
-                {% endif %}
-                
-                {% if register_form.non_field_errors %}
-                    <div class="alert alert-error">
-                        {% for error in register_form.non_field_errors %}
-                            {{ error }}
+                <div id="registerMessages">
+                    {% if messages %}
+                        {% for message in messages %}
+                            {% if 'register' in message.tags %}
+                            <div class="alert alert-{{ message.tags|cut:'register-' }}">
+                                {{ message }}
+                            </div>
+                            {% endif %}
                         {% endfor %}
-                    </div>
-                {% endif %}
+                    {% endif %}
+                </div>
                 
                 <div class="input-box">
-                    {{ register_form.nome }}
+                    <input type="text" name="nome" placeholder="Nome Completo" required>
                     <i class='bx bxs-user'></i>
-                    {% if register_form.nome.errors %}
-                        <div class="text-danger">{{ register_form.nome.errors }}</div>
-                    {% endif %}
+                    <div id="nome-error" class="text-danger"></div>
                 </div>
                 
                 <div class="input-box">
-                    {{ register_form.email }}
+                    <input type="email" name="email" placeholder="Email" required>
                     <i class='bx bxs-envelope'></i>
-                    {% if register_form.email.errors %}
-                        <div class="text-danger">{{ register_form.email.errors }}</div>
-                    {% endif %}
+                    <div id="email-error" class="text-danger"></div>
                 </div>
                 
                 <div class="input-box">
-                    {{ register_form.password1 }}
+                    <input type="password" name="password1" placeholder="Senha" required>
                     <i class='bx bxs-lock'></i>
-                    {% if register_form.password1.errors %}
-                        <div class="text-danger">{{ register_form.password1.errors }}</div>
-                    {% endif %}
+                    <div id="password1-error" class="text-danger"></div>
                 </div>
                 
                 <div class="input-box">
-                    {{ register_form.password2 }}
+                    <input type="password" name="password2" placeholder="Confirmar Senha" required>
                     <i class='bx bxs-lock-alt'></i>
-                    {% if register_form.password2.errors %}
-                        <div class="text-danger">{{ register_form.password2.errors }}</div>
-                    {% endif %}
+                    <div id="password2-error" class="text-danger"></div>
                 </div>
                 
                 <button type="submit" class="btn">Registrar</button>
-                
             </form>
         </div>
         
@@ -193,18 +178,104 @@
         </div>
     </div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         const container = document.querySelector('.container');
         const registrarBtn = document.querySelector('.registrar-btn');
         const entrarBtn = document.querySelector('.entrar-btn');
+        const registerForm = document.getElementById('registerForm');
 
-        registrarBtn.addEventListener('click', () => {
+        // Função para verificar se há erros visíveis
+        function hasVisibleErrors() {
+            const errorElements = document.querySelectorAll('.alert-error, .text-danger');
+            return Array.from(errorElements).some(el => {
+                const style = window.getComputedStyle(el);
+                return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetParent !== null;
+            });
+        }
+
+        // Alternar entre login e registro
+        registrarBtn.addEventListener('click', (e) => {
+            e.preventDefault();
             container.classList.add('ativo');
+            // Limpa mensagens de erro ao alternar
+            clearRegisterErrors();
         });
 
-        entrarBtn.addEventListener('click', () => {
+        entrarBtn.addEventListener('click', (e) => {
+            // Verifica se há erros visíveis antes de permitir a troca
+            if (hasVisibleErrors()) {
+                e.preventDefault();
+                return;
+            }
             container.classList.remove('ativo');
         });
+
+        // Função para limpar erros do formulário de registro
+        function clearRegisterErrors() {
+            const messages = document.getElementById('registerMessages');
+            if (messages) messages.innerHTML = '';
+        }
+
+        // Submissão do formulário de registro via AJAX
+        if (registerForm) {
+            registerForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Limpa erros anteriores
+                clearRegisterErrors();
+                
+                // Obtém os dados do formulário
+                const formData = new FormData(this);
+                const messagesDiv = document.getElementById('registerMessages');
+                
+                // Adiciona o CSRF token manualmente
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                
+                // Envia a requisição AJAX
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Registro bem-sucedido, redireciona
+                        window.location.href = data.redirect_url || '{% url "home" %}';
+                    } else {
+                        // Exibe apenas o primeiro erro encontrado
+                        if (data.errors && messagesDiv) {
+                            // Limpa mensagens anteriores
+                            messagesDiv.innerHTML = '';
+                            
+                            // Encontra o primeiro erro
+                            const firstError = Object.values(data.errors)[0]?.[0];
+                            
+                            // Adiciona apenas o primeiro erro à div de mensagens
+                            if (firstError) {
+                                messagesDiv.innerHTML = 
+                                    `<div class="alert alert-error">${firstError}</div>`;
+                                
+                                // Rola até a div de mensagens
+                                messagesDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    if (messagesDiv) {
+                        messagesDiv.innerHTML = 
+                            '<div class="alert alert-error">Ocorreu um erro ao processar o registro. Tente novamente.</div>';
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
