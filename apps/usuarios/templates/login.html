@@ -194,27 +194,38 @@
             });
         }
 
-        // Alternar entre login e registro
-        registrarBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            container.classList.add('ativo');
-            // Limpa mensagens de erro ao alternar
-            clearRegisterErrors();
-        });
-
-        entrarBtn.addEventListener('click', (e) => {
-            // Verifica se há erros visíveis antes de permitir a troca
-            if (hasVisibleErrors()) {
-                e.preventDefault();
-                return;
-            }
-            container.classList.remove('ativo');
-        });
-
         // Função para limpar erros do formulário de registro
         function clearRegisterErrors() {
             const messages = document.getElementById('registerMessages');
             if (messages) messages.innerHTML = '';
+        }
+
+        // Alternar para o formulário de registro
+        if (registrarBtn) {
+            registrarBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                container.classList.add('ativo');
+                clearRegisterErrors();
+            });
+        }
+
+        // Alternar para o formulário de login
+        if (entrarBtn) {
+            // Adiciona o evento de clique ao botão de entrar
+            entrarBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                container.classList.remove('ativo');
+            });
+            
+            // Adiciona também ao link "Já tem uma conta?"
+            const jaTemConta = document.querySelector('.alternar-card p');
+            if (jaTemConta) {
+                jaTemConta.style.cursor = 'pointer';
+                jaTemConta.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    container.classList.remove('ativo');
+                });
+            }
         }
 
         // Submissão do formulário de registro via AJAX
@@ -269,6 +280,7 @@
                 })
                 .catch(error => {
                     console.error('Erro:', error);
+                    const messagesDiv = document.getElementById('registerMessages');
                     if (messagesDiv) {
                         messagesDiv.innerHTML = 
                             '<div class="alert alert-error">Ocorreu um erro ao processar o registro. Tente novamente.</div>';
