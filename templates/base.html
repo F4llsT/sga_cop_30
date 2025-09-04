@@ -34,7 +34,7 @@
                     </a>
                     <div class="user-profile" id="profile-toggle">
                         {% if user.is_authenticated %}
-                            <span>{{ user.email }}</span>
+                            <span>{{ user.nome }}</span>
                         {% else %}
                             <span>Visitante</span>
                         {% endif %}
