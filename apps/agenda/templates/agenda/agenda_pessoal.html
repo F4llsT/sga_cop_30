@@ -4,7 +4,10 @@
 {% block title %}Minha Agenda Pessoal - COP30{% endblock title %}
 
 {% block extra_styles %}
+<script src="https://cdn.tailwindcss.com"></script>
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+    
     /* Estilos específicos para a página da agenda pessoal */
     body {
         font-family: 'Poppins', sans-serif;
@@ -39,18 +42,6 @@
 
 
 {% block content %}
-<header class="bg-white shadow-md w-full max-w-6xl mx-auto rounded-b-lg">
-    <nav class="container mx-auto px-4 py-4 flex justify-between items-center">
-        <a href="{% url 'agenda:agenda_oficial' %}" class="text-2xl font-bold text-gray-800 hover:text-indigo-600 transition-colors">
-            Agenda Oficial
-        </a>
-        <div>
-            <a href="{% url 'agenda:agenda_pessoal' %}" class="px-5 py-2 bg-indigo-500 text-white font-medium rounded-lg shadow-md hover:bg-indigo-600 transition-colors">
-                Minha Agenda
-            </a>
-        </div>
-    </nav>
-</header>
 
 <main class="container mx-auto px-4 md:px-8">
     <div class="container-agenda">
@@ -109,4 +100,9 @@
         {% endif %}
     </div>
 </main>
+
+{% block extra_js %}
+<script src="{% static 'js/agenda.js' %}"></script>
+{% endblock extra_js %}
+
 {% endblock content %}
