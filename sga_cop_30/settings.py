@@ -48,8 +48,12 @@ AUTH_USER_MODEL = 'usuarios.Usuario'
 
 # Configurações de autenticação
 LOGIN_URL = 'usuarios:login'
-LOGIN_REDIRECT_URL = 'home'
-LOGOUT_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'home'  # Página para redirecionar após o login
+LOGOUT_REDIRECT_URL = 'home'  # Página para redirecionar após o logout
+
+# Configurações de sessão
+SESSION_COOKIE_AGE = 1209600  # 2 semanas em segundos
+SESSION_SAVE_EVERY_REQUEST = True  # Renova a sessão a cada requisição
 
 # Configurações de senha
 AUTH_PASSWORD_VALIDATORS = [
@@ -69,10 +73,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
-# Configurações de sessão
-SESSION_COOKIE_AGE = 1209600  # 2 semanas em segundos
-SESSION_SAVE_EVERY_REQUEST = True
 
 # Configurações de email
 # Modo de desenvolvimento: exibe emails no console
