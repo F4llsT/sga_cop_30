@@ -7,55 +7,7 @@
     <title>Login - SGA COP 30</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="{% static 'css/login.css' %}">
-    <style>
-        .alert {
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            border-radius: 4px;
-            font-size: 14px;
-            color: #fff;
-        }
-        .alert-error {
-            background-color: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-        .alert-info {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            color: #0c5460;
-        }
-        .input-box {
-            position: relative;
-            margin: 25px 0;
-        }
-        .input-box input {
-            width: 100%;
-            padding: 12px 45px 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-        .input-box input:focus {
-            border-color: #7494ec;
-            box-shadow: 0 0 5px rgba(116, 148, 236, 0.5);
-        }
-        .input-box i {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #888;
-            font-size: 20px;
-        }
-    </style>
+
 </head>
 
 <body>
@@ -147,7 +99,7 @@
                 
                 <div class="input-box">
                     <input type="password" name="password2" placeholder="Confirmar Senha" required>
-                    <i class='bx bxs-lock-alt'></i>
+                    <i class='bx bxs-lock'></i>
                     <div id="password2-error" class="text-danger"></div>
                 </div>
                 
@@ -159,8 +111,8 @@
         <div class="alternar-box">
             <div class="alternar-card alternar-left">
                 <div class="logo-login">
-                    <i class='bx bxs-planet'></i>
-                    <span>COP30</span>
+                    <i class='bx bxs-planet' style="font-size: 40px !important; width: 40px !important; height: 40px !important;"></i>
+                    <span style="font-size: 32px !important;">COP30</span>
                 </div>
                 <h1> Olá, bem vindo</h1>
                 <p>não tem acesso a conta?</p>
@@ -168,8 +120,8 @@
             </div>
             <div class="alternar-card alternar-right">
                  <div class="logo-login">
-                    <i class='bx bxs-planet'></i>
-                    <span>COP30</span>
+                    <i class='bx bxs-planet' style="font-size: 40px !important; width: 40px !important; height: 40px !important;"></i>
+                    <span style="font-size: 32px !important;">COP30</span>
                 </div>
                 <h1> Bem vindo!</h1>
                 <p>já tem uma conta?</p>

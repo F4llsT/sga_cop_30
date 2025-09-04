@@ -206,17 +206,30 @@ form {/*uma terceira caixa invisivel dentro das duas caixas pra centralizar*/
     box-shadow: none;
 }
 
-.logo-login { /*logo do planetinha lá*/
+.logo-login {
     display: flex;
     align-items: center;
     gap: 0.8rem;
-    font-size: 2rem;
-    font-weight: 700;
     margin-bottom: 20px;
-    color: #fff;
 }
-.logo-login span {
-    font-size: 1.8rem;
+
+/* Estilo para o ícone do planeta - específico para BoxIcons */
+.alternar-card .logo-login .bxs-planet {
+    font-size: 2rm !important;
+    width: 1em !important;
+    height: 1em !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    line-height: 1 !important;
+}
+
+/* Estilo para o texto COP30 */
+.alternar-card .logo-login span {
+    font-size: 1.8rm !important;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
 }
 
 @media screen and (max-width: 650px) { /* isso muda a tela e a animação de acordo com o tamanho e etc (obg gemini pro)*/
@@ -281,4 +294,53 @@ form {/*uma terceira caixa invisivel dentro das duas caixas pra centralizar*/
     .alternar-card h1 {
         font-size: 30px;
     }
+}
+
+
+.alert {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #fff;
+}
+.alert-error {
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    color: #721c24;
+}
+.alert-success {
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+.alert-info {
+    background-color: #d1ecf1;
+    border: 1px solid #bee5eb;
+    color: #0c5460;
+}
+.input-box {
+    position: relative;
+    margin: 25px 0;
+}
+.input-box input {
+    width: 100%;
+    padding: 12px 45px 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.3s ease;
+}
+.input-box input:focus {
+    border-color: #7494ec;
+    box-shadow: 0 0 5px rgba(116, 148, 236, 0.5);
+}
+.input-box i {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    font-size: 20px;
 }
