@@ -15,27 +15,6 @@ body { /*centralizando tudo*/
     background: linear-gradient(90deg, #e2e2e2, #c9d6ff); /*cores do gradient (fundo)*/
 }
 
-/* Estilos para mensagens de erro */
-.alert {
-    padding: 10px 15px;
-    margin-bottom: 15px;
-    border: 1px solid transparent;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.alert-error {
-    color: #721c24;
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
-}
-
-.alert-success {
-    color: #155724;
-    background-color: #d4edda;
-    border-color: #c3e6cb;
-}
-
 .container { /*a caixa toda, primeira caixa*/
     position: relative;
     width: 850px;
@@ -69,6 +48,7 @@ body { /*centralizando tudo*/
 
 .forma-box.registro {/*a segunda caixa escondida na direita (registro)*/
     visibility: hidden;
+    right: -50%;
 }
 
 .container.ativo .forma-box.registro { /*muda oq ta escrito no registro e no entrar*/
@@ -224,6 +204,19 @@ form {/*uma terceira caixa invisivel dentro das duas caixas pra centralizar*/
     background: transparent;
     border: 2px solid #fff;
     box-shadow: none;
+}
+
+.logo-login { /*logo do planetinha lá*/
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #fff;
+}
+.logo-login span {
+    font-size: 1.8rem;
 }
 
 @media screen and (max-width: 650px) { /* isso muda a tela e a animação de acordo com o tamanho e etc (obg gemini pro)*/

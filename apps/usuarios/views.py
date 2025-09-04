@@ -108,6 +108,10 @@ class RegisterView(FormView):
         """
         O formulário é inválido.
         """
+        # Limpa mensagens anteriores para evitar duplicação
+        storage = messages.get_messages(self.request)
+        storage.used = True
+        
         # Adiciona as mensagens de erro
         for field, errors in form.errors.items():
             for error in errors:
@@ -117,7 +121,7 @@ class RegisterView(FormView):
                     extra_tags='register-error'
                 )
         
-        # Retorna para a página de login/registro com os erros
+        # Força o redirecionamento para a mesma página com o formulário inválido
         return self.render_to_response(self.get_context_data(register_form=form))
     
     def get_context_data(self, **kwargs):

@@ -105,12 +105,7 @@
                 </div>
                 
                 <button type="submit" class="btn">Entrar</button>
-                
-                <p>Entrar com outras plataformas</p>
-                <div class="outrasP-icons">
-                    <a href="#"><i class='bx bxl-google'></i></a>
-                    <a href="#"><i class='bx bxl-facebook'></i></a>
-                </div>
+
             </form>
         </div> 
         
@@ -130,9 +125,11 @@
                     {% endfor %}
                 {% endif %}
                 
-                {% if register_form.errors %}
+                {% if register_form.non_field_errors %}
                     <div class="alert alert-error">
-                        Por favor, corrija os erros abaixo.
+                        {% for error in register_form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
                     </div>
                 {% endif %}
                 
@@ -170,24 +167,27 @@
                 
                 <button type="submit" class="btn">Registrar</button>
                 
-                <p>Registrar com outras plataformas</p>
-                <div class="outrasP-icons">
-                    <a href="#"><i class='bx bxl-google'></i></a>
-                    <a href="#"><i class='bx bxl-facebook'></i></a>
-                </div>
             </form>
         </div>
         
         <!-- Botões de Alternância -->
         <div class="alternar-box">
             <div class="alternar-card alternar-left">
-                <h1>Olá, bem-vindo</h1>
-                <p>Não tem acesso à conta?</p>
+                <div class="logo-login">
+                    <i class='bx bxs-planet'></i>
+                    <span>COP30</span>
+                </div>
+                <h1> Olá, bem vindo</h1>
+                <p>não tem acesso a conta?</p>
                 <button class="btn registrar-btn">Registrar</button>
             </div>
             <div class="alternar-card alternar-right">
-                <h1>Bem-vindo!</h1>
-                <p>Já tem uma conta?</p>
+                 <div class="logo-login">
+                    <i class='bx bxs-planet'></i>
+                    <span>COP30</span>
+                </div>
+                <h1> Bem vindo!</h1>
+                <p>já tem uma conta?</p>
                 <button class="btn entrar-btn">Entrar</button>
             </div>
         </div>
