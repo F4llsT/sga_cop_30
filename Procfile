@@ -1,0 +1,1 @@
+web: gunicorn --chdir sga_cop_30 wsgi:application

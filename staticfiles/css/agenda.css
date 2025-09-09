@@ -1,0 +1,31 @@
+/* agenda.css */
+/* ... seu código atual ... */
+
+/* Melhorias de design */
+.agenda-filters button {
+    background-color: #007bff; /* Azul para destaque */
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.agenda-filters button:hover {
+    background-color: #0056b3;
+}
+
+/* Responsividade para telas pequenas */
+@media (max-width: 768px) {
+    .agenda-filters {
+        flex-direction: column; /* Filtros um em cima do outro em telas pequenas */
+        align-items: center;
+    }
+
+    .agenda-filters select,
+    .agenda-filters button {
+        width: 100%; /* Ocupam a largura total */
+        margin-bottom: 10px;
+    }
+}
