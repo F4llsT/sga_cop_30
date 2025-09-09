@@ -63,8 +63,8 @@
                     <a href="{% url 'home' %}" class="{% if request.path == '/' %}active-link{% endif %}">Home</a>
                     <a href="#">Mapa Interativo</a>
                     <a href="#">Transporte</a>
-                    <a href="{% url 'agenda:listar_eventos' tipo='oficial' %}">Agenda Oficial</a>
-                    <a href="{% url 'agenda:listar_eventos' tipo='pessoal' %}">Agenda Pessoal</a>
+                    <a href="{% url 'agenda:agenda_oficial' %}">Agenda Oficial</a>
+                    <a href="{% url 'agenda:agenda_pessoal' %}">Agenda Pessoal</a>
                 </div>
             </div>
         </div>
@@ -84,8 +84,8 @@
                     <a href="{% url 'home' %}">Home</a>
                     <a href="#">Mapa Interativo</a>
                     <a href="#">Transporte</a>
-                    <a href="{% url 'agenda:listar_eventos' tipo='oficial' %}">Agenda Oficial</a>
-                    <a href="{% url 'agenda:listar_eventos' tipo='pessoal' %}">Agenda Pessoal</a>
+                    <a href="{% url 'agenda:agenda_oficial' %}">Agenda Oficial</a>
+                    <a href="{% url 'agenda:agenda_pessoal' %}">Agenda Pessoal</a>
                     <a href="#">Configurações</a>
                 </div>
             </div>

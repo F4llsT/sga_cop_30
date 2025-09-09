@@ -175,7 +175,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Configurações adicionais para arquivos estáticos
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
-    os.path.join(BASE_DIR, 'apps', 'usuarios', 'static'),
+    os.path.join(BASE_DIR, 'apps/usuarios/static'),
 ]
 
 # Configurações de arquivos de mídia

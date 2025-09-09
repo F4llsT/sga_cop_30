@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - SGA COP 30</title>
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
-    <link rel="stylesheet" href="{% static 'usuarios/css/login.css' %}">
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
 
 </head>
 
@@ -131,6 +131,115 @@
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{% static 'usuarios/js/login.js' %}"></script>
+    <script>
+        const container = document.querySelector('.container');
+        const registrarBtn = document.querySelector('.registrar-btn');
+        const entrarBtn = document.querySelector('.entrar-btn');
+        const registerForm = document.getElementById('registerForm');
+
+        // Função para verificar se há erros visíveis
+        function hasVisibleErrors() {
+            const errorElements = document.querySelectorAll('.alert-error, .text-danger');
+            return Array.from(errorElements).some(el => {
+                const style = window.getComputedStyle(el);
+                return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetParent !== null;
+            });
+        }
+
+        // Função para limpar erros do formulário de registro
+        function clearRegisterErrors() {
+            const messages = document.getElementById('registerMessages');
+            if (messages) messages.innerHTML = '';
+        }
+
+        // Alternar para o formulário de registro
+        if (registrarBtn) {
+            registrarBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                container.classList.add('ativo');
+                clearRegisterErrors();
+            });
+        }
+
+        // Alternar para o formulário de login
+        if (entrarBtn) {
+            // Adiciona o evento de clique ao botão de entrar
+            entrarBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                container.classList.remove('ativo');
+            });
+            
+            // Adiciona também ao link "Já tem uma conta?"
+            const jaTemConta = document.querySelector('.alternar-card p');
+            if (jaTemConta) {
+                jaTemConta.style.cursor = 'pointer';
+                jaTemConta.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    container.classList.remove('ativo');
+                });
+            }
+        }
+
+        // Submissão do formulário de registro via AJAX
+        if (registerForm) {
+            registerForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Limpa erros anteriores
+                clearRegisterErrors();
+                
+                // Obtém os dados do formulário
+                const formData = new FormData(this);
+                const messagesDiv = document.getElementById('registerMessages');
+                
+                // Adiciona o CSRF token manualmente
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                
+                // Envia a requisição AJAX
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Registro bem-sucedido, redireciona
+                        window.location.href = data.redirect_url || '{% url "home" %}';
+                    } else {
+                        // Exibe apenas o primeiro erro encontrado
+                        if (data.errors && messagesDiv) {
+                            // Limpa mensagens anteriores
+                            messagesDiv.innerHTML = '';
+                            
+                            // Encontra o primeiro erro
+                            const firstError = Object.values(data.errors)[0]?.[0];
+                            
+                            // Adiciona apenas o primeiro erro à div de mensagens
+                            if (firstError) {
+                                messagesDiv.innerHTML = 
+                                    `<div class="alert alert-error">${firstError}</div>`;
+                                
+                                // Rola até a div de mensagens
+                                messagesDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                    const messagesDiv = document.getElementById('registerMessages');
+                    if (messagesDiv) {
+                        messagesDiv.innerHTML = 
+                            '<div class="alert alert-error">Ocorreu um erro ao processar o registro. Tente novamente.</div>';
+                    }
+                });
+            });
+        }
+    </script>
 </body>
 </html>
