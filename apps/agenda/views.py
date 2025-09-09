@@ -58,3 +58,14 @@ def remove_from_agenda(request, event_id):
         messages.success(request, 'Evento removido da sua agenda pessoal com sucesso.')
     # Redireciona de volta para a agenda pessoal
     return redirect('agenda:agenda_pessoal')
+
+@login_required
+def detalhes_evento(request, event_id):
+    evento = get_object_or_404(Event, pk=event_id)
+    #Verifica se o evento já está na agenda do usuário para o botão "favoritar"
+    if_favorited = UserAgenda.objects.filter(user=request.user, event=evento).exists()
+    return render(request, 'agenda/detalhes_evento.html', {
+        'evento': evento,
+        'is_favorited': is_favorited
+    }
+                  )
