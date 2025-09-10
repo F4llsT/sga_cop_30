@@ -23,11 +23,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-#i+mjii)++-mb_gvdmirus@5k2b-1^1na(3#7j%i49_2_@5@78"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 # Adicione seu domínio do PythonAnywhere aos hosts permitidos
-ALLOWED_HOSTS = ['JoaoVCC.pythonanywhere.com', 'www.JoaoVCC.pythonanywhere.com']
-
+ALLOWED_HOSTS = [
+    'joaovcc.pythonanywhere.com',
+    'www.joaovcc.pythonanywhere.com',
+    '127.0.0.1',  # Para desenvolvimento local
+    'localhost',   # Para desenvolvimento local
+]
 
 # Application definition
 
@@ -58,6 +62,8 @@ LOGIN_EXEMPT_URLS = [
     r'^agenda/$',  # Página da agenda oficial
     r'^accounts/login/$',  # Página de login
     r'^accounts/register/$',  # Página de registro
+    r'^static/.*$',  # Arquivos estáticos
+    r'^media/.*$',   # Arquivos de mídia
 ]
 
 # Configurações de sessão
@@ -103,12 +109,14 @@ EMAIL_SUBJECT_PREFIX = '[SGA COP 30] '  # Prefixo para assuntos de email
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "sga_cop_30.middleware.LoginRequiredMiddleware",
 ]
 
 ROOT_URLCONF = "sga_cop_30.urls"
@@ -177,9 +185,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'staticfiles'),
+    os.path.join(BASE_DIR, 'static'),
 ]
 
 # Configurações de arquivos de mídia
@@ -197,3 +205,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 if not DEBUG:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://joaovcc.pythonanywhere.com',
+    'https://www.joaovcc.pythonanywhere.com',
+]
