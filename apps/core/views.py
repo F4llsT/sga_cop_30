@@ -15,6 +15,9 @@ def pagina_inicial(request):
     ).order_by('start_time')[:4]
 
     # Cria o contexto para enviar os dados ao template
+    print(f"Eventos futuros encontrados: {eventos_futuros}")
+    print(f"Total de eventos: {eventos_futuros.count()}")
+    
     context = {
         'proximos_eventos': eventos_futuros
     }

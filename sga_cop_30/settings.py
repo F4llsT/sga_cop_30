@@ -51,6 +51,14 @@ LOGIN_URL = 'usuarios:login'
 LOGIN_REDIRECT_URL = 'home'  # Página para redirecionar após o login
 LOGOUT_REDIRECT_URL = 'home'  # Página para redirecionar após o logout
 
+# Configuração para redirecionar usuários não autenticados para a página de login
+LOGIN_EXEMPT_URLS = [
+    r'^$',  # Página inicial
+    r'^agenda/$',  # Página da agenda oficial
+    r'^accounts/login/$',  # Página de login
+    r'^accounts/register/$',  # Página de registro
+]
+
 # Configurações de sessão
 SESSION_COOKIE_AGE = 1209600  # 2 semanas em segundos
 SESSION_SAVE_EVERY_REQUEST = True  # Renova a sessão a cada requisição

@@ -3,13 +3,17 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .models import Event, UserAgenda
 
-@login_required
 def agenda_oficial(request):
     """
     Exibe a agenda oficial com todos os eventos e permite filtrar por tema.
+    Acesso público, não requer autenticação.
     """
     eventos = Event.objects.all().order_by('start_time')
-    user_events = UserAgenda.objects.filter(user=request.user).values_list('event_id', flat=True)
+    user_events = []
+    
+    # Se o usuário estiver autenticado, carrega seus eventos
+    if request.user.is_authenticated:
+        user_events = list(UserAgenda.objects.filter(user=request.user).values_list('event_id', flat=True))
 
     theme_filter = request.GET.get('theme', '')
     if theme_filter:
@@ -17,7 +21,7 @@ def agenda_oficial(request):
 
     return render(request, 'agenda/agenda_oficial.html', {
         'eventos': eventos,
-        'user_events': list(user_events),
+        'user_events': user_events,
         'theme_filter': theme_filter,
     })
 
