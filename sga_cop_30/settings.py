@@ -23,9 +23,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-#i+mjii)++-mb_gvdmirus@5k2b-1^1na(3#7j%i49_2_@5@78"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+# Adicione seu domínio do PythonAnywhere aos hosts permitidos
+ALLOWED_HOSTS = ['JoaoVCC.pythonanywhere.com', 'www.JoaoVCC.pythonanywhere.com']
 
 
 # Application definition
@@ -175,15 +176,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "/static/"
-
-# Local onde os arquivos estáticos serão coletados (para produção)
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
-# Configurações adicionais para arquivos estáticos
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-    os.path.join(BASE_DIR, 'apps/usuarios/static'),
+    os.path.join(BASE_DIR, 'staticfiles'),
 ]
 
 # Configurações de arquivos de mídia
@@ -198,3 +194,6 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
