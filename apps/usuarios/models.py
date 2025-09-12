@@ -34,11 +34,11 @@ class Usuario(AbstractUser):
     
     username = None
     email = models.EmailField(_('endereço de email'), unique=True)
-    nome = models.CharField(_('nome completo'), max_length=150, blank=True)
+    nome = models.CharField(_('nome completo'), max_length=150, blank=False, null=False)  # Campo obrigatório
     data_cadastro = models.DateTimeField(_('data de cadastro'), auto_now_add=True)
     
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ['nome']  # Adiciona 'nome' aos campos obrigatórios
     
     objects = UsuarioManager()
     

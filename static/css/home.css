@@ -87,11 +87,11 @@ h1.logo-text {
     align-items: center;
     gap: 1.5rem;
 }
-.notification-bell {
+.notification-bell { 
+    display: flex; 
+    margin-right: 1rem;
     font-size: 1.5rem;
     color: var(--text-secondary);
-    position: relative;
-    cursor: pointer;
 }
 .notification-bell:hover { color: var(--text-primary); }
 .notification-dot {
@@ -149,6 +149,12 @@ h1.logo-text {
     transform: scaleX(1);
 }
 
+/* Container para agrupar o sino e o botão de menu no mobile */
+.mobile-nav-controls {
+    display: flex;
+    align-items: center;
+}
+
 /* ===== MENU LATERAL DESLIZANTE DE DOIS NÍVEIS ===== */
 .mobile-nav {
     position: fixed;
@@ -186,8 +192,7 @@ h1.logo-text {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 1rem;
-    margin-bottom: 1rem;
+    padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
 }
 .mobile-user-profile {
@@ -257,12 +262,71 @@ h1.logo-text {
 }
 .overlay.active { opacity: 1; visibility: visible; }
 
+/* Estilo para o cabeçalho do menu mobile */
+.mobile-nav-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Container para os botões de ação no menu mobile */
+.mobile-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Ajustes para o botão de notificação no menu mobile */
+.mobile-nav .notification-bell {
+    font-size: 1.4rem;
+    color: var(--text-secondary);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.mobile-nav .notification-bell:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--primary-blue);
+}
+
+/* Ajustes para o botão de fechar */
+.close-button {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.close-button:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: var(--primary-blue);
+}
+
 /* ===== RESPONSIVIDADE DA NAVBAR ===== */
-.bottom-bar, .user-profile, .notification-bell { display: none; }
-.hub-button { display: block; }
+.bottom-bar, .user-profile { display: none; }
+.hub-button { display: flex; align-items: center; }
 @media (min-width: 768px) {
-    .bottom-bar, .user-profile, .notification-bell { display: flex; }
+    .bottom-bar, .user-profile { display: flex; }
     .hub-button { display: none; }
+    .notification-bell {
+        margin-right: 0;
+        margin-left: 1.5rem;
+    }
 }
 
 /* ===== SEÇÕES DE CONTEÚDO ===== */

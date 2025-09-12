@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.forms import UserCreationForm, UserChangeForm
 from .models import Usuario, Perfil
 
 class PerfilInline(admin.StackedInline):
@@ -8,16 +9,28 @@ class PerfilInline(admin.StackedInline):
     verbose_name_plural = 'Perfil'
     fk_name = 'usuario'
 
+class UsuarioCreationForm(UserCreationForm):
+    class Meta(UserCreationForm.Meta):
+        model = Usuario
+        fields = ('email', 'nome')
+
+class UsuarioChangeForm(UserChangeForm):
+    class Meta(UserChangeForm.Meta):
+        model = Usuario
+        fields = ('email', 'nome', 'is_active', 'is_staff', 'is_superuser')
+
 class UsuarioAdmin(UserAdmin):
+    form = UsuarioChangeForm
+    add_form = UsuarioCreationForm
     inlines = (PerfilInline, )
-    list_display = ('email', 'first_name', 'last_name', 'is_staff', 'is_active')
+    list_display = ('email', 'nome', 'is_staff', 'is_active')
     list_filter = ('is_staff', 'is_superuser', 'is_active')
-    search_fields = ('email', 'first_name', 'last_name')
+    search_fields = ('email', 'nome')
     ordering = ('email',)
     
     fieldsets = (
         (None, {'fields': ('email', 'password')}),
-        ('Informações Pessoais', {'fields': ('first_name', 'last_name')}),
+        ('Informações Pessoais', {'fields': ('nome',)}),
         ('Permissões', {
             'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
         }),
@@ -26,7 +39,7 @@ class UsuarioAdmin(UserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2', 'is_staff', 'is_active')}
+            'fields': ('email', 'nome', 'password1', 'password2', 'is_staff', 'is_active')}
         ),
     )
 
@@ -36,5 +49,5 @@ admin.site.register(Usuario, UsuarioAdmin)
 @admin.register(Perfil)
 class PerfilAdmin(admin.ModelAdmin):
     list_display = ('usuario', 'telefone', 'data_nascimento')
-    search_fields = ('usuario__email', 'usuario__first_name', 'telefone')
+    search_fields = ('usuario__email', 'usuario__nome', 'telefone')
     list_filter = ('data_nascimento',)
