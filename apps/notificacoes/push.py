@@ -7,6 +7,17 @@ logger = logging.getLogger(__name__)
 ONESIGNAL_API_URL = "https://api.onesignal.com/notifications"
 
 
+def _build_auth_header(api_key: str) -> dict:
+    """Return proper Authorization header for OneSignal.
+    - Chaves novas (v2) iniciam com 'os_' e usam 'Bearer'.
+    - Chaves antigas usam 'Basic'.
+    """
+    if not api_key:
+        return {}
+    scheme = "Bearer" if api_key.startswith("os_") else "Basic"
+    return {"Authorization": f"{scheme} {api_key}"}
+
+
 def send_push_to_user(user_external_id: str, title: str, message: str, url: str | None = None) -> bool:
     """
     Sends a Web Push notification using OneSignal to a specific user identified by external_id.
@@ -37,14 +48,16 @@ def send_push_to_user(user_external_id: str, title: str, message: str, url: str 
     if url:
         payload["url"] = url
 
+    headers = {
+        **_build_auth_header(api_key),
+        "Content-Type": "application/json",
+    }
+
     try:
         resp = requests.post(
             ONESIGNAL_API_URL,
             json=payload,
-            headers={
-                "Authorization": f"Basic {api_key}",
-                "Content-Type": "application/json",
-            },
+            headers=headers,
             timeout=10,
         )
         if resp.status_code in (200, 201, 202):
