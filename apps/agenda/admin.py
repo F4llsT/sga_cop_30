@@ -5,7 +5,7 @@ from .models import Event, UserAgenda
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('titulo', 'horario', 'local', 'start_time')
+    list_display = ('titulo', 'horario', 'local', 'start_time', 'end_time')
     list_filter = ('local', 'tags')
     search_fields = ('titulo', 'palestrantes', 'tags', 'descricao')
     ordering = ('start_time',)
@@ -14,7 +14,7 @@ class EventAdmin(admin.ModelAdmin):
             'fields': ('titulo', 'descricao')
         }),
         ('Detalhes do Evento', {
-            'fields': ('horario', 'local', 'palestrantes', 'tags', 'start_time')
+            'fields': ('horario', 'local', 'palestrantes', 'tags', 'start_time', 'end_time')
         }),
     )
 

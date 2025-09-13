@@ -8,19 +8,30 @@
 
 <div class="event-detail-container">
     <div class="event-header">
-        <h1 class="event-title">{{ event.titulo }}</h1>
-        <p class="event-time">{{ event.horario_inicio|time:"H:i" }} - {{ event.horario_fim|time:"H:i" }}</p>
+        <h1 class="event-title">{{ evento.titulo }}</h1>
+        <p class="event-time">
+            {% if evento.start_time %}
+                {{ evento.start_time|date:"d/m/Y H:i" }}
+                {% if evento.end_time %}
+                    - {{ evento.end_time|date:"H:i" }}
+                {% else %}
+                    - {{ evento.horario }}
+                {% endif %}
+            {% else %}
+                {{ evento.horario }}
+            {% endif %}
+        </p>
     </div>
 
     <div class="event-body">
         <div class="event-description">
             <h2>Sobre o Evento</h2>
-            <p>{{ event.descricao|linebreaks }}</p>
+            <p>{{ evento.descricao|linebreaks }}</p>
         </div>
 
         <div class="event-location">
             <h2>Localização</h2>
-            <p><strong>Local:</strong> {{ event.local }}</p>
+            <p><strong>Local:</strong> {{ evento.local }}</p>
             <div class="map-placeholder">
                 <p>Aqui será exibido o mapa com o pino de localização.</p>
             </div>
@@ -28,7 +39,7 @@
     </div>
 
     <div class="event-actions">
-        <a href="{% url 'add_to_agenda' event.id %}" class="favorite-btn {% if is_favorited %}favorited{% endif %}">
+        <a href="{% url 'agenda:add_to_agenda' evento.id %}" class="favorite-btn {% if is_favorited %}favorited{% endif %}">
             <span class="icon">★</span>
             <span class="text">
                 {% if is_favorited %}

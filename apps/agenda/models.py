@@ -21,6 +21,7 @@ class Event(models.Model):
     palestrantes = models.CharField(max_length=200, blank=True)
     tags = models.CharField(max_length=200, blank=True)  # separado por vírgulas
     start_time = models.DateTimeField('Data e Hora do Evento', null=True, blank=True)
+    end_time = models.DateTimeField('Data e Hora de Término', null=True, blank=True)
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
     
     # Gerenciadores
