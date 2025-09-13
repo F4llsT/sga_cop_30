@@ -108,6 +108,12 @@ PASSWORD_RESET_TIMEOUT = 14400  # 4 horas em segundos
 DEFAULT_FROM_EMAIL = 'noreply@sgacop30.com'  # Email padrão para envio
 EMAIL_SUBJECT_PREFIX = '[SGA COP 30] '  # Prefixo para assuntos de email
 
+# OneSignal / Push settings (configure via environment variables on PythonAnywhere)
+ONESIGNAL_APP_ID = os.environ.get('ONESIGNAL_APP_ID', '')
+ONESIGNAL_REST_API_KEY = os.environ.get('ONESIGNAL_REST_API_KEY', '')
+# Public base URL of the site (used to build absolute links in push notifications)
+SITE_URL = os.environ.get('SITE_URL', 'https://SEU-DOMINIO.pythonanywhere.com')
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -132,6 +138,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                # Expose OneSignal App ID to templates
+                'apps.core.context_processors.onesignal',
             ],
         },
     },

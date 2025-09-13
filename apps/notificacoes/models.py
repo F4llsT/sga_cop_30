@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from apps.agenda.models import Event
 
 User = get_user_model()
 
@@ -19,6 +20,7 @@ class Notificacao(models.Model):
     lida = models.BooleanField(default=False)
     criada_em = models.DateTimeField(auto_now_add=True)
     lida_em = models.DateTimeField(null=True, blank=True)
+    evento = models.ForeignKey(Event, on_delete=models.CASCADE, null=True, blank=True, related_name='notificacoes_evento')
     
     class Meta:
         ordering = ['-criada_em']

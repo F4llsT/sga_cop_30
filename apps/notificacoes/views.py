@@ -2,18 +2,30 @@ from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from datetime import timedelta
 import json
 from .models import Notificacao
 
 @login_required
 def listar_notificacoes(request):
-    """Retorna as notificações do usuário logado"""
-    notificacoes = Notificacao.objects.filter(usuario=request.user)
+    """Retorna as notificações do usuário logado com menos de 10 horas"""
+    # Calcular o limite de 10 horas atrás
+    dez_horas_atras = timezone.now() - timedelta(hours=10)
+    
+    # Filtrar notificações do usuário com menos de 10 horas
+    notificacoes = Notificacao.objects.filter(
+        usuario=request.user,
+        criada_em__gte=dez_horas_atras
+    ).order_by('-criada_em')  # Ordena do mais recente para o mais antigo
+    
+    # Contar notificações não lidas (apenas as últimas 10 horas)
+    nao_lidas = notificacoes.filter(lida=False).count()
     
     data = {
         'notificacoes': [],
         'total': notificacoes.count(),
-        'nao_lidas': notificacoes.filter(lida=False).count()
+        'nao_lidas': nao_lidas
     }
     
     for notif in notificacoes:
@@ -24,7 +36,8 @@ def listar_notificacoes(request):
             'tipo': notif.tipo,
             'lida': notif.lida,
             'tempo': notif.tempo_decorrido,
-            'criada_em': notif.criada_em.isoformat()
+            'criada_em': notif.criada_em.isoformat(),
+            'evento_id': notif.evento.id if notif.evento else None
         })
     
     return JsonResponse(data)

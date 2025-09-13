@@ -15,6 +15,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     {% block extra_styles %}{% endblock %}
+    
+    <!-- OneSignal Web SDK -->
+    <script>
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(function(OneSignal) {
+        OneSignal.init({
+          appId: "{{ ONESIGNAL_APP_ID|default:'' }}",
+          safari_web_id: undefined,
+          allowLocalhostAsSecureOrigin: true
+        });
+        {% if user.is_authenticated %}
+        // Associa o usuário logado como external_id no OneSignal
+        OneSignal.login("{{ user.id }}");
+        {% endif %}
+      });
+    </script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
 
@@ -36,7 +53,10 @@
                         <div class="notification-dropdown" id="notification-dropdown">
                             <div class="notification-header">
                                 <h3>Notificações</h3>
-                                <button class="mark-all-read" id="mark-all-read">Marcar todas como lidas</button>
+                                <div class="notification-actions">
+                                    <button class="activate-notifications" id="activate-notifications" type="button">Ativar notificações</button>
+                                    <button class="mark-all-read" id="mark-all-read" type="button">Marcar todas como lidas</button>
+                                </div>
                             </div>
                             <div class="notification-list" id="notification-list">
                                 <div class="no-notifications">

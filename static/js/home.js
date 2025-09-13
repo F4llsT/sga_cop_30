@@ -216,7 +216,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     'error': 'fa-exclamation-circle'
                 };
                 
-                notificationItem.innerHTML = `
+                // Verifica se a notificação está vinculada a um evento
+                const hasEvent = notification.evento_id !== null && notification.evento_id !== undefined;
+                const notificationContent = `
                     <div class="notification-icon ${notification.tipo}">
                         <i class="fa-solid ${iconMap[notification.tipo] || 'fa-info-circle'}"></i>
                     </div>
@@ -227,10 +229,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
                 
+                if (hasEvent) {
+                    // Se tiver evento, cria um link para a página do evento
+                    const notificationLink = document.createElement('a');
+                    notificationLink.href = `/agenda/evento/${notification.evento_id}/`;
+                    notificationLink.className = 'notification-link';
+                    notificationLink.innerHTML = notificationContent;
+                    notificationItem.appendChild(notificationLink);
+                    
+                    // Adiciona classe para indicar que é clicável
+                    notificationItem.classList.add('has-event');
+                } else {
+                    // Se não tiver evento, mantém o conteúdo normal
+                    notificationItem.innerHTML = notificationContent;
+                }
+                
                 // Adiciona evento de clique para marcar como lida
-                notificationItem.addEventListener('click', () => {
-                    if (!notification.lida) {
-                        marcarNotificacaoComoLida(notification.id, notificationItem);
+                notificationItem.addEventListener('click', (e) => {
+                    // Previne a navegação se o clique foi em um link
+                    if (!e.target.closest('a')) {
+                        if (!notification.lida) {
+                            marcarNotificacaoComoLida(notification.id, notificationItem);
+                        }
                     }
                 });
                 
@@ -356,4 +376,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Carrega notificações do backend ao inicializar
     carregarNotificacoes();
+
+    // =======================================================================
+    // OneSignal: Ativar notificações sob demanda (ao clicar no botão)
+    // =======================================================================
+    const activateNotificationsBtn = document.getElementById('activate-notifications');
+    if (activateNotificationsBtn) {
+        const setBtnState = (state) => {
+            if (state === 'granted') {
+                activateNotificationsBtn.textContent = 'Notificações ativadas';
+                activateNotificationsBtn.disabled = true;
+                activateNotificationsBtn.classList.add('is-active');
+            } else if (state === 'denied') {
+                activateNotificationsBtn.textContent = 'Permissão negada (ajuste no navegador)';
+                activateNotificationsBtn.disabled = true;
+                activateNotificationsBtn.classList.add('is-denied');
+            } else {
+                activateNotificationsBtn.textContent = 'Ativar notificações';
+                activateNotificationsBtn.disabled = false;
+                activateNotificationsBtn.classList.remove('is-active', 'is-denied');
+            }
+        };
+
+        // Tenta detectar o status atual e ajustar o botão
+        if ('Notification' in window) {
+            try {
+                setBtnState(Notification.permission);
+            } catch (_) {}
+        }
+
+        activateNotificationsBtn.addEventListener('click', () => {
+            if (!window.OneSignalDeferred) {
+                console.warn('OneSignal SDK ainda não carregou.');
+                return;
+            }
+            window.OneSignalDeferred.push(function(OneSignal) {
+                // Se já está concedido, apenas confirma estado
+                OneSignal.Notifications.getPermissionStatus().then((status) => {
+                    if (status === 'granted') {
+                        setBtnState('granted');
+                        return;
+                    }
+                    // Solicita permissão ao usuário
+                    OneSignal.Notifications.requestPermission().then((result) => {
+                        // result: 'granted' | 'denied' | 'default'
+                        setBtnState(result);
+                    }).catch((err) => {
+                        console.error('Erro ao solicitar permissão de notificação:', err);
+                    });
+                });
+            });
+        });
+    }
 });
