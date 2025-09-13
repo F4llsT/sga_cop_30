@@ -31,7 +31,7 @@
                 
                 {% if proximos_eventos %}
                     {% for evento in proximos_eventos %}
-                    <a href="#" class="event-item-horizontal">
+                    <a href="{% url 'agenda:detalhes_evento' evento.id %}" class="event-item-horizontal">
                         <div class="time-block">
                             <span class="hour">{{ evento.start_time|date:"H:i" }}</span>
                             <span class="period">{{ evento.start_time|date:"d/m" }}</span>

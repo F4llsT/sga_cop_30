@@ -64,7 +64,7 @@
         {% if agenda_items %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for item in agenda_items %}
-                    <div class="relative event-card bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                    <a href="{% url 'agenda:detalhes_evento' item.event.id %}" class="block relative event-card bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
                         <h2 class="text-xl font-semibold text-gray-800 mb-2">{{ item.event.titulo }}</h2>
                         {% if item.event.palestrantes %}
                             <p class="text-sm text-gray-500 mb-2">
@@ -79,7 +79,7 @@
                         </p>
                         <p class="text-gray-600 mb-6">{{ item.event.descricao|truncatechars:150 }}</p>
                         
-                        <form action="{% url 'agenda:remove_from_agenda' item.event.id %}" method="post" class="absolute top-4 right-4">
+                        <form action="{% url 'agenda:remove_from_agenda' item.event.id %}" method="post" class="absolute top-4 right-4 z-10">
                             {% csrf_token %}
                             <button type="submit" class="p-2 text-white rounded-full btn-remove-agenda shadow-lg" aria-label="Remover evento da agenda">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,7 +87,7 @@
                                 </svg>
                             </button>
                         </form>
-                    </div>
+                    </a>
                 {% endfor %}
             </div>
         {% else %}
