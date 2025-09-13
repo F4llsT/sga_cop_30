@@ -40,6 +40,8 @@ def send_push_to_user(user_external_id: str, title: str, message: str, url: str 
 
     payload = {
         "app_id": app_id,
+        # Necessário quando usa include_aliases/external_id com a API v16
+        "target_channel": "webpush",
         "headings": {"en": title, "pt": title},
         "contents": {"en": message, "pt": message},
         "include_aliases": {"external_id": [str(user_external_id)]},
