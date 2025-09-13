@@ -133,4 +133,204 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // =======================================================================
+    // === LÓGICA DA CAIXA DE NOTIFICAÇÕES ===
+    // =======================================================================
+    const notificationToggle = document.getElementById('notification-toggle');
+    const notificationDropdown = document.getElementById('notification-dropdown');
+    const notificationList = document.getElementById('notification-list');
+    const markAllReadBtn = document.getElementById('mark-all-read');
+
+    // Função para mostrar/ocultar a caixa de notificações
+    const toggleNotificationDropdown = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        
+        // Fecha o dropdown do perfil se estiver aberto
+        if (profileDropdown && profileDropdown.classList.contains('active')) {
+            profileDropdown.classList.remove('active');
+            profileToggle.classList.remove('active');
+        }
+        
+        // Toggle do dropdown de notificações
+        notificationDropdown.classList.toggle('active');
+    };
+
+    // Função para fechar a caixa de notificações
+    const closeNotificationDropdown = () => {
+        notificationDropdown.classList.remove('active');
+    };
+
+    // Função para atualizar a interface baseada no estado das notificações
+    const updateNotificationUI = (hasNotifications, unreadCount = 0) => {
+        const markAllReadBtn = document.getElementById('mark-all-read');
+        const notificationDot = document.querySelector('.notification-dot');
+        
+        // Mostra/esconde o botão "Marcar todas como lidas"
+        if (markAllReadBtn) {
+            markAllReadBtn.style.display = hasNotifications && unreadCount > 0 ? 'block' : 'none';
+        }
+        
+        // Mostra/esconde o ponto de notificação
+        if (notificationDot) {
+            notificationDot.style.display = unreadCount > 0 ? 'block' : 'none';
+        }
+    };
+
+    // Função para carregar notificações do backend
+    const carregarNotificacoes = async () => {
+        try {
+            const response = await fetch('/notificacoes/');
+            const data = await response.json();
+            
+            if (data.total === 0) {
+                showNoNotifications();
+                return;
+            }
+            
+            // Remove o estado "sem notificações"
+            const noNotifications = notificationList.querySelector('.no-notifications');
+            if (noNotifications) {
+                noNotifications.remove();
+            }
+            
+            // Limpa a lista atual
+            notificationList.innerHTML = '';
+            
+            // Adiciona as notificações do backend
+            data.notificacoes.forEach(notification => {
+                const notificationItem = document.createElement('div');
+                notificationItem.className = `notification-item ${!notification.lida ? 'unread' : ''}`;
+                notificationItem.dataset.notificationId = notification.id;
+                
+                const iconMap = {
+                    'info': 'fa-info-circle',
+                    'success': 'fa-check-circle',
+                    'warning': 'fa-exclamation-triangle',
+                    'error': 'fa-exclamation-circle'
+                };
+                
+                notificationItem.innerHTML = `
+                    <div class="notification-icon ${notification.tipo}">
+                        <i class="fa-solid ${iconMap[notification.tipo] || 'fa-info-circle'}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <h4 class="notification-title">${notification.titulo}</h4>
+                        <p class="notification-message">${notification.mensagem}</p>
+                        <p class="notification-time">${notification.tempo}</p>
+                    </div>
+                `;
+                
+                // Adiciona evento de clique para marcar como lida
+                notificationItem.addEventListener('click', () => {
+                    if (!notification.lida) {
+                        marcarNotificacaoComoLida(notification.id, notificationItem);
+                    }
+                });
+                
+                notificationList.appendChild(notificationItem);
+            });
+            
+            // Atualiza a UI
+            updateNotificationUI(true, data.nao_lidas);
+            
+        } catch (error) {
+            console.error('Erro ao carregar notificações:', error);
+            showNoNotifications();
+        }
+    };
+
+    // Função para marcar uma notificação específica como lida
+    const marcarNotificacaoComoLida = async (notificationId, element) => {
+        try {
+            const response = await fetch(`/notificacoes/${notificationId}/marcar-lida/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                element.classList.remove('unread');
+                // Recarrega as notificações para atualizar contadores
+                carregarNotificacoes();
+            }
+        } catch (error) {
+            console.error('Erro ao marcar notificação como lida:', error);
+        }
+    };
+
+    // Função para obter CSRF token
+    const getCookie = (name) => {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    };
+
+    // Função para mostrar estado "sem notificações"
+    const showNoNotifications = () => {
+        notificationList.innerHTML = `
+            <div class="no-notifications">
+                <i class="fa-solid fa-bell-slash"></i>
+                <p>Sem notificações</p>
+            </div>
+        `;
+        updateNotificationUI(false, 0);
+    };
+
+    // Função para marcar todas como lidas
+    const markAllAsRead = async () => {
+        try {
+            const response = await fetch('/notificacoes/marcar-todas-lidas/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Recarrega as notificações para atualizar a UI
+                carregarNotificacoes();
+            } else {
+                console.error('Erro ao marcar notificações como lidas:', data.message);
+            }
+        } catch (error) {
+            console.error('Erro ao marcar notificações como lidas:', error);
+        }
+    };
+
+    // Event listeners
+    if (notificationToggle && notificationDropdown) {
+        notificationToggle.addEventListener('click', toggleNotificationDropdown);
+        
+        // Fecha quando clica fora
+        window.addEventListener('click', (event) => {
+            if (!notificationDropdown.contains(event.target) && !notificationToggle.contains(event.target)) {
+                closeNotificationDropdown();
+            }
+        });
+    }
+
+    if (markAllReadBtn) {
+        markAllReadBtn.addEventListener('click', markAllAsRead);
+    }
+
+    // Carrega notificações do backend ao inicializar
+    carregarNotificacoes();
 });

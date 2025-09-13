@@ -18,6 +18,9 @@ urlpatterns = [
 
     # Agenda (corrigido para ter o namespace)
     path("agenda/", include("apps.agenda.urls", namespace="agenda")),
+    
+    # Notificações
+    path("notificacoes/", include("apps.notificacoes.urls", namespace="notificacoes")),
 ]
 
 # Servir arquivos estáticos em desenvolvimento

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
     'apps.usuarios.apps.UsuariosConfig',
     'apps.agenda.apps.AgendaConfig',
+    'apps.notificacoes.apps.NotificacoesConfig',
     'django_bootstrap5',
 ]
 

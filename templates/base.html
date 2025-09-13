@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}COP30 Dashboard{% endblock %}</title>
     
-    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'css/home.css' %}?v=5">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,10 +28,24 @@
                     </h1>
                 </a>
                 <div class="user-area">
-                    <a href="#" class="notification-bell">
-                        <i class="fa-solid fa-bell"></i>
-                        <span class="notification-dot"></span>
-                    </a>
+                    <div class="notification-container">
+                        <a href="#" class="notification-bell" id="notification-toggle">
+                            <i class="fa-solid fa-bell"></i>
+                            <span class="notification-dot"></span>
+                        </a>
+                        <div class="notification-dropdown" id="notification-dropdown">
+                            <div class="notification-header">
+                                <h3>Notificações</h3>
+                                <button class="mark-all-read" id="mark-all-read">Marcar todas como lidas</button>
+                            </div>
+                            <div class="notification-list" id="notification-list">
+                                <div class="no-notifications">
+                                    <i class="fa-solid fa-bell-slash"></i>
+                                    <p>Sem notificações</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="user-profile" id="profile-toggle">
                         {% if user.is_authenticated %}
                             <span>{{ user.nome|truncatewords:1 }}</span>
@@ -148,7 +162,7 @@
         </div>
     </footer>    
 
-    <script src="{% static 'js/home.js' %}"></script>
+    <script src="{% static 'js/home.js' %}?v=4"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
