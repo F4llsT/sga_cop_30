@@ -111,3 +111,22 @@ def detalhes_evento(request, event_id):
         'is_favorited': is_favorited,
         'is_past_event': evento.is_past_event,
     })
+
+def event_detail(request, event_id):
+    """
+    Exibe os detalhes de um evento específico.
+    """
+    # Busca o evento pelo ID ou retorna um erro 404 se não for encontrado
+    event = get_object_or_404(Event, id=event_id)
+    
+    # Verifica se o evento está na agenda pessoal do usuário
+    is_favorited = False
+    if request.user.is_authenticated:
+        is_favorited = UserAgenda.objects.filter(user=request.user, event=event).exists()
+
+    context = {
+        'event': event,
+        'is_favorited': is_favorited
+    }
+    
+    return render(request, 'agenda/detalhes_evento.html', context)
