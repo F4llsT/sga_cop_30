@@ -10,4 +10,9 @@ urlpatterns = [
     path('remove/<int:event_id>/', views.remove_from_agenda, name='remove_from_agenda'),
     # Nova url para detalhes do evento
     path('evento/<int:event_id>/', views.detalhes_evento, name='detalhes_evento'),
+    path('evento/<int:event_id>/', views.event_detail, name='detalhes_evento'),
 ]
+
+
+
+

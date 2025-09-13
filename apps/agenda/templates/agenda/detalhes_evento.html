@@ -1,129 +1,44 @@
 {% extends 'base.html' %}
 {% load static %}
 
+{% block title %}Detalhes do Evento{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">{{ evento.titulo }}</h2>
-                    {% if is_past_event %}
-                        <div class="alert alert-warning mt-2">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            Este evento ocorreu há mais de 10 horas e não está mais disponível na agenda.
-                        </div>
-                    {% endif %}
-                </div>
-                <div class="card-body">
-                    <div class="mb-4">
-                        <h5 class="text-muted">Detalhes do Evento</h5>
-                        <hr>
-                        <div class="row mb-3">
-                            <div class="col-md-4 fw-bold">Descrição:</div>
-                            <div class="col-md-8">{{ evento.descricao|default:"Nenhuma descrição fornecida." }}</div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-4 fw-bold">Horário:</div>
-                            <div class="col-md-8">{{ evento.horario }}</div>
-                        </div>
-                        {% if evento.start_time %}
-                        <div class="row mb-3">
-                            <div class="col-md-4 fw-bold">Data e Hora:</div>
-                            <div class="col-md-8">{{ evento.start_time|date:"d/m/Y H:i" }}</div>
-                        </div>
-                        {% endif %}
-                        <div class="row mb-3">
-                            <div class="col-md-4 fw-bold">Local:</div>
-                            <div class="col-md-8">{{ evento.local }}</div>
-                        </div>
-                        {% if evento.palestrantes %}
-                        <div class="row mb-3">
-                            <div class="col-md-4 fw-bold">Palestrantes:</div>
-                            <div class="col-md-8">{{ evento.palestrantes }}</div>
-                        </div>
-                        {% endif %}
-                        {% if evento.tags %}
-                        <div class="row mb-3">
-                            <div class="col-md-4 fw-bold">Tags:</div>
-                            <div class="col-md-8">
-                                {% for tag in evento.tags.split "," %}
-                                    <span class="badge bg-primary me-1">{{ tag|title }}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="d-flex justify-content-between align-items-center mt-4">
-                        <a href="{% url 'agenda:agenda_oficial' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-2"></i>Voltar para a Agenda
-                        </a>
-                        
-                        {% if not is_past_event %}
-                            {% if is_favorited %}
-                                <form action="{% url 'agenda:remove_from_agenda' evento.id %}" method="post" class="d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-outline-danger">
-                                        <i class="fas fa-star me-2"></i>Remover dos Favoritos
-                                    </button>
-                                </form>
-                            {% else %}
-                                <form action="{% url 'agenda:add_to_agenda' evento.id %}" method="post" class="d-inline">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="far fa-star me-2"></i>Adicionar aos Favoritos
-                                    </button>
-                                </form>
-                            {% endif %}
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="card-footer text-muted">
-                    Criado em: {{ evento.created_at|date:"d/m/Y H:i" }}
-                </div>
+<link rel="stylesheet" href="{% static 'css/detalhes_evento.css' %}">
+
+<div class="event-detail-container">
+    <div class="event-header">
+        <h1 class="event-title">{{ event.titulo }}</h1>
+        <p class="event-time">{{ event.horario_inicio|time:"H:i" }} - {{ event.horario_fim|time:"H:i" }}</p>
+    </div>
+
+    <div class="event-body">
+        <div class="event-description">
+            <h2>Sobre o Evento</h2>
+            <p>{{ event.descricao|linebreaks }}</p>
+        </div>
+
+        <div class="event-location">
+            <h2>Localização</h2>
+            <p><strong>Local:</strong> {{ event.local }}</p>
+            <div class="map-placeholder">
+                <p>Aqui será exibido o mapa com o pino de localização.</p>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block extra_css %}
-<style>
-    .card {
-        border: none;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
-        border-radius: 10px;
-        overflow: hidden;
-    }
-    .card-header {
-        background-color: #f8f9fa;
-        border-bottom: 1px solid #e3e6f0;
-    }
-    .card-title {
-        color: #4e73df;
-        margin-bottom: 0;
-    }
-    .fw-bold {
-        color: #5a5c69;
-    }
-    .btn {
-        padding: 0.5rem 1.5rem;
-        border-radius: 5px;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-    .btn-primary {
-        background-color: #4e73df;
-        border-color: #4e73df;
-    }
-    .btn-primary:hover {
-        background-color: #2e59d9;
-        border-color: #2653d4;
-    }
-    .badge {
-        font-weight: 500;
-        padding: 0.4em 0.8em;
-    }
-</style>
+    <div class="event-actions">
+        <a href="{% url 'add_to_agenda' event.id %}" class="favorite-btn {% if is_favorited %}favorited{% endif %}">
+            <span class="icon">★</span>
+            <span class="text">
+                {% if is_favorited %}
+                    Agendado
+                {% else %}
+                    Adicionar à Agenda
+                {% endif %}
+            </span>
+        </a>
+    </div>
+</div>
+
 {% endblock %}

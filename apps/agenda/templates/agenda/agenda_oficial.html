@@ -88,6 +88,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for evento in eventos %}
                     <div class="event-card bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
+                        <a href="{% url 'agenda:detalhes_evento' evento.id %}" class="event-title-link"></a>
                         <h2 class="text-xl font-semibold text-gray-800 mb-2">{{ evento.titulo }}</h2>
                         <p class="text-sm text-gray-600 mb-2">
                             <span class="font-medium">Horário:</span> {{ evento.start_time|date:"d/m/Y H:i" }} - {{ evento.end_time|date:"H:i" }}
