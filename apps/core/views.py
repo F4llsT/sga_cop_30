@@ -1,7 +1,10 @@
+import logging
 from django.shortcuts import render
 from django.http import HttpResponse
 from apps.agenda.models import Event
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 def pagina_inicial(request):
     """
@@ -15,8 +18,8 @@ def pagina_inicial(request):
     ).order_by('start_time')[:4]
 
     # Cria o contexto para enviar os dados ao template
-    print(f"Eventos futuros encontrados: {eventos_futuros}")
-    print(f"Total de eventos: {eventos_futuros.count()}")
+    logger.debug(f"Eventos futuros encontrados: {eventos_futuros}")
+    logger.debug(f"Total de eventos: {eventos_futuros.count()}")
     
     context = {
         'proximos_eventos': eventos_futuros
