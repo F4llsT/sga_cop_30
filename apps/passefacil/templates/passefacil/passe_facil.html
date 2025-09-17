@@ -1,0 +1,204 @@
+<!-- apps/passefacil/templates/passefacil/passe_facil.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Passe Fácil{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .passe-facil-container {
+        max-width: 500px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .qr-code-wrapper {
+        text-align: center;
+        padding: 1.5rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin: 1.5rem 0;
+    }
+
+    .qr-code {
+        width: 300px;
+        height: 300px;
+        margin: 0 auto;
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .qr-code img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+    }
+
+    .tempo-restante {
+        font-size: 1.25rem;
+        font-weight: 500;
+        color: #2c3e50;
+        margin: 1.5rem 0;
+        text-align: center;
+    }
+
+    .btn-atualizar {
+        display: block;
+        width: 100%;
+        max-width: 250px;
+        margin: 1.5rem auto 0;
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 500;
+        color: white;
+        background-color: #3498db;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-atualizar:hover {
+        background-color: #2980b9;
+    }
+
+    .instrucoes {
+        color: #7f8c8d;
+        text-align: center;
+        margin-top: 1.5rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    @media (max-width: 768px) {
+        .passe-facil-container {
+            margin: 1rem;
+            padding: 1.25rem;
+        }
+        
+        .qr-code {
+            width: 250px;
+            height: 250px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="passe-facil-container">
+        <h2 class="text-center mb-4">Passe Fácil</h2>
+        
+        <div class="qr-code-wrapper">
+            <div class="qr-code">
+                <img id="qrCodeImage" src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+            </div>
+        </div>
+
+        <div class="tempo-restante">
+            Atualiza em: <span id="tempoRestante">{{ tempo_restante }}</span>s
+        </div>
+
+        <p class="instrucoes">
+            Apresente este QR Code ao embarcar. Ele é atualizado automaticamente a cada minuto para maior segurança.
+        </p>
+
+        <button id="btnAtualizar" class="btn-atualizar">
+            <i class="fas fa-sync-alt me-2"></i> Atualizar QR Code
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let tempoRestante = {{ tempo_restante }};
+        let intervaloAtualizacao;
+        let estaAtualizando = false;
+
+        function atualizarTempo() {
+            const elemento = document.getElementById('tempoRestante');
+            tempoRestante--;
+            
+            if (tempoRestante <= 0) {
+                tempoRestante = 60;
+                if (!estaAtualizando) {
+                    atualizarQRCode();
+                }
+            }
+            
+            elemento.textContent = tempoRestante;
+        }
+
+        function atualizarQRCode() {
+            estaAtualizando = true;
+            const btnAtualizar = document.getElementById('btnAtualizar');
+            btnAtualizar.disabled = true;
+            btnAtualizar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Atualizando...';
+            
+            fetch("{% url 'passefacil:atualizar_qr_code' %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('qrCodeImage').src = 
+                        `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${data.novo_codigo}`;
+                    tempoRestante = data.tempo_restante;
+                    document.getElementById('tempoRestante').textContent = tempoRestante;
+                    
+                    // Efeito visual de atualização
+                    const qrCode = document.querySelector('.qr-code');
+                    qrCode.style.animation = 'fadeIn 0.5s';
+                    setTimeout(() => qrCode.style.animation = '', 500);
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao atualizar QR Code:', error);
+            })
+            .finally(() => {
+                estaAtualizando = false;
+                btnAtualizar.disabled = false;
+                btnAtualizar.innerHTML = '<i class="fas fa-sync-alt me-2"></i> Atualizar QR Code';
+            });
+        }
+
+        // Iniciar contador
+        intervaloAtualizacao = setInterval(atualizarTempo, 1000);
+
+        // Atualizar manualmente
+        document.getElementById('btnAtualizar').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!estaAtualizando) {
+                atualizarQRCode();
+            }
+        });
+
+        // Adicionar animação de fadeIn
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0.5; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+            }
+            .qr-code {
+                transition: transform 0.3s ease;
+            }
+            .qr-code:hover {
+                transform: scale(1.02);
+            }
+        `;
+        document.head.appendChild(style);
+    });
+</script>
+{% endblock %}

@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'apps.usuarios.apps.UsuariosConfig',
     'apps.agenda.apps.AgendaConfig',
     'apps.notificacoes.apps.NotificacoesConfig',
+    'apps.passefacil.apps.PassefacilConfig',
     'django_bootstrap5',
 ]
 
