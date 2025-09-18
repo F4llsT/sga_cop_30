@@ -97,9 +97,6 @@
                     <a href="{% url 'home' %}" class="{% if request.path == '/' %}active-link{% endif %}">Home</a>
                     <a href="#">Mapa Interativo</a>
                     <a href="{% url 'passefacil:passe_facil' %}">Passe Fácil</a>
-                    {% if user.is_staff %}
-                    <a href="{% url 'passefacil:admin_dashboard' %}">Painel Admin</a>
-                    {% endif %}
                     <a href="{% url 'agenda:agenda_oficial' %}">Agenda Oficial</a>
                     <a href="{% url 'agenda:agenda_pessoal' %}">Agenda Pessoal</a>
                 </div>
@@ -127,9 +124,6 @@
                     <a href="{% url 'home' %}">Home</a>
                     <a href="#">Mapa Interativo</a>
                     <a href="{% url 'passefacil:passe_facil' %}">Passe Fácil</a>
-                    {% if user.is_staff %}
-                    <a href="{% url 'passefacil:admin_dashboard' %}">Painel Admin</a>
-                    {% endif %}
                     <a href="{% url 'agenda:agenda_oficial' %}">Agenda Oficial</a>
                     <a href="{% url 'agenda:agenda_pessoal' %}">Agenda Pessoal</a>
                     <a href="#">Configurações</a>
