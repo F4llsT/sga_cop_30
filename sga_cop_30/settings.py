@@ -62,10 +62,16 @@ LOGOUT_REDIRECT_URL = 'home'  # Página para redirecionar após o logout
 LOGIN_EXEMPT_URLS = [
     r'^$',  # Página inicial
     r'^agenda/$',  # Página da agenda oficial
-    r'^accounts/login/$',  # Página de login
-    r'^accounts/register/$',  # Página de registro
+    r'^usuarios/login/$',  # Página de login
+    r'^usuarios/registrar/$',  # Página de registro
+    r'^usuarios/password_reset/',  # URLs de redefinição de senha
     r'^static/.*$',  # Arquivos estáticos
-    r'^media/.*$',   # Arquivos de mídia
+]
+
+# Aplicativos que não requerem autenticação
+LOGIN_EXEMPT_APPS = [
+    'django.contrib.auth',
+    'django.contrib.staticfiles',
 ]
 
 # Configurações de sessão
