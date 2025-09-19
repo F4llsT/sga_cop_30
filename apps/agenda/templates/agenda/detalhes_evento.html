@@ -33,9 +33,13 @@
             <h2>Especificações</h2>
             <p><strong>Local:</strong> {{ evento.local }}</p>
             <p><strong>Palestrantes:</strong> {{ evento.palestrantes }}</p>
-            <div class="map-placeholder">
-                <p>Aqui será exibido o mapa com o pino de localização.</p>
-            </div>
+             {% if evento.latitude and evento.longitude %}
+                <div id="map" style="height: 300px; width: 100%; border-radius: 8px; margin-top: 15px;"></div>
+            {% else %}
+                <div class="map-placeholder">
+                    <p>Localização não fornecida.</p>
+                </div>
+            {% endif %}
         </div>
     </div>
 
@@ -83,3 +87,4 @@
     </script>
     {% endif %}
 {% endblock extra_js %}
+
