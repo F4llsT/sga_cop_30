@@ -16,6 +16,10 @@ class EventAdmin(admin.ModelAdmin):
         ('Detalhes do Evento', {
             'fields': ('horario', 'local', 'palestrantes', 'tags', 'start_time', 'end_time')
         }),
+        ('Localização', {
+            'fields': ('latitude', 'longitude'),
+            'classes': ('collapse', 'in')
+        }),
     )
 
 @admin.register(UserAgenda)
