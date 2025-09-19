@@ -1,0 +1,228 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Painel Administrativo - Passe Fácil{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <h1><i class="fas fa-tachometer-alt"></i> Painel de Controle</h1>
+    
+    <div class="dashboard-stats">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-qrcode"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Validações Hoje</h3>
+                <p class="stat-number">{{ total_validacoes }}</p>
+            </div>
+        </div>
+        
+        <div class="stat-card success">
+            <div class="stat-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Válidas</h3>
+                <p class="stat-number">{{ validas }}</p>
+            </div>
+        </div>
+        
+        <div class="stat-card danger">
+            <div class="stat-icon">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Inválidas</h3>
+                <p class="stat-number">{{ invalidas }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="recent-validations">
+        <h2><i class="fas fa-history"></i> Últimas Validações</h2>
+        <div class="table-responsive">
+            <table class="validation-table">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Usuário</th>
+                        <th>Status</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for validacao in validacoes_recentes %}
+                    <tr class="{% if validacao.valido %}valid{% else %}invalid{% endif %}">
+                        <td>{{ validacao.data_validacao|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if validacao.passe_facil %}
+                                {{ validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.username }}
+                            {% else %}
+                                Código inválido
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if validacao.valido %}
+                                <span class="status-badge valid">Válido</span>
+                            {% else %}
+                                <span class="status-badge invalid">Inválido</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ validacao.ip_address|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="no-data">Nenhuma validação registrada hoje</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para o painel administrativo */
+.admin-dashboard {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+}
+
+.stat-card.success {
+    border-left: 4px solid #28a745;
+}
+
+.stat-card.danger {
+    border-left: 4px solid #dc3545;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-right: 1rem;
+    color: #6c757d;
+}
+
+.stat-card.success .stat-icon {
+    color: #28a745;
+}
+
+.stat-card.danger .stat-icon {
+    color: #dc3545;
+}
+
+.stat-info h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+.stat-number {
+    margin: 0.25rem 0 0;
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+.recent-validations {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-top: 2rem;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    margin-top: 1rem;
+}
+
+.validation-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.validation-table th,
+.validation-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.validation-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-badge.valid {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-badge.invalid {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.no-data {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .dashboard-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .validation-table th,
+    .validation-table td {
+        padding: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Atualiza a página a cada 30 segundos para obter dados atualizados
+    setTimeout(function() {
+        window.location.reload();
+    }, 30000);
+});
+</script>
+{% endblock %}
