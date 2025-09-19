@@ -17,6 +17,8 @@ class Event(models.Model):
     descricao = models.TextField('Descrição', blank=True, null=True, help_text='Descrição detalhada do evento')
     horario = models.CharField(max_length=50)
     local = models.CharField(max_length=100)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     palestrantes = models.CharField(max_length=200, blank=True)
     tags = models.CharField(max_length=200, blank=True)  # separado por vírgulas
     start_time = models.DateTimeField('Data e Hora do Evento', null=True, blank=True)

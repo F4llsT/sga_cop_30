@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mapa Interativo{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos para garantir que o mapa ocupe o espaço corretamente */
+    #map {
+        height: 80vh; /* Ocupa 80% da altura da tela */
+        width: 100%;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .map-container {
+        padding: 20px;
+    }
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #333;
+    }
+</style>
+
+<div class="map-container">
+    <h1>Mapa Interativo dos Eventos</h1>
+    <div id="map"></div>
+</div>
+
+<script>
+    function initMap() {
+        // Coordenadas de Belém como centro inicial do mapa
+        const belem = { lat: -1.4558, lng: -48.5039 }; 
+
+        const map = new google.maps.Map(document.getElementById("map"), {
+            zoom: 13,
+            center: belem,
+        });
+
+        const eventos = JSON.parse('{{ eventos_json|escapejs }}');
+        let activeInfoWindow = null;
+
+        eventos.forEach(function(evento) {
+            const marker = new google.maps.Marker({
+                position: { lat: evento.latitude, lng: evento.longitude },
+                map: map,
+                title: evento.titulo,
+            });
+
+            // Conteúdo da janela de informação
+            const contentString = 
+                '<div id="content">' +
+                '<h3 id="firstHeading" class="firstHeading">' + evento.titulo + '</h3>' +
+                '<div id="bodyContent">' +
+                "<p><b>Data:</b> " + new Date(evento.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) + "</p>" +
+                "<p><b>Hora:</b> " + evento.hora.substring(0, 5) + "</p>" +
+                '<p><a href="/agenda/evento/' + evento.id + '/">Ver Detalhes do Evento</a></p>' +
+                "</div>" +
+                "</div>";
+
+            const infowindow = new google.maps.InfoWindow({
+                content: contentString,
+            });
+
+            marker.addListener("click", () => {
+                // Fecha a janela anterior se houver uma aberta
+                if (activeInfoWindow) {
+                    activeInfoWindow.close();
+                }
+                infowindow.open(map, marker);
+                activeInfoWindow = infowindow;
+            });
+        });
+    }
+</script>
+
+<script async
+    src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap">
+</script>
+{% endblock %}

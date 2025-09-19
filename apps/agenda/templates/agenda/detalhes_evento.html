@@ -30,8 +30,9 @@
         </div>
 
         <div class="event-location">
-            <h2>Localização</h2>
+            <h2>Especificações</h2>
             <p><strong>Local:</strong> {{ evento.local }}</p>
+            <p><strong>Palestrantes:</strong> {{ evento.palestrantes }}</p>
             <div class="map-placeholder">
                 <p>Aqui será exibido o mapa com o pino de localização.</p>
             </div>
@@ -53,3 +54,32 @@
 </div>
 
 {% endblock %}
+
+
+{% block extra_js %}
+    {% if evento.latitude and evento.longitude %}
+    <script>
+        function initMap() {
+            const evento_mapa = JSON.parse('{{ evento_mapa_json|escapejs }}');
+            
+            const localEvento = { lat: evento_mapa.latitude, lng: evento_mapa.longitude };
+
+            const map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 16,
+                center: localEvento,
+                disableDefaultUI: true, // Opcional: remove controles do mapa para um visual mais limpo
+            });
+
+            const marker = new google.maps.Marker({
+                position: localEvento,
+                map: map,
+                title: evento_mapa.titulo,
+            });
+        }
+    </script>
+
+    <script async
+        src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key }}&callback=initMap">
+    </script>
+    {% endif %}
+{% endblock extra_js %}

@@ -226,3 +226,4 @@ CSRF_TRUSTED_ORIGINS = [
     'https://joaovcc.pythonanywhere.com',
     'https://www.joaovcc.pythonanywhere.com',
 ]
+GOOGLE_MAPS_API_KEY = 'AIzaSyC59hMjc_tTFXtLwCILXphKzW5BvuZPTQk'
