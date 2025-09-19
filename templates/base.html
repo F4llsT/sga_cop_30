@@ -13,6 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     
     {% block extra_styles %}{% endblock %}
     
@@ -38,7 +39,7 @@
     <header class="top-nav">
         <div class="top-bar">
             <div class="nav-content-wrapper">
-                <a href="#" class="logo" id="main-logo">
+                <a href="{% url 'home' %}" class="logo" id="main-logo">
                     <i class="fa-solid fa-earth-americas planet-icon"></i>
                     <h1 class="logo-text">
                         <span class="letter">C</span><span class="letter">O</span><span class="letter">P</span><span class="letter">3</span><span class="letter">0</span>
@@ -46,6 +47,11 @@
                 </a>
                 <div class="user-area">
                     <div class="notification-container">
+                        {% if user.is_staff %}
+                        <a href="{% url 'admin:index' %}" id="admin-button" class="admin-button" title="Acessar Admin" style="width: 55px; height: 55px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">
+                            <i class='bx bx-badge-check' style="font-size: 1.5rem;"></i>
+                        </a>   
+                        {% endif %} 
                         <a href="#" class="notification-bell" id="notification-toggle">
                             <i class="fa-solid fa-bell"></i>
                             <span class="notification-dot"></span>
@@ -97,9 +103,6 @@
                     <a href="{% url 'home' %}" class="{% if request.path == '/' %}active-link{% endif %}">Home</a>
                     <a href="#">Mapa Interativo</a>
                     <a href="{% url 'passefacil:meu_qr_code' %}">Passe Fácil</a>
-                    {% if user.is_staff %}
-                    <a href="{% url 'passefacil:admin_dashboard' %}">Painel Admin</a>
-                    {% endif %}
                     <a href="{% url 'agenda:agenda_oficial' %}">Agenda Oficial</a>
                     <a href="{% url 'agenda:agenda_pessoal' %}">Agenda Pessoal</a>
                 </div>
@@ -127,9 +130,6 @@
                     <a href="{% url 'home' %}">Home</a>
                     <a href="#">Mapa Interativo</a>
                     <a href="{% url 'passefacil:meu_qr_code' %}">Passe Fácil</a>
-                    {% if user.is_staff %}
-                    <a href="{% url 'passefacil:admin_dashboard' %}">Painel Admin</a>
-                    {% endif %}
                     <a href="{% url 'agenda:agenda_oficial' %}">Agenda Oficial</a>
                     <a href="{% url 'agenda:agenda_pessoal' %}">Agenda Pessoal</a>
                     <a href="#">Configurações</a>

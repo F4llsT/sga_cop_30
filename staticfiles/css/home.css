@@ -546,6 +546,7 @@ h1.logo-text {
     position: relative;
     display: flex;
     align-items: center;
+    margin-right: 10px;
 }
 
 /* Estilo do dropdown de notificações */
@@ -793,4 +794,23 @@ h1.logo-text {
 .notification-item.has-event:focus-within {
     box-shadow: 0 0 0 2px #0A74DA;
     outline: none;
+}
+
+/* Admin Button */
+.admin-button {
+    color: #333;
+    font-size: 1.8rem;  
+    margin-left: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;        
+    height: 46px;       
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.admin-button:hover {
+    background-color: #f0f0f0;
+    color: #0066cc;
 }
