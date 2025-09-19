@@ -87,48 +87,61 @@
         {% if eventos %}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for evento in eventos %}
-                    <a href="{% url 'agenda:detalhes_evento' evento.id %}" class="block event-card bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-800 mb-2">{{ evento.titulo }}</h2>
-                        <p class="text-sm text-gray-600 mb-2">
-                            <span class="font-medium">Horário:</span> {{ evento.start_time|date:"d/m/Y H:i" }} - {{ evento.end_time|date:"H:i" }}
-                        </p>
-                        <p class="text-sm text-gray-600 mb-4">
-                            <span class="font-medium">Local:</span> {{ evento.local }}
-                        </p>
+                    <div class="event-card bg-white p-6 rounded-2xl shadow-lg border border-gray-200 relative">
+                        <!-- Make the entire card clickable except for the button -->
+                        <a href="{% url 'agenda:detalhes_evento' evento.id %}" class="block absolute inset-0 z-0" aria-label="Ver detalhes do evento {{ evento.titulo }}"></a>
                         
-                        {% if evento.palestrantes %}
-                            <p class="text-sm text-gray-600 mb-4">
-                                <span class="font-medium">Palestrantes:</span> {{ evento.palestrantes }}
+                        <div class="relative z-10">
+                            <h2 class="text-xl font-semibold text-gray-800 mb-2">{{ evento.titulo }}</h2>
+                            <p class="text-sm text-gray-600 mb-2">
+                                <span class="font-medium">Horário:</span> {{ evento.start_time|date:"d/m/Y H:i" }} - {{ evento.end_time|date:"H:i" }}
                             </p>
-                        {% endif %}
-                        
-                        <p class="text-gray-600 mb-6">{{ evento.descricao|truncatechars:150 }}</p>
-
-                        <div class="mt-auto pt-4 border-t border-gray-200">
-                            {% if user.is_authenticated %}
-                                {% if not evento.id in user_events %}
-                                <div class="agenda-button-wrapper" onclick="event.preventDefault(); window.location.href='{% url 'agenda:add_to_agenda' evento.id %}';">
-                                    <span class="btn-add-agenda text-white font-medium py-3 px-6 rounded-full inline-block text-center shadow-lg">
-                                        Adicionar à Minha Agenda
-                                    </span>
-                                </div>
-                                {% else %}
-                                <p class="text-sm text-green-600 font-bold flex items-center gap-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                                    </svg>
-                                    Adicionado à sua agenda
+                            <p class="text-sm text-gray-600 mb-4">
+                                <span class="font-medium">Local:</span> {{ evento.local }}
+                            </p>
+                            
+                            {% if evento.palestrantes %}
+                                <p class="text-sm text-gray-600 mb-4">
+                                    <span class="font-medium">Palestrantes:</span> {{ evento.palestrantes }}
                                 </p>
-                                {% endif %}
-                            {% else %}
-                                <div class="agenda-button-wrapper" onclick="event.preventDefault(); window.location.href='{% url 'usuarios:login' %}?next={{ request.path }}';">
-                                    <span class="btn-add-agenda text-white font-medium py-3 px-6 rounded-full inline-block text-center shadow-lg">
-                                        Faça login para adicionar
-                                    </span>
-                                </div>
                             {% endif %}
+                            
+                            <p class="text-gray-600 mb-6">{{ evento.descricao|truncatechars:150 }}</p>
+
+                            <div class="mt-auto pt-4 border-t border-gray-200">
+                                {% if user.is_authenticated %}
+                                    {% if not evento.id in user_events %}
+                                    <div class="agenda-button-wrapper relative z-20">
+                                        <button onclick="event.stopPropagation(); addToAgenda({{ evento.id }}, this)" 
+                                                class="btn-add-agenda text-white font-medium py-3 px-6 rounded-full inline-block text-center shadow-lg w-full relative z-20">
+                                            <span class="flex items-center justify-center">
+                                                <span class="icon mr-2">+</span>
+                                                <span class="text">Adicionar à Minha Agenda</span>
+                                                <span class="loading hidden ml-2">
+                                                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                </span>
+                                            </span>
+                                        </button>
+                                    </div>
+                                    {% else %}
+                                    <p class="text-sm text-green-600 font-bold flex items-center justify-center gap-2 relative z-20">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                        Adicionado à sua agenda
+                                    </p>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{% url 'usuarios:login' %}?next={{ request.path }}" class="btn-add-agenda text-white font-medium py-3 px-6 rounded-full inline-block text-center shadow-lg w-full block relative z-20">
+                                        Faça login para adicionar
+                                    </a>
+                                {% endif %}
+                            </div>
                         </div>
-                    </a>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}
@@ -168,7 +181,139 @@
 </main>
 
 {% block extra_js %}
-<script src="{% static 'js/agenda.js' %}"></script>
+<script>
+// Make sure the entire card is clickable except for buttons
+document.addEventListener('DOMContentLoaded', function() {
+    // Add click handler to all event cards
+    const cards = document.querySelectorAll('.event-card');
+    cards.forEach(card => {
+        // Make the card show pointer cursor on hover
+        card.style.cursor = 'pointer';
+        
+        // Handle click on the card (but not on buttons or links)
+        card.addEventListener('click', function(e) {
+            // Don't navigate if clicking on a button or link
+            if (e.target.tagName === 'BUTTON' || 
+                e.target.closest('button') || 
+                e.target.tagName === 'A' || 
+                e.target.closest('a')) {
+                return;
+            }
+            
+            // Find the first link in the card and navigate to it
+            const link = this.querySelector('a');
+            if (link) {
+                window.location.href = link.href;
+            }
+        });
+    });
+});
+
+function addToAgenda(eventId, button, event) {
+    // Stop the event from bubbling up to the card
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+    
+    const url = `/agenda/add/${eventId}/`;
+    const buttonText = button.querySelector('.text');
+    const loadingIcon = button.querySelector('.loading');
+    
+    // Show loading state
+    button.disabled = true;
+    buttonText.textContent = 'Adicionando...';
+    loadingIcon.classList.remove('hidden');
+    
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Show success message
+            showToast(data.message, 'success');
+            
+            // Replace button with success state
+            const wrapper = button.closest('.agenda-button-wrapper');
+            if (wrapper) {
+                wrapper.innerHTML = `
+                    <p class="text-sm text-green-600 font-bold flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        Adicionado à sua agenda
+                    </p>
+                `;
+            }
+        } else {
+            throw new Error(data.message || 'Erro ao adicionar evento');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Erro ao adicionar evento à agenda', 'error');
+        button.disabled = false;
+        buttonText.textContent = 'Adicionar à Minha Agenda';
+        loadingIcon.classList.add('hidden');
+    });
+}
+
+function showToast(message, type = 'info') {
+    // Create toast element if it doesn't exist
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'fixed bottom-4 right-4 z-50 space-y-2';
+        document.body.appendChild(toastContainer);
+    }
+    
+    const toast = document.createElement('div');
+    const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+    toast.className = `${bgColor} text-white px-6 py-3 rounded-lg shadow-lg flex items-center justify-between min-w-64`;
+    
+    // Add message
+    const messageEl = document.createElement('div');
+    messageEl.textContent = message;
+    messageEl.className = 'flex-1';
+    
+    // Add close button
+    const closeButton = document.createElement('button');
+    closeButton.innerHTML = '&times;';
+    closeButton.className = 'text-white text-xl font-bold ml-4';
+    closeButton.onclick = (e) => {
+        e.stopPropagation();
+        toast.remove();
+    };
+    
+    toast.appendChild(messageEl);
+    toast.appendChild(closeButton);
+    
+    // Add to container
+    toastContainer.appendChild(toast);
+    
+    // Auto-remove after 5 seconds
+    const removeToast = () => {
+        toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+        setTimeout(() => toast.remove(), 300);
+    };
+    
+    const timeoutId = setTimeout(removeToast, 5000);
+    
+    // Pause timeout on hover
+    toast.addEventListener('mouseenter', () => clearTimeout(timeoutId));
+    toast.addEventListener('mouseleave', () => {
+        const newTimeoutId = setTimeout(removeToast, 1000);
+        toast.dataset.timeoutId = newTimeoutId;
+    });
+}
+</script>
 {% endblock extra_js %}
 
 {% endblock content %}
