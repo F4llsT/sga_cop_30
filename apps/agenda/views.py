@@ -67,7 +67,7 @@ def mapa_eventos(request):
     eventos = Event.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
     eventos_data = [{
         "titulo": evento.titulo,
-        "data": evento.data,
+        "data": evento.start_time,
         "hora": evento.hora,
         "latitude": evento.latitude,
         "longitude": evento.longitude,
