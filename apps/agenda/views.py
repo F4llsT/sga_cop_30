@@ -17,20 +17,42 @@ def agenda_oficial(request):
     Exibe a lista de todos os eventos oficiais.
     """
     eventos = Event.objects.all().order_by('start_time', 'horario')
+    
+    # Get the list of event IDs that the user has added to their agenda
+    user_events = []
+    if request.user.is_authenticated:
+        user_events = list(UserAgenda.objects.filter(user=request.user).values_list('event_id', flat=True))
+    
     context = {
-        'eventos': eventos
+        'eventos': eventos,
+        'user_events': user_events
     }
     return render(request, 'agenda/agenda_oficial.html', context)
+
+from datetime import datetime, timedelta
+from django.utils import timezone
 
 @login_required
 def agenda_pessoal(request):
     """
     Exibe a agenda pessoal do usuário logado.
+    Remove automaticamente eventos que já passaram mais de 10 horas do seu início.
     """
-    eventos_pessoais = UserAgenda.objects.filter(user=request.user).select_related('event')
-    eventos = [item.event for item in eventos_pessoais]
+    # Remove eventos antigos (mais de 10 horas do início)
+    ten_hours_ago = timezone.now() - timedelta(hours=10)
+    UserAgenda.objects.filter(
+        user=request.user,
+        event__start_time__lt=ten_hours_ago
+    ).delete()
+    
+    # Get the user's agenda items, ordered by event start time
+    agenda_items = UserAgenda.objects.filter(
+        user=request.user
+    ).select_related('event').order_by('event__start_time')
+    
     context = {
-        'eventos': eventos
+        'agenda_items': agenda_items,
+        'title': 'Minha Agenda Pessoal'
     }
     return render(request, 'agenda/agenda_pessoal.html', context)
 
@@ -44,8 +66,21 @@ def add_to_agenda(request, event_id):
     Adiciona um evento à agenda pessoal do usuário.
     """
     evento = get_object_or_404(Event, pk=event_id)
-    UserAgenda.objects.get_or_create(user=request.user, event=evento)
-    return redirect('agenda:detalhes_evento', event_id=event_id)
+    
+    # Verifica se o evento já está na agenda do usuário
+    already_added = UserAgenda.objects.filter(user=request.user, event=evento).exists()
+    
+    if not already_added:
+        UserAgenda.objects.create(user=request.user, event=evento)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Evento adicionado à sua agenda!',
+            'already_added': already_added
+        })
+    
+    return redirect('agenda:agenda_pessoal')
 
 @login_required
 def remove_from_agenda(request, event_id):

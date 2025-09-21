@@ -23,7 +23,7 @@ urlpatterns = [
     path("notificacoes/", include("apps.notificacoes.urls", namespace="notificacoes")),
     
     # Passe Fácil
-    path("passefacil/", include("apps.passefacil.urls", namespace="passefacil")),
+    path('passefacil/', include('apps.passefacil.urls', namespace='passefacil')),
 ]
 
 # Servir arquivos estáticos em desenvolvimento
