@@ -103,7 +103,7 @@ def mapa_eventos(request):
     eventos_data = [{
         "titulo": evento.titulo,
         "data": evento.start_time,
-        "hora": evento.hora,
+        "hora": evento.horario,
         "latitude": evento.latitude,
         "longitude": evento.longitude,
         "id": evento.id
