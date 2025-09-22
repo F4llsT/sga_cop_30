@@ -274,37 +274,53 @@ async function processCode(code) {
             }
             
             // 2. Se ainda não encontrou, tenta obter do objeto usuario
-            if ((!userName || userName === 'Usuário não identificado') && data.usuario) {
+            if ((!userName || userName === 'Usuário não identificado' || userName === 'None') && data.usuario) {
                 console.log('Tentando obter nome do objeto usuario:', data.usuario);
                 
-                // Ordem de prioridade para buscar o nome
-                const possibleNameFields = [
-                    'nome', 'name', 'username', 'first_name', 'email'
-                ];
+                // Verifica se temos um email para extrair o nome
+                if ((!userName || userName === 'Usuário não identificado' || userName === 'None') && data.usuario.email) {
+                    const email = data.usuario.email.trim();
+                    if (email && email.includes('@')) {
+                        userName = email.split('@')[0];
+                        // Tenta capitalizar o nome
+                        userName = userName.charAt(0).toUpperCase() + userName.slice(1);
+                        console.log('Nome extraído do email:', userName);
+                    }
+                }
                 
-                for (const field of possibleNameFields) {
-                    if (data.usuario[field]) {
-                        userName = data.usuario[field];
-                        console.log(`Nome encontrado em usuario.${field}:`, userName);
-                        
-                        // Se for email, extrai a parte antes do @
-                        if (field === 'email' && userName.includes('@')) {
-                            userName = userName.split('@')[0];
-                            console.log('Nome extraído do email:', userName);
-                        }
-                        
-                        // Se encontrou um nome, para de procurar
-                        if (userName && userName.trim() !== '') {
+                // Tenta obter o nome de outros campos, mesmo que vazios
+                if (!userName || userName === 'Usuário não identificado' || userName === 'None') {
+                    const possibleNameFields = [
+                        'nome', 'name', 'username', 'first_name', 'last_name'
+                    ];
+                    
+                    for (const field of possibleNameFields) {
+                        const value = data.usuario[field];
+                        if (value && value.trim() !== '') {
+                            userName = value.trim();
+                            console.log(`Nome encontrado em usuario.${field}:`, userName);
                             break;
                         }
                     }
                 }
                 
-                // Se ainda não encontrou, tenta combinar first_name e last_name
-                if ((!userName || userName === 'Usuário não identificado') && 
+                // Tenta combinar first_name e last_name
+                if ((!userName || userName === 'Usuário não identificado' || userName === 'None') && 
                     (data.usuario.first_name || data.usuario.last_name)) {
-                    userName = `${data.usuario.first_name || ''} ${data.usuario.last_name || ''}`.trim();
-                    console.log('Nome combinado de first_name e last_name:', userName);
+                    const firstName = (data.usuario.first_name || '').trim();
+                    const lastName = (data.usuario.last_name || '').trim();
+                    const combined = `${firstName} ${lastName}`.trim();
+                    
+                    if (combined) {
+                        userName = combined;
+                        console.log('Nome combinado de first_name e last_name:', userName);
+                    }
+                }
+                
+                // Se ainda não encontrou, usa o ID do usuário
+                if ((!userName || userName === 'Usuário não identificado' || userName === 'None') && data.usuario.id) {
+                    userName = `Usuário ${data.usuario.id}`;
+                    console.log('Usando ID do usuário como nome:', userName);
                 }
             }
             
@@ -325,24 +341,44 @@ async function processCode(code) {
             let email = 'Não informado';
             let userId = 'N/A';
             
+            // Função para formatar valores nulos/vazios
+            const formatValue = (value, defaultValue = 'N/A') => {
+                if (value === null || value === undefined || value === '') {
+                    return defaultValue;
+                }
+                return value.toString().trim() || defaultValue;
+            };
+            
             if (data.usuario) {
                 // Tenta obter o email de diferentes campos
-                email = data.usuario.email || data.usuario.mail || 'Não informado';
-                userId = data.usuario.id || 'N/A';
+                email = formatValue(data.usuario.email || data.usuario.mail, 'Não informado');
+                userId = formatValue(data.usuario.id, 'N/A');
+                
+                // Prepara os campos do usuário
+                const userFields = [
+                    { label: 'ID', value: userId },
+                    { label: 'Nome', value: userName },
+                    { label: 'Email', value: email },
+                    { label: 'Usuário', value: formatValue(data.usuario.username) },
+                    { label: 'Código', value: formatValue(data.codigo) },
+                    { label: 'Data/Hora', value: formatValue(data.data_validacao, 'Agora') }
+                ];
+                
+                // Filtra campos vazios e gera o HTML
+                const userFieldsHtml = userFields
+                    .map(field => `
+                        <p><strong>${field.label}:</strong> ${field.value}</p>
+                    `).join('');
                 
                 // Exibe mais informações do usuário
                 userInfo = `
                     <div class="user-info mt-3 p-3 bg-light rounded">
-                        <h5>Informações do Usuário:</h5>
-                        <p><strong>ID:</strong> ${userId}</p>
-                        <p><strong>Nome:</strong> ${userName}</p>
-                        <p><strong>Email:</strong> ${email}</p>
-                        <p><strong>Usuário:</strong> ${data.usuario.username || 'N/A'}</p>
-                        <p><strong>Código:</strong> ${data.codigo || 'N/A'}</p>
-                        <p><strong>Data/Hora:</strong> ${data.data_validacao || 'Agora'}</p>
+                        <h5>Informações do Usuário</h5>
+                        ${userFieldsHtml}
                         <div class="mt-2 p-2 bg-white rounded">
-                            <small class="text-muted">Dados completos:</small>
-                            <pre class="small p-2 bg-light border rounded" style="max-height: 150px; overflow: auto;">${JSON.stringify(data.usuario, null, 2)}</pre>
+                            <small class="text-muted">Dados completos para depuração:</small>
+                            <pre class="small p-2 bg-light border rounded" style="max-height: 150px; overflow: auto;">${JSON.stringify(data.usuario, (key, value) => 
+                                value === null ? 'null' : value === '' ? '""' : value, 2)}</pre>
                         </div>
                     </div>
                 `;
