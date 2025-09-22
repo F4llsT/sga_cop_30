@@ -63,22 +63,43 @@ def validar_qr_code(request):
 @login_required
 def gerar_qr_code_dinamico(request):
     try:
-        print("Tentando obter o passe fácil do usuário...")
-        passe_facil = request.user.passe_facil
-        print(f"Passe Fácil encontrado: {passe_facil}")
+        print("\n=== Iniciando geração de QR Code ===")
+        print(f"Usuário: {request.user.username} (ID: {request.user.id})")
+        
+        # Obtém ou cria o PasseFacil se não existir
+        if not hasattr(request.user, 'passe_facil'):
+            passe_facil = PasseFacil.objects.create(
+                user=request.user,
+                ativo=True,
+                codigo=uuid.uuid4()
+            )
+            print(f"Novo PasseFacil criado com código: {passe_facil.codigo}")
+        else:
+            passe_facil = request.user.passe_facil
+            print(f"PasseFacil existente encontrado. Código: {passe_facil.codigo}")
+            
+            # Se não tiver código, gera um novo
+            if not passe_facil.codigo:
+                passe_facil.codigo = uuid.uuid4()
+                passe_facil.save()
+                print(f"Novo código gerado para PasseFacil: {passe_facil.codigo}")
         
         if not passe_facil.ativo:
-            print("Passe Fácil inativo")
+            print("ERRO: Passe Fácil está inativo")
             return HttpResponse("Passe inativo", status=403)
 
-        print(f"Gerando QR Code para o código: {passe_facil.codigo}")
+        # Converte o UUID para string e remove hífens para garantir consistência
+        codigo_str = str(passe_facil.codigo).replace('-', '')
+        print(f"Gerando QR Code para o código: {codigo_str}")
+        
+        # Cria o QR Code
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
             box_size=10,
             border=4,
         )
-        qr.add_data(str(passe_facil.codigo))  
+        qr.add_data(codigo_str)
         qr.make(fit=True)
 
         print("Criando imagem do QR Code...")
@@ -89,7 +110,7 @@ def gerar_qr_code_dinamico(request):
         img.save(buffer, format='PNG')
         buffer.seek(0)
 
-        print("Enviando resposta...")
+        print("Enviando resposta...\n")
         response = HttpResponse(buffer, content_type='image/png')
         response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         response['Pragma'] = 'no-cache'
@@ -109,23 +130,31 @@ def gerar_qr_code_dinamico(request):
 def meu_qr_code_view(request):
     # Verifica se o usuário já tem um Passe Fácil
     if not hasattr(request.user, 'passe_facil'):
-        # Cria um novo Passe Fácil para o usuário
+        # Cria um novo Passe Fácil para o usuário com um código gerado automaticamente
         passe = PasseFacil.objects.create(
             user=request.user,
-            ativo=True
+            ativo=True,
+            codigo=uuid.uuid4()  # Gera um novo UUID automaticamente
         )
-        # Gera um novo código para o passe
-        passe.gerar_novo_codigo()
+        print(f"Novo PasseFacil criado com código: {passe.codigo}")
         # Recarrega o usuário para garantir que o passe_facil esteja disponível
         request.user.refresh_from_db()
     else:
-        # Verifica se o passe atual tem um código
-        if not request.user.passe_facil.codigo:
-            request.user.passe_facil.gerar_novo_codigo()
+        # Garante que o passe existente tenha um código
+        passe = request.user.passe_facil
+        if not passe.codigo:
+            passe.codigo = uuid.uuid4()
+            passe.save()
+            print(f"Código gerado para PasseFacil existente: {passe.codigo}")
+    
+    # Debug: verifica o código atual
+    codigo_atual = request.user.passe_facil.codigo
+    print(f"Código atual para o usuário {request.user.username}: {codigo_atual}")
     
     # Adiciona o código ao contexto para depuração
     context = {
-        'codigo_passe': str(request.user.passe_facil.codigo) if hasattr(request.user, 'passe_facil') else 'N/A',
+        'user': request.user,
+        'codigo_passe': str(codigo_atual) if codigo_atual else 'NENHUM_CÓDIGO_GERADO',
         'usuario_nome': request.user.get_full_name() or request.user.username
     }
     
