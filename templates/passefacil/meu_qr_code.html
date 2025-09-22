@@ -132,10 +132,18 @@
             <i class="fas fa-qrcode me-2"></i> Mostrar QR Code
         </button>
 
-        <div id="qrCodeContainer">
-            <img src="" id="qrCodeImage" alt="Meu QR Code" class="img-fluid">
-            <div class="qr-code-info mt-3">
-                <p class="mb-0">Código: <strong>{{ request.user.passefacil.codigo }}</strong></p>
+        <div class="qr-code-placeholder" id="qrCodeContainer">
+            <img id="qrCodeImage" src="" alt="QR Code de Validação" style="display: none; max-width: 100%;">
+            <p id="qrCodeStatus" class="text-muted">Clique no botão abaixo para exibir seu QR Code</p>
+            <!-- Debug info -->
+            <div id="debugInfo" style="display: none; margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-family: monospace;">
+                <p><strong>Debug Info:</strong></p>
+                <p>ID do Usuário: {{ user.id }}</p>
+                <p>Nome: {{ user.get_full_name|default:user.username }}</p>
+                <p>Código do Passe: <span id="codigoPasse">{{ request.user.passefacil.codigo }}</span></p>
+                <button onclick="copyToClipboard('{{ request.user.passefacil.codigo }}')" class="btn btn-sm btn-outline-secondary mt-2">
+                    <i class="fas fa-copy"></i> Copiar Código
+                </button>
             </div>
         </div>
 
@@ -182,6 +190,12 @@ document.addEventListener('DOMContentLoaded', function() {
             qrImage.onload = function() {
                 console.log('QR Code carregado com sucesso');
                 toggleButton.innerHTML = '<i class="fas fa-eye-slash me-2"></i> Ocultar QR Code';
+                document.getElementById('qrCodeStatus').style.display = 'none';
+                qrImage.style.display = 'block';
+                document.getElementById('debugInfo').style.display = 'block';
+                
+                // Log para depuração
+                console.log('Código do passe:', document.getElementById('codigoPasse').textContent);
             };
             
             // Tratamento de erro

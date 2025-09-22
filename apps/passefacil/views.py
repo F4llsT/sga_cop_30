@@ -110,11 +110,23 @@ def meu_qr_code_view(request):
     # Verifica se o usuário já tem um Passe Fácil
     if not hasattr(request.user, 'passe_facil'):
         # Cria um novo Passe Fácil para o usuário
-        PasseFacil.objects.create(
+        passe = PasseFacil.objects.create(
             user=request.user,
             ativo=True
         )
+        # Gera um novo código para o passe
+        passe.gerar_novo_codigo()
         # Recarrega o usuário para garantir que o passe_facil esteja disponível
         request.user.refresh_from_db()
+    else:
+        # Verifica se o passe atual tem um código
+        if not request.user.passe_facil.codigo:
+            request.user.passe_facil.gerar_novo_codigo()
     
-    return render(request, 'passefacil/meu_qr_code.html')
+    # Adiciona o código ao contexto para depuração
+    context = {
+        'codigo_passe': str(request.user.passe_facil.codigo) if hasattr(request.user, 'passe_facil') else 'N/A',
+        'usuario_nome': request.user.get_full_name() or request.user.username
+    }
+    
+    return render(request, 'passefacil/meu_qr_code.html', context)
