@@ -58,14 +58,14 @@
             <tbody>
                 {% for validacao in ultimas_validacoes %}
                 <tr>
-                    <td>{{ validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.username }}</td>
-                    <td>{{ validacao.codigo }}</td>
+                    <td>{% if validacao.passe_facil and validacao.passe_facil.user %}{{ validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.username }}{% else %}Usuário não encontrado{% endif %}</td>
+                    <td>{{ validacao.codigo|default:'N/A' }}</td>
                     <td>
                         <span class="badge {% if validacao.valido %}bg-success{% else %}bg-danger{% endif %}">
                             {% if validacao.valido %}Válido{% else %}Inválido{% endif %}
                         </span>
                     </td>
-                    <td>{{ validacao.data_validacao|date:"d/m/Y H:i" }}</td>
+                    <td>{% if validacao.data_validacao %}{{ validacao.data_validacao|date:"d/m/Y H:i" }}{% else %}N/A{% endif %}</td>
                 </tr>
                 {% endfor %}
             </tbody>

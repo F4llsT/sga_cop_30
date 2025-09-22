@@ -113,15 +113,17 @@ def validar_qr_code(request):
         passe.save()
         
         # Prepara os dados do usuário para a resposta
-        usuario_nome = str(passe.user.get_full_name() or passe.user.username)
+        user = passe.user
+        usuario_nome = user.get_full_name() or user.username or 'Usuário sem nome'
+        usuario_email = getattr(user, 'email', 'Sem e-mail')
         
         return JsonResponse({
             'valido': True,
             'mensagem': f'Passe válido para {usuario_nome}',
             'usuario': {
                 'nome': usuario_nome,
-                'email': passe.user.email,
-                'id': passe.user.id
+                'email': usuario_email,
+                'id': user.id
             },
             'codigo': codigo,
             'validacao_id': validacao.id,
