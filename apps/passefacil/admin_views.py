@@ -18,6 +18,21 @@ def admin_dashboard(request):
         'passe_facil__user'
     ).order_by('-data_validacao')[:10]
     
+    # Lista todos os passes com suas últimas validações
+    ultimas_validacoes_subquery = ValidacaoQRCode.objects.filter(
+        passe_facil_id=OuterRef('pk')
+    ).order_by('-data_validacao').values('id')[:1]
+    
+    passes = PasseFacil.objects.select_related('user').prefetch_related(
+        Prefetch(
+            'validacoes',
+            queryset=ValidacaoQRCode.objects.filter(
+                id__in=Subquery(ultimas_validacoes_subquery)
+            ),
+            to_attr='ultimas_validacoes'
+        )
+    ).order_by('user__first_name', 'user__last_name')
+    
     # Estatísticas
     agora = timezone.now()
     hoje = agora.date()
@@ -38,10 +53,11 @@ def admin_dashboard(request):
     from django.template.context_processors import csrf
     context = {
         'validacoes_recentes': validacoes_recentes,
+        'passes': passes,  # Adiciona a lista de passes ao contexto
         'total_validacoes': total_validacoes,
         'validas': validas,
         'invalidas': invalidas,
-        'ultimas_validacoes': validacoes_recentes,  # Adiciona para compatibilidade com o template
+        'ultimas_validacoes': validacoes_recentes,
     }
     # Adiciona o token CSRF ao contexto
     context.update(csrf(request))

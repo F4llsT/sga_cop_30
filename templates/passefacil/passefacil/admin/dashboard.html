@@ -43,33 +43,105 @@
         </div>
     </div>
 
+    <!-- Lista de Passe Fácil -->
+    <div class="passe-lista mb-5">
+        <h2>Lista de Passe Fácil</h2>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Usuário</th>
+                        <th>Código</th>
+                        <th>Status</th>
+                        <th>Última Validação</th>
+                        <th>Resultado</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for passe in passes %}
+                    <tr>
+                        <td>{{ passe.user.get_full_name|default:passe.user.username }}</td>
+                        <td><code>{{ passe.codigo|default:'-' }}</code></td>
+                        <td>
+                            {% if passe.ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge bg-danger">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if passe.ultimas_validacoes %}
+                                {{ passe.ultimas_validacoes.0.data_validacao|date:"d/m/Y H:i" }}
+                            {% else %}
+                                Nunca validado
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if passe.ultimas_validacoes %}
+                                {% with passe.ultimas_validacoes.0 as ultima %}
+                                    {% if ultima.valido %}
+                                        <span class="badge bg-success">Válido</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Inválido</span>
+                                    {% endif %}
+                                {% endwith %}
+                            {% else %}
+                                <span class="badge bg-secondary">N/A</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'admin:passefacil_passefacil_change' passe.id %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if passe.ultimas_validacoes %}
+                                <button class="btn btn-sm btn-outline-info" 
+                                        onclick="showValidationDetails('{{ passe.user.get_full_name|default:passe.user.username }}', '{{ passe.ultimas_validacoes.0.data_validacao|date:'d/m/Y H:i' }}', '{{ passe.ultimas_validacoes.0.ip_address }}')"
+                                        title="Ver detalhes">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">Nenhum Passe Fácil encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Últimas Validações -->
     <div class="recent-validations">
         <h2>Últimas Validações</h2>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Usuário</th>
-                    <th>Código</th>
-                    <th>Status</th>
-                    <th>Data/Hora</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for validacao in ultimas_validacoes %}
-                <tr>
-                    <td>{% if validacao.passe_facil and validacao.passe_facil.user %}{{ validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.username }}{% else %}Usuário não encontrado{% endif %}</td>
-                    <td>{{ validacao.codigo|default:'N/A' }}</td>
-                    <td>
-                        <span class="badge {% if validacao.valido %}bg-success{% else %}bg-danger{% endif %}">
-                            {% if validacao.valido %}Válido{% else %}Inválido{% endif %}
-                        </span>
-                    </td>
-                    <td>{% if validacao.data_validacao %}{{ validacao.data_validacao|date:"d/m/Y H:i" }}{% else %}N/A{% endif %}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table">
+                <thead class="table-light">
+                    <tr>
+                        <th>Usuário</th>
+                        <th>Código</th>
+                        <th>Status</th>
+                        <th>Data/Hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for validacao in ultimas_validacoes %}
+                    <tr>
+                        <td>{% if validacao.passe_facil and validacao.passe_facil.user %}{{ validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.username }}{% else %}Usuário não encontrado{% endif %}</td>
+                        <td><code>{{ validacao.codigo|default:'N/A' }}</code></td>
+                        <td>
+                            <span class="badge {% if validacao.valido %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if validacao.valido %}Válido{% else %}Inválido{% endif %}
+                            </span>
+                        </td>
+                        <td>{% if validacao.data_validacao %}{{ validacao.data_validacao|date:"d/m/Y H:i" }}{% else %}N/A{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -290,6 +362,47 @@ function stopScanner() {
     
     // Limpa o resultado
     resultDiv.innerHTML = '<p class="text-muted mb-0">Aponte a câmera para o QR Code</p>';
+}
+
+// Modal para mostrar detalhes da validação
+function showValidationDetails(userName, validationDate, ipAddress) {
+    // Cria o modal se não existir
+    let modal = document.getElementById('validationDetailsModal');
+    
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'validationDetailsModal';
+        modal.className = 'modal fade';
+        modal.tabIndex = '-1';
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Detalhes da Validação</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Usuário:</strong> <span id="modalUserName"></span></p>
+                        <p><strong>Data/Hora:</strong> <span id="modalValidationDate"></span></p>
+                        <p><strong>Endereço IP:</strong> <span id="modalIpAddress"></span></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    // Preenche os dados
+    document.getElementById('modalUserName').textContent = userName;
+    document.getElementById('modalValidationDate').textContent = validationDate;
+    document.getElementById('modalIpAddress').textContent = ipAddress;
+    
+    // Mostra o modal usando Bootstrap
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
 }
 
 // Event listeners
