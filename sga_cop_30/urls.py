@@ -3,6 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from apps.core import views as core_views
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -24,6 +25,13 @@ urlpatterns = [
     
     # Passe Fácil
     path('passefacil/', include('apps.passefacil.urls', namespace='passefacil')),
+    
+    # API Passe Fácil
+    path('api/passefacil/', include('apps.passefacil.api_urls', namespace='passefacil_api')),
+    
+    # API Auth JWT
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 ]
 
 # Servir arquivos estáticos em desenvolvimento

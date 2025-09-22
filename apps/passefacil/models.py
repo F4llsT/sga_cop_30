@@ -9,8 +9,12 @@ User = get_user_model()
 class PasseFacil(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='passe_facil')
     codigo = models.UUIDField(default=uuid.uuid4, editable=False)
+    secret_totp = models.CharField(max_length=100, null=True, blank=True, help_text='Segredo para geração de códigos TOTP')
     data_atualizacao = models.DateTimeField(auto_now=True)
+    ultima_geracao = models.DateTimeField(null=True, blank=True, help_text='Data da última geração de código')
     ativo = models.BooleanField(default=True)
+    tentativas_validacao = models.PositiveIntegerField(default=0, help_text='Número de tentativas de validação')
+    ultima_tentativa = models.DateTimeField(null=True, blank=True, help_text='Data da última tentativa de validação')
 
     def __str__(self):
         return f"Passe Fácil - {self.user.get_full_name() or self.user.username}"
