@@ -146,36 +146,58 @@ document.addEventListener('DOMContentLoaded', function() {
     let html5QrCode = null;
 
     // Função para processar o código
-    async function processCode(code) {
-        try {
-            const response = await fetch('', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: `codigo=${encodeURIComponent(code)}`
-            });
+// Função para processar o código
+async function processCode(code) {
+    try {
+        const response = await fetch('', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `codigo=${encodeURIComponent(code)}`
+        });
+        
+        const data = await response.json();
+        
+        if (data.valido) {
+            const userName = data.usuario?.nome || 'Usuário não identificado';
+            showResult(`Passe válido para: ${userName}`, 'success');
             
-            const data = await response.json();
+            // Adiciona o nome do usuário no campo de entrada
+            qrInput.value = userName;
             
-            if (data.valido) {
-                showResult(`Passe válido para ${data.usuario.nome}`, 'success');
+            // Atualiza a interface com os dados do usuário
+            if (data.usuario) {
+                // Exibe mais informações do usuário
+                const userInfo = `
+                    <div class="user-info mt-3 p-3 bg-light rounded">
+                        <h5>Informações do Usuário:</h5>
+                        <p><strong>Nome:</strong> ${data.usuario.nome || 'Não informado'}</p>
+                        <p><strong>Email:</strong> ${data.usuario.email || 'Não informado'}</p>
+                        <p><strong>Código:</strong> ${data.codigo || 'N/A'}</p>
+                        <p><strong>Data/Hora:</strong> ${data.data_validacao || 'Agora'}</p>
+                    </div>
+                `;
+                resultDiv.innerHTML = `Passe válido para: <strong>${userName}</strong>${userInfo}`;
             } else {
-                showResult(data.erro || 'Código inválido', 'error');
+                showResult(`Passe válido para: ${userName}`, 'success');
             }
-            
-            // Recarrega a página após 2 segundos para atualizar a lista
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-            
-        } catch (error) {
-            console.error('Erro ao validar código:', error);
-            showResult('Erro ao processar o código. Tente novamente.', 'error');
+        } else {
+            showResult(data.mensagem || data.erro || 'Código inválido', 'error');
         }
+        
+        // Recarrega a página após 3 segundos para atualizar a lista
+        setTimeout(() => {
+            window.location.reload();
+        }, 3000);
+        
+    } catch (error) {
+        console.error('Erro ao validar código:', error);
+        showResult('Erro ao processar o código. Tente novamente.', 'error');
     }
+}
     
     // Função para mostrar o resultado
     function showResult(message, type) {

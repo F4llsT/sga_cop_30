@@ -3,78 +3,278 @@
 
 {% block extrastyle %}
 {{ block.super }}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-    .dashboard-stats {
+    :root {
+        --primary-color: #4e73df;
+        --primary-dark: #2e59d9;
+        --success-color: #1cc88a;
+        --info-color: #36b9cc;
+        --warning-color: #f6c23e;
+        --danger-color: #e74a3b;
+        --secondary-color: #858796;
+        --light-color: #f8f9fc;
+        --dark-color: #5a5c69;
+        --dark-bg: #1a2035;
+        --darker-bg: #141b2d;
+        --card-bg: #1f2940;
+        --text-color: #e0e0e0;
+        --text-muted: #a0a0a0;
+        --border-color: #2a324a;
+        --border-radius: 0.35rem;
+        --box-shadow: 0 0.15rem 1.75rem 0 rgba(0, 0, 0, 0.3);
+    }
+    
+    body {
+        font-family: 'Roboto', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: var(--dark-bg);
+        color: var(--text-color);
+    }
+    
+    /* Cabeçalho */
+    #header {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: white;
+        box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+    
+    /* Cartões de Estatísticas */
+    .stats-cards {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
     }
+    
     .stat-card {
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        background: white;
+        border-radius: var(--border-radius);
+        padding: 1.5rem;
+        box-shadow: var(--box-shadow);
+        border-left: 0.25rem solid var(--primary-color);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
-    .stat-card h3 {
-        margin: 0 0 10px 0;
-        color: #666;
-        font-size: 1rem;
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 2rem 0 rgba(0, 0, 0, 0.1);
     }
-    .stat-card p {
+    
+    .stat-card.primary { border-left-color: var(--primary-color); }
+    .stat-card.success { border-left-color: var(--success-color); }
+    .stat-card.warning { border-left-color: var(--warning-color); }
+    .stat-card.danger { border-left-color: var(--danger-color); }
+    
+    .stat-card .stat-title {
+        color: var(--secondary-color);
+        font-size: 0.9rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .stat-card .stat-value {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: var(--dark-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-card .stat-diff {
+        display: flex;
+        align-items: center;
+        font-size: 0.85rem;
+    }
+    
+    .stat-card .stat-diff.positive { color: var(--success-color); }
+    .stat-card .stat-diff.negative { color: var(--danger-color); }
+    
+    /* Botão de Validação */
+    .validation-button {
+        display: inline-flex;
+        align-items: center;
+        background: var(--primary-color);
+        color: white !important;
+        padding: 0.75rem 1.5rem;
+        border-radius: 50px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(78, 115, 223, 0.3);
+        margin-bottom: 2rem;
+    }
+    
+    .validation-button:hover {
+        background: #2e59d9;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(78, 115, 223, 0.4);
+        color: white;
+    }
+    
+    .validation-button i {
+        margin-right: 8px;
+        font-size: 1.1rem;
+    }
+    
+    /* Tabela de Validações Recentes */
+    .recent-validations {
+        background: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        margin-top: 2rem;
+        overflow: hidden;
+    }
+    
+    .recent-validations .module h2 {
+        background: #f8f9fc;
+        padding: 1.25rem 1.5rem;
         margin: 0;
-        font-size: 2rem;
-        font-weight: bold;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        border-bottom: 1px solid #e3e6f0;
+        display: flex;
+        align-items: center;
     }
+    
+    .recent-validations .module h2 i {
+        margin-right: 8px;
+        color: var(--primary-color);
+    }
+    
+    .recent-validations table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .recent-validations th {
+        background-color: #f8f9fc;
+        color: var(--secondary-color);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        padding: 0.75rem 1.5rem;
+        text-align: left;
+        border-bottom: 1px solid #e3e6f0;
+    }
+    
+    .recent-validations td {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #e3e6f0;
+        color: var(--dark-color);
+        vertical-align: middle;
+    }
+    
+    .recent-validations tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .recent-validations tr:hover td {
+        background-color: #f8f9fc;
+    }
+    
+    /* Badges */
     .badge {
-        font-size: 0.9em;
         padding: 0.35em 0.65em;
+        font-size: 75%;
+        font-weight: 600;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
     }
-    .badge.bg-success { background-color: #28a745 !important; }
-    .badge.bg-danger { background-color: #dc3545 !important; }
-    .badge.bg-secondary { background-color: #6c757d !important; }
-    .button {
-        padding: 2px 8px;
-        margin: 0 2px;
-        border-radius: 3px;
-        background: #f0f0f0;
+    
+    .badge-success {
+        background-color: var(--success-color);
+        color: white;
     }
-    .button:hover {
-        background: #e0e0e0;
+    
+    .badge-danger {
+        background-color: var(--danger-color);
+        color: white;
+    }
+    
+    .badge-warning {
+        background-color: var(--warning-color);
+        color: #000;
+    }
+    
+    /* Responsividade */
+    @media (max-width: 992px) {
+        .stats-cards {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .stats-cards {
+            grid-template-columns: 1fr;
+        }
+        
+        .recent-validations table {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
     }
 </style>
 {% endblock %}
 
+{% block content_title %}
+<h1>Painel de Controle do Passe Fácil</h1>
+{% endblock %}
+
 {% block content %}
 <div class="dashboard-container">
-    <!-- Estatísticas -->
-    <div class="dashboard-stats">
-        <div class="stat-card">
-            <h3>Total de Passes</h3>
-            <p>{{ total_passes }}</p>
+    <!-- Cartões de Estatísticas -->
+    <div class="stats-cards">
+        <div class="stat-card primary">
+            <div class="stat-title">Total de Passes</div>
+            <div class="stat-value">{{ total_passes }}</div>
+            <div class="stat-diff">
+                <i class="fas fa-users"></i>
+                <span>Total de usuários cadastrados</span>
+            </div>
         </div>
-        <div class="stat-card">
-            <h3>Passes Ativos</h3>
-            <p class="text-success">{{ passes_ativos }}</p>
+        
+        <div class="stat-card success">
+            <div class="stat-title">Passes Ativos</div>
+            <div class="stat-value">{{ passes_ativos }}</div>
+            <div class="stat-diff positive">
+                <i class="fas fa-check-circle"></i>
+                <span>Ativos no sistema</span>
+            </div>
         </div>
-        <div class="stat-card">
-            <h3>Passes Inativos</h3>
-            <p class="text-danger">{{ passes_inativos }}</p>
+        
+        <div class="stat-card warning">
+            <div class="stat-title">Passes Inativos</div>
+            <div class="stat-value">{{ passes_inativos }}</div>
+            <div class="stat-diff">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>Inativos no momento</span>
+            </div>
         </div>
-        <div class="stat-card">
-            <h3>Validações Hoje</h3>
-            <p>{{ total_validacoes_hoje }}</p>
+        
+        <div class="stat-card danger">
+            <div class="stat-title">Validações Hoje</div>
+            <div class="stat-value">{{ total_validacoes_hoje }}</div>
+            <div class="stat-diff">
+                <i class="fas fa-sync"></i>
+                <span>Atualizado agora</span>
+            </div>
         </div>
     </div>
 
-    <!-- Botão de validação QR Code -->
-    <div class="mb-4">
-        <a href="{% url 'admin:passefacil_validar_qr_code' %}" class="button">
-            <i class="fas fa-qrcode"></i> Validar QR Code
-        </a>
-    </div>
+    <!-- Botão de Validação -->
+    <a href="{% url 'admin:passefacil_validar_qr_code' %}" class="validation-button">
+        <i class="fas fa-qrcode"></i> Validar QR Code
+    </a>
 
     <!-- Lista de Passe Fácil -->
     <div class="module">
@@ -82,46 +282,63 @@
     </div>
 
     <!-- Últimas Validações -->
-    <div class="module">
-        <h2>Últimas Validações</h2>
-        <div class="results">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Usuário</th>
-                        <th>Código</th>
-                        <th>Status</th>
-                        <th>Data/Hora</th>
-                        <th>IP</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for validacao in ultimas_validacoes %}
-                    <tr>
-                        <td>{% if validacao.passe_facil and validacao.passe_facil.user %}
-                            {{ validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.username }}
-                            {% else %}
-                            Usuário não encontrado
-                            {% endif %}
-                        </td>
-                        <td><code>{{ validacao.codigo|default:'N/A' }}</code></td>
-                        <td>
-                            {% if validacao.valido %}
-                            <span class="badge bg-success">Válido</span>
-                            {% else %}
-                            <span class="badge bg-danger">Inválido</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ validacao.data_validacao|date:"d/m/Y H:i" }}</td>
-                        <td>{{ validacao.ip_address|default:'N/A' }}</td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center">Nenhuma validação encontrada.</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="recent-validations">
+        <div class="module">
+            <h2><i class="fas fa-history"></i> Últimas Validações</h2>
+            <div class="results">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Usuário</th>
+                            <th>Código</th>
+                            <th>Status</th>
+                            <th>Data/Hora</th>
+                            <th>IP</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for validacao in ultimas_validacoes|slice:":10" %}
+                        <tr>
+                            <td>
+                                {% if validacao.passe_facil and validacao.passe_facil.user %}
+                                    <strong>{{ validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.username }}</strong>
+                                    <div class="text-muted small">{{ validacao.passe_facil.user.email|default:'' }}</div>
+                                {% else %}
+                                    <span class="text-muted">Usuário não encontrado</span>
+                                {% endif %}
+                            </td>
+                            <td><code>{{ validacao.codigo|default:'N/A' }}</code></td>
+                            <td>
+                                {% if validacao.valido %}
+                                <span class="badge badge-success"><i class="fas fa-check-circle"></i> Válido</span>
+                                {% else %}
+                                <span class="badge badge-danger"><i class="fas fa-times-circle"></i> Inválido</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="font-weight-bold">{{ validacao.data_validacao|date:"d/m/Y" }}</div>
+                                <div class="text-muted small">{{ validacao.data_validacao|date:"H:i" }}</div>
+                            </td>
+                            <td>
+                                <code>{{ validacao.ip_address|default:'N/A' }}</code>
+                                {% if validacao.observacoes %}
+                                <div class="text-muted small mt-1" title="{{ validacao.observacoes }}">
+                                    <i class="fas fa-info-circle"></i> {{ validacao.observacoes|truncatechars:20 }}
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="fas fa-inbox fa-2x mb-2"></i>
+                                <p>Nenhuma validação encontrada</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
