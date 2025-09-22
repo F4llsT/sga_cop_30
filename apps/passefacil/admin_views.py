@@ -63,25 +63,35 @@ def admin_dashboard(request):
     context.update(csrf(request))
     return render(request, 'passefacil/admin/dashboard.html', context)
 
-@user_passes_test(is_admin)
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.contrib.admin.views.decorators import staff_member_required
+
+@staff_member_required
 def validar_qr_code(request):
-    if request.method != 'POST':
-        return JsonResponse({'erro': 'Método não permitido'}, status=405)
+    """
+    View para validação de QR Code no painel de administração.
+    Suporta tanto requisições AJAX quanto requisições normais.
+    """
+    if request.method == 'GET':
+        # Exibe o formulário de validação
+        return render(request, 'admin/passefacil/validar_qr_code.html', {
+            'title': 'Validar QR Code',
+            'opts': PasseFacil._meta,
+            'has_permission': True,
+        })
     
-    # Verifica se o código foi fornecido
-    codigo = request.POST.get('codigo')
+    # Para requisições POST (validação do código)
+    codigo = request.POST.get('codigo', '').strip()
+    
     if not codigo:
-        return JsonResponse({
-            'valido': False, 
-            'erro': 'Código não fornecido',
-            'data_validacao': timezone.now().strftime('%d/%m/%Y %H:%M:%S')
-        }, status=400)
-    
-    # Remove espaços em branco extras
-    codigo = codigo.strip()
+        messages.error(request, 'Nenhum código foi fornecido.')
+        return redirect('admin:passefacil_validar_qr_code')
     
     try:
-        # Tenta encontrar o passe com o código fornecido
         try:
             passe = PasseFacil.objects.get(codigo=codigo)
         except PasseFacil.DoesNotExist:
@@ -89,18 +99,14 @@ def validar_qr_code(request):
             ValidacaoQRCode.objects.create(
                 codigo=codigo,
                 valido=False,
-                ip_address=request.META.get('REMOTE_ADDR', '0.0.0.0')
+                ip_address=request.META.get('REMOTE_ADDR', '0.0.0.0'),
+                observacoes='Código não encontrado'
             )
-            return JsonResponse({
-                'valido': False, 
-                'erro': 'Código não encontrado',
-                'codigo': codigo,
-                'data_validacao': timezone.now().strftime('%d/%m/%Y %H:%M:%S')
-            }, status=404)
+            messages.error(request, f'Código não encontrado: {codigo}')
+            return redirect('admin:passefacil_validar_qr_code')
         
         # Verifica se o passe está ativo
         if not passe.ativo:
-            # Registra tentativa de uso de passe inativo
             ValidacaoQRCode.objects.create(
                 passe_facil=passe,
                 codigo=codigo,
@@ -108,12 +114,8 @@ def validar_qr_code(request):
                 ip_address=request.META.get('REMOTE_ADDR', '0.0.0.0'),
                 observacoes='Tentativa de uso de passe inativo'
             )
-            return JsonResponse({
-                'valido': False, 
-                'erro': 'Este passe está inativo',
-                'codigo': codigo,
-                'data_validacao': timezone.now().strftime('%d/%m/%Y %H:%M:%S')
-            }, status=403)
+            messages.error(request, f'Passe inativo para o código: {codigo}')
+            return redirect('admin:passefacil_validar_qr_code')
         
         # Cria o registro de validação
         validacao = ValidacaoQRCode(
@@ -128,23 +130,30 @@ def validar_qr_code(request):
         passe.data_atualizacao = timezone.now()
         passe.save()
         
-        # Prepara os dados do usuário para a resposta
-        user = passe.user
-        usuario_nome = user.get_full_name() or user.username or 'Usuário sem nome'
-        usuario_email = getattr(user, 'email', 'Sem e-mail')
+        # Prepara a mensagem de sucesso
+        usuario_nome = passe.user.get_full_name() or passe.user.username
+        messages.success(
+            request, 
+            f'Validação realizada com sucesso para: {usuario_nome} (Código: {codigo})',
+            extra_tags='success'
+        )
         
-        return JsonResponse({
-            'valido': True,
-            'mensagem': f'Passe válido para {usuario_nome}',
-            'usuario': {
-                'nome': usuario_nome,
-                'email': usuario_email,
-                'id': user.id
-            },
-            'codigo': codigo,
-            'validacao_id': validacao.id,
-            'data_validacao': validacao.data_validacao.strftime('%d/%m/%Y %H:%M:%S')
-        })
+        # Se for uma requisição AJAX, retorna JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'valido': True,
+                'mensagem': f'Passe válido para {usuario_nome}',
+                'usuario': {
+                    'nome': usuario_nome,
+                    'email': passe.user.email,
+                    'id': passe.user.id
+                },
+                'codigo': codigo,
+                'validacao_id': validacao.id,
+                'data_validacao': validacao.data_validacao.strftime('%d/%m/%Y %H:%M:%S')
+            })
+            
+        return redirect('admin:passefacil_validar_qr_code')
         
     except Exception as e:
         # Log do erro para debug
@@ -152,10 +161,14 @@ def validar_qr_code(request):
         logger = logging.getLogger(__name__)
         logger.error(f'Erro ao validar QR Code: {str(e)}', exc_info=True)
         
-        # Resposta genérica de erro
-        return JsonResponse({
-            'valido': False,
-            'erro': 'Erro interno ao processar a validação',
-            'detail': str(e),
-            'data_validacao': timezone.now().strftime('%d/%m/%Y %H:%M:%S')
-        }, status=500)
+        error_msg = f'Erro ao processar a validação: {str(e)}'
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'valido': False,
+                'erro': 'Erro ao processar a validação',
+                'detail': str(e)
+            }, status=500)
+            
+        messages.error(request, error_msg)
+        return redirect('admin:passefacil_validar_qr_code')
