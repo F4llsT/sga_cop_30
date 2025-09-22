@@ -76,12 +76,37 @@ def validar_qr_code(request):
     View para validação de QR Code no painel de administração.
     Suporta tanto requisições AJAX quanto requisições normais.
     """
+    # Cálculo das estatísticas
+    agora = timezone.now()
+    hoje = agora.date()
+    inicio_dia = timezone.make_aware(timezone.datetime.combine(hoje, timezone.datetime.min.time()))
+    
+    total_validacoes = ValidacaoQRCode.objects.filter(
+        data_validacao__gte=inicio_dia
+    ).count()
+    
+    validas = ValidacaoQRCode.objects.filter(
+        valido=True,
+        data_validacao__gte=inicio_dia
+    ).count()
+    
+    invalidas = total_validacoes - validas
+    
+    # Últimas 10 validações
+    ultimas_validacoes = ValidacaoQRCode.objects.select_related(
+        'passe_facil__user'
+    ).order_by('-data_validacao')[:10]
+    
     if request.method == 'GET':
         # Exibe o formulário de validação
         return render(request, 'admin/passefacil/validar_qr_code.html', {
             'title': 'Validar QR Code',
             'opts': PasseFacil._meta,
             'has_permission': True,
+            'total_validacoes': total_validacoes,
+            'validas': validas,
+            'invalidas': invalidas,
+            'ultimas_validacoes': ultimas_validacoes,
         })
     
     # Para requisições POST (validação do código)
@@ -132,11 +157,24 @@ def validar_qr_code(request):
         
         # Prepara a mensagem de sucesso
         usuario_nome = passe.user.get_full_name() or passe.user.username
+        mensagem = f'Validação realizada com sucesso para: {usuario_nome} (Código: {codigo})'
         messages.success(
             request, 
-            f'Validação realizada com sucesso para: {usuario_nome} (Código: {codigo})',
+            mensagem,
             extra_tags='success'
         )
+        
+        # Atualiza as estatísticas para a resposta
+        total_validacoes = ValidacaoQRCode.objects.filter(
+            data_validacao__gte=inicio_dia
+        ).count()
+        
+        validas = ValidacaoQRCode.objects.filter(
+            valido=True,
+            data_validacao__gte=inicio_dia
+        ).count()
+        
+        invalidas = total_validacoes - validas
         
         # Se for uma requisição AJAX, retorna JSON
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -150,7 +188,12 @@ def validar_qr_code(request):
                 },
                 'codigo': codigo,
                 'validacao_id': validacao.id,
-                'data_validacao': validacao.data_validacao.strftime('%d/%m/%Y %H:%M:%S')
+                'data_validacao': validacao.data_validacao.strftime('%d/%m/%Y %H:%M:%S'),
+                'estatisticas': {
+                    'total': total_validacoes,
+                    'validas': validas,
+                    'invalidas': invalidas
+                }
             })
             
         return redirect('admin:passefacil_validar_qr_code')

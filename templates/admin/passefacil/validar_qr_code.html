@@ -6,12 +6,40 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <style>
     .scanner-container {
-        max-width: 500px;
-        margin: 20px 0;
+        max-width: 800px;
+        margin: 20px auto;
         padding: 20px;
         border: 1px solid #ddd;
         border-radius: 4px;
         background: #fff;
+    }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card h3 {
+        margin: 0 0 10px 0;
+        font-size: 14px;
+        color: #495057;
+    }
+    
+    .stat-card p {
+        margin: 0;
+        font-size: 24px;
+        font-weight: bold;
+        color: #212529;
     }
     #reader {
         width: 100%;
@@ -77,6 +105,22 @@
         <h2>Validar QR Code</h2>
         
         <div class="scanner-container">
+            <!-- Estatísticas -->
+            <div class="stats-grid mb-4">
+                <div class="stat-card">
+                    <h3>Validações Hoje</h3>
+                    <p>{{ total_validacoes }}</p>
+                </div>
+                <div class="stat-card" style="background-color: #d4edda;">
+                    <h3>Válidas</h3>
+                    <p>{{ validas }}</p>
+                </div>
+                <div class="stat-card" style="background-color: #f8d7da;">
+                    <h3>Inválidas</h3>
+                    <p>{{ invalidas }}</p>
+                </div>
+            </div>
+            
             <div class="form-group">
                 <label for="qr-code-input">Digite o código ou escaneie o QR Code:</label>
                 <input type="text" id="qr-code-input" class="form-control" placeholder="Digite o código ou escaneie o QR Code">
@@ -146,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let html5QrCode = null;
 
     // Função para processar o código
-// Função para processar o código
 async function processCode(code) {
     try {
         const response = await fetch('', {
@@ -160,13 +203,21 @@ async function processCode(code) {
         });
         
         const data = await response.json();
+        console.log('Resposta da API:', data); // Debug
         
         if (data.valido) {
-            const userName = data.usuario?.nome || 'Usuário não identificado';
-            showResult(`Passe válido para: ${userName}`, 'success');
+            // Obtém o nome do usuário da resposta da API
+            const userName = data.usuario?.nome || data.mensagem?.split('para: ')[1]?.split(' (Código:')[0] || 'Usuário não identificado';
             
             // Adiciona o nome do usuário no campo de entrada
             qrInput.value = userName;
+            
+            // Atualiza as estatísticas na interface, se disponíveis
+            if (data.estatisticas) {
+                document.querySelector('.stat-card:nth-child(1) p').textContent = data.estatisticas.total;
+                document.querySelector('.stat-card:nth-child(2) p').textContent = data.estatisticas.validas;
+                document.querySelector('.stat-card:nth-child(3) p').textContent = data.estatisticas.invalidas;
+            }
             
             // Atualiza a interface com os dados do usuário
             if (data.usuario) {
@@ -174,18 +225,20 @@ async function processCode(code) {
                 const userInfo = `
                     <div class="user-info mt-3 p-3 bg-light rounded">
                         <h5>Informações do Usuário:</h5>
-                        <p><strong>Nome:</strong> ${data.usuario.nome || 'Não informado'}</p>
+                        <p><strong>Nome:</strong> ${userName}</p>
                         <p><strong>Email:</strong> ${data.usuario.email || 'Não informado'}</p>
                         <p><strong>Código:</strong> ${data.codigo || 'N/A'}</p>
                         <p><strong>Data/Hora:</strong> ${data.data_validacao || 'Agora'}</p>
                     </div>
                 `;
                 resultDiv.innerHTML = `Passe válido para: <strong>${userName}</strong>${userInfo}`;
-            } else {
                 showResult(`Passe válido para: ${userName}`, 'success');
+            } else {
+                // Se não tiver dados do usuário na resposta, mostra a mensagem retornada
+                showResult(`Passe válido: ${data.mensagem || 'Validação bem-sucedida'}`, 'success');
             }
         } else {
-            showResult(data.mensagem || data.erro || 'Código inválido', 'error');
+            showResult(data.erro || data.mensagem || 'Código inválido', 'error');
         }
         
         // Recarrega a página após 3 segundos para atualizar a lista
