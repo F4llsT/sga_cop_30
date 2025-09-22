@@ -15,7 +15,7 @@ from .admin_views import validar_qr_code
 class PasseFacilAdmin(admin.ModelAdmin):
     list_display = ('user', 'codigo', 'ultima_validacao', 'status_validacao', 'acoes')
     list_filter = ('ativo',)
-    search_fields = ('user__username', 'user__email', 'codigo')
+    search_fields = ('user__email', 'user__nome', 'codigo')
     change_list_template = 'admin/passefacil/change_list.html'
     
     def get_urls(self):
@@ -81,7 +81,7 @@ class PasseFacilAdmin(admin.ModelAdmin):
 class ValidacaoQRCodeAdmin(admin.ModelAdmin):
     list_display = ('passe_facil', 'data_validacao', 'valido', 'ip_address')
     list_filter = ('valido', 'data_validacao')
-    search_fields = ('passe_facil__user__username', 'passe_facil__codigo', 'ip_address')
+    search_fields = ('passe_facil__user__email', 'passe_facil__user__nome', 'passe_facil__codigo', 'ip_address')
     readonly_fields = ('data_validacao', 'ip_address')
     
     def has_add_permission(self, request):

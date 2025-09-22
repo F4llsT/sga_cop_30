@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.utils import timezone
 from .models import PasseFacil, ValidacaoQRCode
 from django.contrib import messages
-from django.db.models import Count
+from django.db.models import Count, OuterRef, Subquery, Prefetch
 from datetime import timedelta
 
 def is_admin(user):
@@ -31,7 +31,7 @@ def admin_dashboard(request):
             ),
             to_attr='ultimas_validacoes'
         )
-    ).order_by('user__first_name', 'user__last_name')
+    ).order_by('user__nome')
     
     # Estatísticas
     agora = timezone.now()
@@ -111,21 +111,27 @@ def validar_qr_code(request):
     
     # Para requisições POST (validação do código)
     codigo = request.POST.get('codigo', '').strip()
-    
+
     if not codigo:
         messages.error(request, 'Nenhum código foi fornecido.')
         return redirect('admin:passefacil_validar_qr_code')
     
     try:
+        # Normaliza o código para UUID (aceita com ou sem hífens)
+        import uuid
         try:
-            passe = PasseFacil.objects.get(codigo=codigo)
+            codigo_uuid = uuid.UUID(codigo)
+        except ValueError:
+            codigo_uuid = uuid.UUID(hex=codigo.replace('-', ''))
+
+        try:
+            passe = PasseFacil.objects.get(codigo=codigo_uuid)
         except PasseFacil.DoesNotExist:
             # Registra tentativa inválida
             ValidacaoQRCode.objects.create(
-                codigo=codigo,
+                codigo=str(codigo),
                 valido=False,
                 ip_address=request.META.get('REMOTE_ADDR', '0.0.0.0'),
-                observacoes='Código não encontrado'
             )
             messages.error(request, f'Código não encontrado: {codigo}')
             return redirect('admin:passefacil_validar_qr_code')
@@ -134,10 +140,9 @@ def validar_qr_code(request):
         if not passe.ativo:
             ValidacaoQRCode.objects.create(
                 passe_facil=passe,
-                codigo=codigo,
+                codigo=str(codigo_uuid),
                 valido=False,
                 ip_address=request.META.get('REMOTE_ADDR', '0.0.0.0'),
-                observacoes='Tentativa de uso de passe inativo'
             )
             messages.error(request, f'Passe inativo para o código: {codigo}')
             return redirect('admin:passefacil_validar_qr_code')
@@ -145,7 +150,7 @@ def validar_qr_code(request):
         # Cria o registro de validação
         validacao = ValidacaoQRCode(
             passe_facil=passe,
-            codigo=codigo,
+            codigo=str(codigo_uuid),
             valido=True,
             ip_address=request.META.get('REMOTE_ADDR', '0.0.0.0')
         )
@@ -156,8 +161,11 @@ def validar_qr_code(request):
         passe.save()
         
         # Prepara a mensagem de sucesso
-        usuario_nome = passe.user.get_full_name() or passe.user.username
-        mensagem = f'Validação realizada com sucesso para: {usuario_nome} (Código: {codigo})'
+        # Preferir campo customizado 'nome'; fallback para get_full_name e, por fim, email
+        user = passe.user
+        usuario_nome = (getattr(user, 'nome', '') or user.get_full_name() or '').strip() or user.email
+        mensagem = f'Validação realizada com sucesso para: {usuario_nome} (Código: {str(codigo_uuid)})'
+        
         messages.success(
             request, 
             mensagem,
@@ -190,14 +198,9 @@ def validar_qr_code(request):
             print(f"- Usuário completo: {passe.user}")
             
             try:
-                # Tenta obter o nome completo do usuário
-                nome_completo = passe.user.get_full_name()
-                print(f"- Nome completo (get_full_name): {nome_completo}")
-                
-                # Se não tiver nome completo, usa o nome de usuário
-                if not nome_completo or nome_completo.strip() == '':
-                    nome_completo = passe.user.username
-                    print(f"- Usando username como nome: {nome_completo}")
+                # Tenta obter o nome preferido
+                nome_completo = (getattr(user, 'nome', '') or user.get_full_name() or '').strip() or user.email
+                print(f"- Nome preferido: {nome_completo}")
                 
                 # Cria o dicionário de resposta com os dados do usuário
                 response_data = {
@@ -206,12 +209,12 @@ def validar_qr_code(request):
                     'usuario': {
                         'id': passe.user.id,
                         'nome': nome_completo,
-                        'username': passe.user.username,
+                        'username': getattr(passe.user, 'username', '') or '',
                         'email': passe.user.email,
                         'first_name': passe.user.first_name or '',
                         'last_name': passe.user.last_name or ''
                     },
-                    'codigo': codigo,
+                    'codigo': str(codigo_uuid),
                     'validacao_id': validacao.id,
                     'data_validacao': validacao.data_validacao.strftime('%d/%m/%Y %H:%M:%S'),
                     'estatisticas': {

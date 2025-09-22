@@ -8,6 +8,7 @@ from .models import PasseFacil, ValidacaoQRCode
 from django.utils import timezone
 import logging
 import io
+import uuid
 import qrcode
 
 logger = logging.getLogger(__name__)
@@ -17,9 +18,22 @@ logger = logging.getLogger(__name__)
 def validar_qr_code(request):
     codigo = request.GET.get('codigo', '')
     ip_address = request.META.get('HTTP_X_FORWARDED_FOR') or request.META.get('REMOTE_ADDR')
-    
+
+    # Validação básica de entrada
+    if not codigo:
+        return JsonResponse({
+            'valido': False,
+            'mensagem': 'Código não fornecido.'
+        }, status=400)
+
     try:
-        passe = PasseFacil.objects.get(codigo=codigo)
+        # Aceita código com ou sem hífens
+        try:
+            codigo_uuid = uuid.UUID(codigo)
+        except ValueError:
+            codigo_uuid = uuid.UUID(hex=codigo.replace('-', ''))
+
+        passe = PasseFacil.objects.get(codigo=codigo_uuid)
         
         # Verifica se o passe está ativo
         if not passe.ativo:
@@ -28,10 +42,14 @@ def validar_qr_code(request):
                 'mensagem': 'Passe Fácil não está ativo.'
             })
             
+        # Dados do usuário (preferindo campo "nome" do usuário customizado)
+        user = passe.user
+        nome_preferido = (getattr(user, 'nome', '') or user.get_full_name() or '').strip() or user.email
+
         # Registra a validação
         validacao = ValidacaoQRCode(
             passe_facil=passe,
-            codigo=codigo,
+            codigo=str(codigo_uuid),
             valido=True,
             ip_address=ip_address
         )
@@ -39,13 +57,19 @@ def validar_qr_code(request):
         
         return JsonResponse({
             'valido': True,
-            'mensagem': f'Passe válido para {passe.user.get_full_name() or passe.user.username}'
+            'mensagem': f'Passe válido para {nome_preferido}',
+            'usuario': {
+                'id': user.id,
+                'nome': nome_preferido,
+                'email': user.email,
+            },
+            'codigo': str(codigo_uuid),
         })
         
     except PasseFacil.DoesNotExist:
         # Registra tentativa de validação inválida
         ValidacaoQRCode.objects.create(
-            codigo=codigo,
+            codigo=str(codigo),
             valido=False,
             ip_address=ip_address
         )
@@ -64,7 +88,7 @@ def validar_qr_code(request):
 def gerar_qr_code_dinamico(request):
     try:
         print("\n=== Iniciando geração de QR Code ===")
-        print(f"Usuário: {request.user.username} (ID: {request.user.id})")
+        print(f"Usuário: {getattr(request.user, 'email', 'sem-email')} (ID: {request.user.id})")
         
         # Obtém ou cria o PasseFacil se não existir
         if not hasattr(request.user, 'passe_facil'):
@@ -149,13 +173,41 @@ def meu_qr_code_view(request):
     
     # Debug: verifica o código atual
     codigo_atual = request.user.passe_facil.codigo
-    print(f"Código atual para o usuário {request.user.username}: {codigo_atual}")
+    nome_preferido = (getattr(request.user, 'nome', '') or request.user.get_full_name() or '').strip() or request.user.email
+    print(f"Código atual para o usuário {nome_preferido}: {codigo_atual}")
     
     # Adiciona o código ao contexto para depuração
     context = {
         'user': request.user,
         'codigo_passe': str(codigo_atual) if codigo_atual else 'NENHUM_CÓDIGO_GERADO',
-        'usuario_nome': request.user.get_full_name() or request.user.username
+        'usuario_nome': nome_preferido
     }
     
     return render(request, 'passefacil/meu_qr_code.html', context)
+
+@login_required
+@require_http_methods(["POST"])
+def atualizar_qr_code(request):
+    """Gera um novo código UUID para o PasseFacil do usuário e retorna JSON.
+    Usado pelo botão 'Atualizar QR Code' no template passe_facil.
+    """
+    try:
+        # Obtém ou cria o passe
+        if not hasattr(request.user, 'passe_facil'):
+            passe = PasseFacil.objects.create(user=request.user, ativo=True, codigo=uuid.uuid4())
+        else:
+            passe = request.user.passe_facil
+
+        # Gera novo código
+        passe.codigo = uuid.uuid4()
+        passe.data_atualizacao = timezone.now()
+        passe.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'novo_codigo': str(passe.codigo).replace('-', ''),
+            'tempo_restante': 60,
+        })
+    except Exception as e:
+        logger.error(f"Erro ao atualizar QR Code: {e}")
+        return JsonResponse({'status': 'error', 'mensagem': 'Falha ao atualizar QR Code'}, status=500)

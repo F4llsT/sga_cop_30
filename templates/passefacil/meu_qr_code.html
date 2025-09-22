@@ -139,9 +139,9 @@
             <div id="debugInfo" style="display: none; margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-family: monospace;">
                 <p><strong>Debug Info:</strong></p>
                 <p>ID do Usuário: {{ user.id }}</p>
-                <p>Nome: {{ user.get_full_name|default:user.username }}</p>
-                <p>Código do Passe: <span id="codigoPasse">{{ request.user.passefacil.codigo }}</span></p>
-                <button onclick="copyToClipboard('{{ request.user.passefacil.codigo }}')" class="btn btn-sm btn-outline-secondary mt-2">
+                <p>Nome: {{ user.nome|default:user.get_full_name|default:user.email }}</p>
+                <p>Código do Passe: <span id="codigoPasse">{{ codigo_passe }}</span></p>
+                <button onclick="copyToClipboard('{{ codigo_passe }}')" class="btn btn-sm btn-outline-secondary mt-2">
                     <i class="fas fa-copy"></i> Copiar Código
                 </button>
             </div>

@@ -155,7 +155,7 @@
                     {% for validacao in ultimas_validacoes|slice:":5" %}
                     <tr>
                         <td>{% if validacao.passe_facil and validacao.passe_facil.user %}
-                            {{ validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.username }}
+                            {{ validacao.passe_facil.user.nome|default:validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.email }}
                             {% else %}
                             Usuário não encontrado
                             {% endif %}

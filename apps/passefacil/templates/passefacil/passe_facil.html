@@ -96,7 +96,11 @@
         
         <div class="qr-code-wrapper">
             <div class="qr-code">
-                <img id="qrCodeImage" src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+                <img id="qrCodeImage" src="" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+                <div id="qrCodePlaceholder" class="text-muted" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                    <i class="fas fa-qrcode fa-3x mb-2"></i>
+                    <p>Clique em "Atualizar QR Code"</p>
+                </div>
             </div>
         </div>
 
@@ -118,7 +122,7 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        let tempoRestante = {{ tempo_restante }};
+        let tempoRestante = parseInt("{{ tempo_restante|default:'60' }}") || 60;
         let intervaloAtualizacao;
         let estaAtualizando = false;
 
@@ -142,26 +146,46 @@
             btnAtualizar.disabled = true;
             btnAtualizar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Atualizando...';
             
-            fetch("{% url 'passefacil:atualizar_qr_code' %}", {
+            fetch("{% url 'passefacil:gerar_qr_code_dinamico' %}", {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': '{{ csrf_token }}',
                     'Content-Type': 'application/x-www-form-urlencoded',
                 }
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    document.getElementById('qrCodeImage').src = 
-                        `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${data.novo_codigo}`;
-                    tempoRestante = data.tempo_restante;
-                    document.getElementById('tempoRestante').textContent = tempoRestante;
-                    
-                    // Efeito visual de atualização
-                    const qrCode = document.querySelector('.qr-code');
-                    qrCode.style.animation = 'fadeIn 0.5s';
-                    setTimeout(() => qrCode.style.animation = '', 500);
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro na resposta do servidor');
                 }
+                return response.json();
+            })
+            .then(data => {
+                const qrCodeImage = document.getElementById('qrCodeImage');
+                const qrCodePlaceholder = document.getElementById('qrCodePlaceholder');
+                
+                if (data.qr_code) {
+                    // Se recebermos um QR code em base64
+                    qrCodeImage.src = `data:image/png;base64,${data.qr_code}`;
+                    qrCodeImage.style.display = 'block';
+                    qrCodePlaceholder.style.display = 'none';
+                } else if (data.codigo) {
+                    // Se recebermos apenas o código, geramos o QR code no frontend
+                    qrCodeImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${data.codigo}`;
+                    qrCodeImage.style.display = 'block';
+                    qrCodePlaceholder.style.display = 'none';
+                }
+                if (data.tempo_restante) {
+                    tempoRestante = data.tempo_restante;
+                } else {
+                    // Valor padrão caso não venha no retorno
+                    tempoRestante = 60;
+                }
+                document.getElementById('tempoRestante').textContent = tempoRestante;
+                
+                // Efeito visual de atualização
+                const qrCode = document.querySelector('.qr-code');
+                qrCode.style.animation = 'fadeIn 0.5s';
+                setTimeout(() => qrCode.style.animation = '', 500);
             })
             .catch(error => {
                 console.error('Erro ao atualizar QR Code:', error);
@@ -173,8 +197,10 @@
             });
         }
 
-        // Iniciar contador
-        intervaloAtualizacao = setInterval(atualizarTempo, 1000);
+        // Iniciar contador apenas se tivermos um tempo definido
+        if (tempoRestante > 0) {
+            intervaloAtualizacao = setInterval(atualizarTempo, 1000);
+        }
 
         // Atualizar manualmente
         document.getElementById('btnAtualizar').addEventListener('click', function(e) {
@@ -184,21 +210,35 @@
             }
         });
 
-        // Adicionar animação de fadeIn
+        // Adicionar estilos dinâmicos
         const style = document.createElement('style');
         style.textContent = `
             @keyframes fadeIn {
-                from { opacity: 0.5; transform: scale(0.95); }
+                from { opacity: 0; transform: scale(0.95); }
                 to { opacity: 1; transform: scale(1); }
             }
             .qr-code {
-                transition: transform 0.3s ease;
+                transition: all 0.3s ease;
+                animation: fadeIn 0.5s ease-out;
             }
             .qr-code:hover {
                 transform: scale(1.02);
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            }
+            .qr-code img {
+                border-radius: 4px;
             }
         `;
         document.head.appendChild(style);
+        
+        // Carregar o QR code inicial se não estiver carregado
+        if (!document.getElementById('qrCodeImage').src) {
+            atualizarQRCode();
+        }
+        // Carregar o QR code inicial se não estiver carregado
+        if (!document.getElementById('qrCodeImage').src) {
+            atualizarQRCode();
+        }
     });
 </script>
 {% endblock %}

@@ -301,7 +301,9 @@
                         <tr>
                             <td>
                                 {% if validacao.passe_facil and validacao.passe_facil.user %}
-                                    <strong>{{ validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.username }}</strong>
+                                    <strong>
+                                        {{ validacao.passe_facil.user.nome|default:validacao.passe_facil.user.get_full_name|default:validacao.passe_facil.user.email }}
+                                    </strong>
                                     <div class="text-muted small">{{ validacao.passe_facil.user.email|default:'' }}</div>
                                 {% else %}
                                     <span class="text-muted">Usuário não encontrado</span>
@@ -321,11 +323,6 @@
                             </td>
                             <td>
                                 <code>{{ validacao.ip_address|default:'N/A' }}</code>
-                                {% if validacao.observacoes %}
-                                <div class="text-muted small mt-1" title="{{ validacao.observacoes }}">
-                                    <i class="fas fa-info-circle"></i> {{ validacao.observacoes|truncatechars:20 }}
-                                </div>
-                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}

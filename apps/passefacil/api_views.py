@@ -10,7 +10,7 @@ from django.views.decorators.vary import vary_on_cookie
 import logging
 
 from .services import PasseFacilService
-from .models import ValidacaoQRCode
+from .models import ValidacaoQRCode, PasseFacil
 
 logger = logging.getLogger(__name__)
 
@@ -43,21 +43,25 @@ class ValidarQRCodeAPIView(APIView):
         try:
             # Valida o código usando o serviço
             valido, mensagem = PasseFacilService.validar_codigo(codigo, request.user)
-            
+
+            # Garante que o usuário possui um PasseFacil para registrar a tentativa
+            passe_facil, _ = PasseFacil.objects.get_or_create(user=request.user, defaults={'ativo': True})
+
             # Registra a tentativa de validação
             ValidacaoQRCode.objects.create(
-                passe_facil=request.user.passe_facil,
+                passe_facil=passe_facil,
                 codigo=codigo,
                 valido=valido,
                 ip_address=ip_address
             )
             
             if valido:
+                nome_preferido = (getattr(request.user, 'nome', '') or request.user.get_full_name() or '').strip() or request.user.email
                 return Response({
                     'valido': True,
                     'mensagem': mensagem,
                     'usuario': {
-                        'nome': request.user.get_full_name(),
+                        'nome': nome_preferido,
                         'email': request.user.email,
                         'matricula': getattr(request.user, 'matricula', '')
                     }
