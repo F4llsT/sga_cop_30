@@ -21,6 +21,12 @@
         background: #f8f9fa;
         border-radius: 8px;
         margin: 1.5rem 0;
+        position: relative;
+        min-height: 400px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
     }
 
     .qr-code {
@@ -40,11 +46,63 @@
     }
 
     .tempo-restante {
-        font-size: 1.25rem;
-        font-weight: 500;
+        font-size: 1.5rem;
+        font-weight: 600;
         color: #2c3e50;
         margin: 1.5rem 0;
         text-align: center;
+        background: #f0f4f8;
+        padding: 1rem 2rem;
+        border-radius: 50px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: inline-block;
+    }
+    
+    .loading-spinner {
+        display: none;
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 1000;
+        transform: translateX(120%);
+        transition: transform 0.3s ease-in-out;
+        max-width: 350px;
+    }
+    
+    .notification.show {
+        transform: translateX(0);
+    }
+    
+    .notification.success {
+        background-color: #2ecc71;
+    }
+    
+    .notification.error {
+        background-color: #e74c3c;
+    }
+    
+    .notification.warning {
+        background-color: #f39c12;
     }
 
     .btn-atualizar {
@@ -94,14 +152,17 @@
     <div class="passe-facil-container">
         <h2 class="text-center mb-4">Passe Fácil</h2>
         
-        <div class="qr-code-wrapper">
-            <div class="qr-code">
-                <img id="qrCodeImage" src="" alt="QR Code" style="width: 100%; height: 100%; object-fit: contain; display: none;">
-                <div id="qrCodePlaceholder" class="text-muted" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
-                    <i class="fas fa-qrcode fa-3x mb-2"></i>
-                    <p>Clique em "Atualizar QR Code"</p>
-                </div>
-            </div>
+        <div id="qrCodeContainer" class="qr-code">
+            {% if qr_code %}
+                <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code Passe Fácil">
+            {% else %}
+                <p>Nenhum QR Code disponível no momento.</p>
+            {% endif %}
+        </div>
+        <div id="loadingSpinner" class="loading-spinner"></div>
+        <div id="qrCodePlaceholder" class="text-muted" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+            <i class="fas fa-qrcode fa-3x mb-2"></i>
+            <p>Clique em "Atualizar QR Code"</p>
         </div>
 
         <div class="tempo-restante">
@@ -130,6 +191,10 @@
             const elemento = document.getElementById('tempoRestante');
             tempoRestante--;
             
+            // Atualizar a barra de progresso
+            const progresso = (tempoRestante / 60) * 100;
+            elemento.style.background = `linear-gradient(90deg, #3498db ${progresso}%, #f0f4f8 ${progresso}%)`;
+            
             if (tempoRestante <= 0) {
                 tempoRestante = 60;
                 if (!estaAtualizando) {
@@ -143,6 +208,16 @@
         function atualizarQRCode() {
             estaAtualizando = true;
             const btnAtualizar = document.getElementById('btnAtualizar');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const qrCodeContainer = document.getElementById('qrCodeContainer');
+            
+            // Mostrar loading e esconder QR Code atual
+            loadingSpinner.style.display = 'block';
+            qrCodeContainer.style.opacity = '0.5';
+            btnAtualizar.disabled = true;
+            
+            // Mostrar notificação
+            showNotification('Atualizando QR Code...', 'warning');
             btnAtualizar.disabled = true;
             btnAtualizar.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Atualizando...';
             
@@ -160,35 +235,27 @@
                 return response.json();
             })
             .then(data => {
-                const qrCodeImage = document.getElementById('qrCodeImage');
-                const qrCodePlaceholder = document.getElementById('qrCodePlaceholder');
+                // Atualizar a imagem do QR Code
+                const qrCodeContainer = document.getElementById('qrCodeContainer');
+                qrCodeContainer.innerHTML = `<img src="data:image/png;base64,${data.qr_code}" alt="QR Code Passe Fácil">`;
                 
-                if (data.qr_code) {
-                    // Se recebermos um QR code em base64
-                    qrCodeImage.src = `data:image/png;base64,${data.qr_code}`;
-                    qrCodeImage.style.display = 'block';
-                    qrCodePlaceholder.style.display = 'none';
-                } else if (data.codigo) {
-                    // Se recebermos apenas o código, geramos o QR code no frontend
-                    qrCodeImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${data.codigo}`;
-                    qrCodeImage.style.display = 'block';
-                    qrCodePlaceholder.style.display = 'none';
-                }
-                if (data.tempo_restante) {
-                    tempoRestante = data.tempo_restante;
-                } else {
-                    // Valor padrão caso não venha no retorno
-                    tempoRestante = 60;
-                }
-                document.getElementById('tempoRestante').textContent = tempoRestante;
+                // Resetar e esconder loading
+                loadingSpinner.style.display = 'none';
+                qrCodeContainer.style.opacity = '1';
+                btnAtualizar.disabled = false;
                 
-                // Efeito visual de atualização
-                const qrCode = document.querySelector('.qr-code');
-                qrCode.style.animation = 'fadeIn 0.5s';
-                setTimeout(() => qrCode.style.animation = '', 500);
+                // Mostrar notificação de sucesso
+                showNotification('QR Code atualizado com sucesso!', 'success');
             })
             .catch(error => {
                 console.error('Erro ao atualizar QR Code:', error);
+                estaAtualizando = false;
+                loadingSpinner.style.display = 'none';
+                qrCodeContainer.style.opacity = '1';
+                btnAtualizar.disabled = false;
+                
+                // Mostrar notificação de erro
+                showNotification('Erro ao atualizar o QR Code. Tente novamente.', 'error');
             })
             .finally(() => {
                 estaAtualizando = false;
@@ -210,6 +277,28 @@
             }
         });
 
+        // Função para mostrar notificação
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Forçar reflow
+            void notification.offsetWidth;
+            
+            // Mostrar notificação
+            notification.classList.add('show');
+            
+            // Remover notificação após 5 segundos
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 5000);
+        }
+        
         // Adicionar estilos dinâmicos
         const style = document.createElement('style');
         style.textContent = `
@@ -220,6 +309,8 @@
             .qr-code {
                 transition: all 0.3s ease;
                 animation: fadeIn 0.5s ease-out;
+                max-width: 300px;
+                margin: 0 auto;
             }
             .qr-code:hover {
                 transform: scale(1.02);
@@ -227,16 +318,14 @@
             }
             .qr-code img {
                 border-radius: 4px;
-            }
-        `;
+                max-width: 100%;
+                height: auto;
+            }`;
         document.head.appendChild(style);
         
         // Carregar o QR code inicial se não estiver carregado
-        if (!document.getElementById('qrCodeImage').src) {
-            atualizarQRCode();
-        }
-        // Carregar o QR code inicial se não estiver carregado
-        if (!document.getElementById('qrCodeImage').src) {
+        const qrCodeImage = document.querySelector('#qrCodeContainer img');
+        if (!qrCodeImage || !qrCodeImage.src) {
             atualizarQRCode();
         }
     });
