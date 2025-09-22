@@ -178,23 +178,67 @@ def validar_qr_code(request):
         
         # Se for uma requisição AJAX, retorna JSON
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'valido': True,
-                'mensagem': f'Passe válido para {usuario_nome}',
-                'usuario': {
-                    'nome': usuario_nome,
-                    'email': passe.user.email,
-                    'id': passe.user.id
-                },
-                'codigo': codigo,
-                'validacao_id': validacao.id,
-                'data_validacao': validacao.data_validacao.strftime('%d/%m/%Y %H:%M:%S'),
-                'estatisticas': {
-                    'total': total_validacoes,
-                    'validas': validas,
-                    'invalidas': invalidas
+            # Garante que temos o nome do usuário
+            if not usuario_nome or usuario_nome == '':
+                usuario_nome = f"Usuário {passe.user.id}"
+            
+            # Log para depuração
+            print("\n[DEBUG] Dados do usuário a serem retornados:")
+            print(f"- Nome: {usuario_nome}")
+            print(f"- Email: {passe.user.email}")
+            print(f"- ID: {passe.user.id}")
+            print(f"- Usuário completo: {passe.user}")
+            
+            try:
+                # Tenta obter o nome completo do usuário
+                nome_completo = passe.user.get_full_name()
+                print(f"- Nome completo (get_full_name): {nome_completo}")
+                
+                # Se não tiver nome completo, usa o nome de usuário
+                if not nome_completo or nome_completo.strip() == '':
+                    nome_completo = passe.user.username
+                    print(f"- Usando username como nome: {nome_completo}")
+                
+                # Cria o dicionário de resposta com os dados do usuário
+                response_data = {
+                    'valido': True,
+                    'mensagem': f'Passe válido para {nome_completo}',
+                    'usuario': {
+                        'id': passe.user.id,
+                        'nome': nome_completo,
+                        'username': passe.user.username,
+                        'email': passe.user.email,
+                        'first_name': passe.user.first_name or '',
+                        'last_name': passe.user.last_name or ''
+                    },
+                    'codigo': codigo,
+                    'validacao_id': validacao.id,
+                    'data_validacao': validacao.data_validacao.strftime('%d/%m/%Y %H:%M:%S'),
+                    'estatisticas': {
+                        'total': total_validacoes,
+                        'validas': validas,
+                        'invalidas': invalidas
+                    }
                 }
-            })
+                
+                # Log da resposta completa
+                print("\n[DEBUG] Resposta JSON a ser enviada:")
+                import json
+                print(json.dumps(response_data, indent=2, ensure_ascii=False))
+                
+                return JsonResponse(response_data)
+                
+            except Exception as e:
+                print(f"\n[ERRO] Ao preparar resposta JSON: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                
+                # Resposta de erro em caso de falha
+                return JsonResponse({
+                    'valido': False,
+                    'erro': 'Erro ao processar os dados do usuário',
+                    'detalhes': str(e)
+                }, status=500)
             
         return redirect('admin:passefacil_validar_qr_code')
         

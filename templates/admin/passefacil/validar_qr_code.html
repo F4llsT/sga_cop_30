@@ -202,12 +202,113 @@ async function processCode(code) {
             body: `codigo=${encodeURIComponent(code)}`
         });
         
-        const data = await response.json();
-        console.log('Resposta da API:', data); // Debug
+        const responseData = await response.text();
+        console.log('Resposta bruta da API:', responseData);
+        
+        let data;
+        try {
+            data = JSON.parse(responseData);
+            console.log('Resposta da API (parseada):', data);
+            
+            // Verifica se o objeto usuário está presente
+            if (data && data.usuario) {
+                console.log('Dados do usuário encontrados:', data.usuario);
+                console.log('Tipo do objeto usuário:', typeof data.usuario);
+                console.log('Chaves do objeto usuário:', Object.keys(data.usuario));
+                console.log('Nome do usuário (acesso direto):', data.usuario.nome);
+                console.log('Email do usuário (acesso direto):', data.usuario.email);
+                
+                // Tenta acessar as propriedades de forma dinâmica
+                for (let key in data.usuario) {
+                    console.log(`Propriedade ${key}:`, data.usuario[key]);
+                }
+            } else {
+                console.log('Nenhum dado de usuário encontrado na resposta');
+                console.log('Conteúdo completo da resposta:', data);
+            }
+        } catch (e) {
+            console.error('Erro ao fazer parse da resposta JSON:', e);
+            console.error('Conteúdo que causou o erro:', responseData);
+            showResult('Erro ao processar a resposta do servidor', 'error');
+            return;
+        }
+        
+        // Garante que data é um objeto
+        if (!data) {
+            console.error('Resposta inválida da API');
+            showResult('Resposta inválida do servidor', 'error');
+            return;
+        }
         
         if (data.valido) {
-            // Obtém o nome do usuário da resposta da API
-            const userName = data.usuario?.nome || data.mensagem?.split('para: ')[1]?.split(' (Código:')[0] || 'Usuário não identificado';
+            // Log detalhado do objeto data
+            console.log('Dados recebidos:', data);
+            
+            // Tenta obter o nome do usuário de diferentes formas
+            let userName = 'Usuário não identificado';
+            
+            // 1. Tenta extrair da mensagem primeiro (pode ser mais confiável)
+            if (data.mensagem) {
+                console.log('Tentando extrair nome da mensagem:', data.mensagem);
+                
+                // Tenta diferentes padrões para extrair o nome
+                let match = data.mensagem.match(/para:?\s*([^(]+)/i);
+                if (match && match[1]) {
+                    userName = match[1].trim();
+                    console.log('Nome extraído da mensagem (padrão 1):', userName);
+                } else {
+                    // Tenta outro padrão
+                    match = data.mensagem.match(/Passe válido para ([^,]+)/i);
+                    if (match && match[1]) {
+                        userName = match[1].trim();
+                        console.log('Nome extraído da mensagem (padrão 2):', userName);
+                    } else {
+                        // Se não encontrar, pega as primeiras palavras
+                        const parts = data.mensagem.split(' ');
+                        if (parts.length > 2) {
+                            userName = parts.slice(0, 3).join(' ');
+                            console.log('Nome extraído das primeiras palavras:', userName);
+                        }
+                    }
+                }
+            }
+            
+            // 2. Se ainda não encontrou, tenta obter do objeto usuario
+            if ((!userName || userName === 'Usuário não identificado') && data.usuario) {
+                console.log('Tentando obter nome do objeto usuario:', data.usuario);
+                
+                // Ordem de prioridade para buscar o nome
+                const possibleNameFields = [
+                    'nome', 'name', 'username', 'first_name', 'email'
+                ];
+                
+                for (const field of possibleNameFields) {
+                    if (data.usuario[field]) {
+                        userName = data.usuario[field];
+                        console.log(`Nome encontrado em usuario.${field}:`, userName);
+                        
+                        // Se for email, extrai a parte antes do @
+                        if (field === 'email' && userName.includes('@')) {
+                            userName = userName.split('@')[0];
+                            console.log('Nome extraído do email:', userName);
+                        }
+                        
+                        // Se encontrou um nome, para de procurar
+                        if (userName && userName.trim() !== '') {
+                            break;
+                        }
+                    }
+                }
+                
+                // Se ainda não encontrou, tenta combinar first_name e last_name
+                if ((!userName || userName === 'Usuário não identificado') && 
+                    (data.usuario.first_name || data.usuario.last_name)) {
+                    userName = `${data.usuario.first_name || ''} ${data.usuario.last_name || ''}`.trim();
+                    console.log('Nome combinado de first_name e last_name:', userName);
+                }
+            }
+            
+            console.log('Nome do usuário a ser exibido:', userName);
             
             // Adiciona o nome do usuário no campo de entrada
             qrInput.value = userName;
@@ -219,24 +320,56 @@ async function processCode(code) {
                 document.querySelector('.stat-card:nth-child(3) p').textContent = data.estatisticas.invalidas;
             }
             
-            // Atualiza a interface com os dados do usuário
+            // Prepara as informações adicionais do usuário, se disponíveis
+            let userInfo = '';
+            let email = 'Não informado';
+            let userId = 'N/A';
+            
             if (data.usuario) {
+                // Tenta obter o email de diferentes campos
+                email = data.usuario.email || data.usuario.mail || 'Não informado';
+                userId = data.usuario.id || 'N/A';
+                
                 // Exibe mais informações do usuário
-                const userInfo = `
+                userInfo = `
                     <div class="user-info mt-3 p-3 bg-light rounded">
                         <h5>Informações do Usuário:</h5>
+                        <p><strong>ID:</strong> ${userId}</p>
                         <p><strong>Nome:</strong> ${userName}</p>
-                        <p><strong>Email:</strong> ${data.usuario.email || 'Não informado'}</p>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Usuário:</strong> ${data.usuario.username || 'N/A'}</p>
                         <p><strong>Código:</strong> ${data.codigo || 'N/A'}</p>
                         <p><strong>Data/Hora:</strong> ${data.data_validacao || 'Agora'}</p>
+                        <div class="mt-2 p-2 bg-white rounded">
+                            <small class="text-muted">Dados completos:</small>
+                            <pre class="small p-2 bg-light border rounded" style="max-height: 150px; overflow: auto;">${JSON.stringify(data.usuario, null, 2)}</pre>
+                        </div>
                     </div>
                 `;
-                resultDiv.innerHTML = `Passe válido para: <strong>${userName}</strong>${userInfo}`;
-                showResult(`Passe válido para: ${userName}`, 'success');
             } else {
-                // Se não tiver dados do usuário na resposta, mostra a mensagem retornada
-                showResult(`Passe válido: ${data.mensagem || 'Validação bem-sucedida'}`, 'success');
+                // Se não tiver dados do usuário, mostra apenas as informações básicas
+                userInfo = `
+                    <div class="user-info mt-3 p-3 bg-light rounded">
+                        <h5>Informações da Validação:</h5>
+                        <p><strong>Código:</strong> ${data.codigo || 'N/A'}</p>
+                        <p><strong>Data/Hora:</strong> ${data.data_validacao || 'Agora'}</p>
+                        <p class="text-muted">Detalhes adicionais do usuário não disponíveis.</p>
+                    </div>
+                `;
             }
+            
+            // Atualiza a interface
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h4 class="alert-heading">Passe Válido!</h4>
+                    <p>Usuário: <strong>${userName}</strong></p>
+                    ${data.mensagem ? `<p class="mb-0">${data.mensagem}</p>` : ''}
+                </div>
+                ${userInfo}
+            `;
+            
+            // Mostra o resultado
+            showResult(`Passe válido para: ${userName}`, 'success');
         } else {
             showResult(data.erro || data.mensagem || 'Código inválido', 'error');
         }
