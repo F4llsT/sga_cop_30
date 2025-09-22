@@ -193,14 +193,25 @@ async function startScanner() {
                     const data = await response.json();
                     
                     if (data.valido) {
+                        // Debug: log the full response
+                        console.log('Resposta da API:', data);
+                        
+                        // Get user info or use defaults
+                        const userName = data.usuario?.nome || 'Usuário não identificado';
+                        const userId = data.usuario?.id || 'N/A';
+                        const userEmail = data.usuario?.email || 'Sem e-mail';
+                        
                         // Validação bem-sucedida
                         resultDiv.innerHTML = `
                             <div class="alert alert-success">
                                 <i class="fas fa-check-circle me-2"></i>
-                                <strong>Válido!</strong> ${data.mensagem}
+                                <strong>Validação bem-sucedida!</strong>
                                 <div class="mt-2">
-                                    <small class="d-block">Usuário: ${data.usuario.nome}</small>
-                                    <small class="d-block">Data: ${data.data_validacao}</small>
+                                    <small class="d-block"><strong>Usuário:</strong> ${userName}</small>
+                                    <small class="d-block"><strong>ID:</strong> ${userId}</small>
+                                    <small class="d-block"><strong>E-mail:</strong> ${userEmail}</small>
+                                    <small class="d-block"><strong>Código:</strong> ${data.codigo || 'N/A'}</small>
+                                    <small class="d-block"><strong>Data/Hora:</strong> ${data.data_validacao || new Date().toLocaleString()}</small>
                                 </div>
                             </div>
                         `;
