@@ -27,10 +27,19 @@
     <!-- Scanner QR Code -->
     <div class="scanner-section">
         <h2>Validar QR Code</h2>
-        <button id="startScanner" class="btn btn-primary">Ativar Câmera</button>
-        <div id="scanner-container" style="display: none; margin: 20px 0;">
-            <div id="reader" style="width: 300px; margin: 0 auto;"></div>
-            <div id="scanner-result"></div>
+        <button id="startScanner" class="btn btn-primary">
+            <i class="fas fa-camera me-2"></i> Ativar Câmera
+        </button>
+        <div id="scanner-container" style="display: none; margin: 20px 0; text-align: center;">
+            <div id="reader" style="width: 300px; margin: 0 auto; border: 2px solid #ddd; border-radius: 8px; overflow: hidden;"></div>
+            <div id="scanner-result" class="mt-3 p-3" style="min-height: 50px; border-radius: 4px; background-color: #f8f9fa;">
+                <p class="text-muted mb-0">Aponte a câmera para o QR Code</p>
+            </div>
+            <div class="mt-3">
+                <button id="stopScanner" class="btn btn-outline-danger" style="display: none;">
+                    <i class="fas fa-stop me-2"></i> Parar Scanner
+                </button>
+            </div>
         </div>
     </div>
 
@@ -129,69 +138,157 @@
 </style>
 
 <script>
-let html5QrcodeScanner;
+let html5QrcodeScanner = null;
+const startButton = document.getElementById('startScanner');
+const stopButton = document.getElementById('stopScanner');
+const container = document.getElementById('scanner-container');
+const resultDiv = document.getElementById('scanner-result');
 
-document.getElementById('startScanner').addEventListener('click', function() {
-    const container = document.getElementById('scanner-container');
-    const button = document.getElementById('startScanner');
-    
-    if (container.style.display === 'none') {
-        // Iniciar o scanner
+// Função para iniciar o scanner
+async function startScanner() {
+    try {
+        // Mostra o container e os botões
         container.style.display = 'block';
-        button.textContent = 'Desativar Câmera';
+        startButton.style.display = 'none';
+        stopButton.style.display = 'inline-block';
+        
+        // Limpa resultados anteriores
+        resultDiv.innerHTML = '<p class="text-muted mb-0">Aguardando leitura do QR Code...</p>';
+        resultDiv.style.color = 'inherit';
         
         // Inicializa o scanner
         html5QrcodeScanner = new Html5QrcodeScanner(
             "reader", 
             { 
                 fps: 10, 
-                qrbox: 250 
+                qrbox: 250,
+                aspectRatio: 1.0
             },
             /* verbose= */ false
         );
         
-        html5QrcodeScanner.render((decodedText, decodedResult) => {
-            // Quando um QR Code for lido
-            const resultDiv = document.getElementById('scanner-result');
-            resultDiv.innerHTML = `Lendo: ${decodedText}`;
-            
-            // Aqui você pode adicionar uma chamada AJAX para validar o QR Code
-            fetch(`/api/validar-qr-code/?codigo=${encodeURIComponent(decodedText)}`, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.valido) {
-                    resultDiv.innerHTML = `✅ ${data.mensagem}`;
-                    resultDiv.style.color = 'green';
+        // Renderiza o scanner
+        html5QrcodeScanner.render(
+            // Callback de sucesso
+            async (decodedText, decodedResult) => {
+                console.log('QR Code lido:', decodedText);
+                
+                // Mostra mensagem de processamento
+                resultDiv.innerHTML = '<div class="text-info"><i class="fas fa-spinner fa-spin me-2"></i> Validando código...</div>';
+                
+                try {
+                    // Envia o código para validação
+                    const formData = new FormData();
+                    formData.append('codigo', decodedText);
+                    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
                     
-                    // Recarrega a página após 1.5 segundos para atualizar a lista
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1500);
-                } else {
-                    resultDiv.innerHTML = `❌ ${data.mensagem}`;
-                    resultDiv.style.color = 'red';
+                    const response = await fetch(`/passefacil/api/validar-qr-code/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: new URLSearchParams(formData)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.valido) {
+                        // Validação bem-sucedida
+                        resultDiv.innerHTML = `
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <strong>Válido!</strong> ${data.mensagem}
+                                <div class="mt-2">
+                                    <small class="d-block">Usuário: ${data.usuario.nome}</small>
+                                    <small class="d-block">Data: ${data.data_validacao}</small>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Recarrega a página após 3 segundos para mostrar a validação na lista
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 3000);
+                    } else {
+                        // Código inválido
+                        let errorMessage = data.erro || 'Código não reconhecido';
+                        if (data.detail) {  // Se houver detalhes adicionais do servidor
+                            errorMessage = data.detail;
+                        }
+                        resultDiv.innerHTML = `
+                            <div class="alert alert-danger">
+                                <i class="fas fa-times-circle me-2"></i>
+                                <strong>Inválido!</strong> ${errorMessage}
+                                <div class="mt-2">
+                                    <small>Data: ${new Date().toLocaleString()}</small>
+                                    ${data.codigo ? `<small class="d-block">Código: ${data.codigo}</small>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }
+                } catch (error) {
+                    console.error('Erro ao validar QR Code:', error);
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Erro ao validar o código. Tente novamente.
+                        </div>
+                    `;
                 }
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                resultDiv.innerHTML = 'Erro ao validar o QR Code';
-                resultDiv.style.color = 'red';
-            });
-        });
-    } else {
-        // Parar o scanner
-        if (html5QrcodeScanner) {
+            },
+            // Callback de erro
+            (error) => {
+                console.error('Erro no scanner:', error);
+                resultDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Erro ao acessar a câmera. Verifique as permissões e tente novamente.
+                    </div>
+                `;
+            }
+        );
+    } catch (error) {
+        console.error('Erro ao iniciar o scanner:', error);
+        resultDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                Não foi possível acessar a câmera. Certifique-se de que você permitiu o acesso à câmera.
+            </div>
+        `;
+        stopScanner();
+    }
+}
+
+// Função para parar o scanner
+function stopScanner() {
+    if (html5QrcodeScanner) {
+        try {
             html5QrcodeScanner.clear().catch(error => {
                 console.error("Falha ao limpar o scanner", error);
             });
+            html5QrcodeScanner = null;
+        } catch (error) {
+            console.error("Erro ao parar o scanner:", error);
         }
-        container.style.display = 'none';
-        button.textContent = 'Ativar Câmera';
+    }
+    
+    // Esconde o container e reseta os botões
+    container.style.display = 'none';
+    startButton.style.display = 'inline-block';
+    stopButton.style.display = 'none';
+    
+    // Limpa o resultado
+    resultDiv.innerHTML = '<p class="text-muted mb-0">Aponte a câmera para o QR Code</p>';
+}
+
+// Event listeners
+startButton.addEventListener('click', startScanner);
+stopButton.addEventListener('click', stopScanner);
+
+// Limpar recursos quando a página for descarregada
+window.addEventListener('beforeunload', () => {
+    if (html5QrcodeScanner) {
+        stopScanner();
     }
 });
 </script>
