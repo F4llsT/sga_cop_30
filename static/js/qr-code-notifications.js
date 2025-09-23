@@ -1,19 +1,31 @@
+// Variável para controlar se já verificamos as validações iniciais
+let initialValidationsChecked = false;
+let lastValidationId = null;
+
 // Função para verificar se o usuário tem notificações de validação pendentes
-function checkForValidations() {
+let isChecking = false;
+
+async function checkForValidations(isInitialCheck = false) {
     // Verifica se o usuário está na página do QR Code
-    if (!document.getElementById('qrStatus')) return;
+    if (!document.getElementById('qrStatus') || isChecking) return;
     
-    // Faz uma requisição para verificar validações recentes
-    // Usa credentials: 'same-origin' para incluir os cookies de sessão
+    isChecking = true;
+    
+    // Se for a verificação inicial, apenas marcamos como verificada e não fazemos nada
+    if (isInitialCheck) {
+        initialValidationsChecked = true;
+        return;
+    }
+    
+    // Se for uma verificação subsequente, verificamos apenas validações novas
     fetch('/api/passefacil/ultimas-validacoes/', {
         method: 'GET',
-        credentials: 'same-origin' // Importante: inclui os cookies de autenticação
+        credentials: 'same-origin'
     })
     .then(response => {
         if (!response.ok) {
             if (response.status === 401) {
                 console.log('Usuário não autenticado. Redirecionando para login...');
-                // Redireciona para a página de login, mantendo a URL atual para redirecionamento posterior
                 window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
                 return null;
             }
@@ -22,31 +34,78 @@ function checkForValidations() {
         return response.json();
     })
     .then(data => {
-        if (!data) return; // Se data for null (usuário não autenticado), sai da função
-            if (data.validacoes && data.validacoes.length > 0) {
-                // Dispara eventos para cada validação recente
-                data.validacoes.forEach(validacao => {
-                    const event = new CustomEvent('qrCodeValidated', {
-                        detail: {
-                            valid: validacao.valido,
-                            timestamp: validacao.data_validacao,
-                            location: validacao.ip_address || 'Local desconhecido'
-                        }
-                    });
-                    document.dispatchEvent(event);
+        if (!data || !data.validacoes || data.validacoes.length === 0) return;
+        
+        // Ordena as validações por data (mais recente primeiro)
+        const sortedValidations = [...data.validacoes].sort((a, b) => 
+            new Date(b.data_validacao) - new Date(a.data_validacao)
+        );
+        
+        // Pega a validação mais recente
+        const latestValidation = sortedValidations[0];
+        
+        // Se for uma validação nova (diferente da última que vimos)
+        if (latestValidation.id !== lastValidationId) {
+            lastValidationId = latestValidation.id;
+            
+            // Só dispara o evento se não for a verificação inicial
+            if (initialValidationsChecked) {
+                const event = new CustomEvent('qrCodeValidated', {
+                    detail: {
+                        valid: latestValidation.valido,
+                        timestamp: latestValidation.data_validacao,
+                        location: latestValidation.ip_address || 'Local desconhecido',
+                        isNew: true
+                    }
                 });
+                document.dispatchEvent(event);
             }
-        })
-        .catch(error => console.error('Erro ao verificar validações:', error));
+        }
+    })
+    .catch(error => console.error('Erro ao verificar validações:', error))
+    .finally(() => {
+        isChecking = false;
+    });
 }
 
-// Verifica por validações a cada 30 segundos
-setInterval(checkForValidations, 30000);
+// Variável para controlar o timer de verificação
+let validationCheckTimer = null;
+
+// Função para iniciar a verificação periódica
+function startValidationChecks() {
+    // Limpa qualquer timer existente
+    if (validationCheckTimer) {
+        clearInterval(validationCheckTimer);
+    }
+    
+    // Verifica a cada 30 segundos (aumentado para reduzir carga)
+    validationCheckTimer = setInterval(() => checkForValidations(false), 30000);
+}
 
 // Verifica por validações quando a página é carregada
 document.addEventListener('DOMContentLoaded', function() {
-    // Verifica após um pequeno atraso para garantir que o DOM esteja totalmente carregado
-    setTimeout(checkForValidations, 2000);
+    // Marca a verificação inicial, mas não dispara notificações
+    checkForValidations(true);
+    
+    // Inicia a verificação periódica após um atraso
+    setTimeout(startValidationChecks, 5000);
+    
+    // Pausa as verificações quando a aba não está visível
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            if (validationCheckTimer) {
+                clearInterval(validationCheckTimer);
+                validationCheckTimer = null;
+            }
+        } else {
+            // Retoma as verificações quando a aba se torna visível novamente
+            if (!validationCheckTimer) {
+                startValidationChecks();
+                // Força uma verificação imediata ao voltar para a aba
+                setTimeout(() => checkForValidations(false), 1000);
+            }
+        }
+    });
     
     // Adiciona um listener para o evento de validação do QR Code
     document.addEventListener('qrCodeValidated', function(event) {
