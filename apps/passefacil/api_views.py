@@ -89,17 +89,75 @@ class GerarQRCodeAPIView(APIView):
     def get(self, request, format=None):
         """Gera um novo QR Code para o usuário"""
         try:
-            # Gera o QR Code usando o serviço
-            qr_code_data = PasseFacilService.gerar_qr_code(request.user)
+            # Obtém ou cria o passe do usuário
+            passe, created = PasseFacil.objects.get_or_create(
+                user=request.user,
+                defaults={'ativo': True}
+            )
+            
+            # Se o passe existe mas está inativo, ativa
+            if not passe.ativo:
+                passe.ativo = True
+                passe.save()
+            
+            # Gera um novo código
+            novo_codigo = passe.gerar_novo_codigo()
             
             return Response({
-                'qr_code': qr_code_data,
-                'validade_segundos': PasseFacilService.TOTP_INTERVAL
+                'status': 'success',
+                'codigo': str(novo_codigo),
+                'data_atualizacao': passe.data_atualizacao.isoformat(),
+                'novo': created
             })
             
         except Exception as e:
             logger.error(f"Erro ao gerar QR Code: {str(e)}")
             return Response(
                 {'erro': 'Erro ao gerar QR Code'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class UltimasValidacoesAPIView(APIView):
+    """
+    API para buscar as validações recentes do usuário
+    """
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, format=None):
+        """Retorna as últimas validações do usuário"""
+        try:
+            # Obtém o passe do usuário
+            passe = PasseFacil.objects.filter(user=request.user).first()
+            if not passe:
+                return Response({
+                    'status': 'success',
+                    'validacoes': []
+                })
+            
+            # Busca as últimas 5 validações
+            validacoes = ValidacaoQRCode.objects.filter(
+                passe_facil=passe,
+                valido=True
+            ).order_by('-data_validacao')[:5]
+            
+            # Formata os dados para a resposta
+            validacoes_data = [{
+                'id': v.id,
+                'data_validacao': v.data_validacao.isoformat(),
+                'valido': v.valido,
+                'ip_address': v.ip_address or 'Local desconhecido'
+            } for v in validacoes]
+            
+            return Response({
+                'status': 'success',
+                'validacoes': validacoes_data
+            })
+            
+        except Exception as e:
+            logger.error(f"Erro ao buscar validações: {str(e)}")
+            return Response(
+                {'erro': 'Erro ao buscar validações'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

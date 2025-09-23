@@ -16,4 +16,5 @@ urlpatterns = [
     # API Passe Fácil
     path('validar-qr/', api_views.ValidarQRCodeAPIView.as_view(), name='validar_qr'),
     path('gerar-qr/', api_views.GerarQRCodeAPIView.as_view(), name='gerar_qr'),
+    path('ultimas-validacoes/', api_views.UltimasValidacoesAPIView.as_view(), name='ultimas_validacoes'),
 ]

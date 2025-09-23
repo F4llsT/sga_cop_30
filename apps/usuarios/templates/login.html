@@ -14,9 +14,10 @@
     <div class="container">
         <!-- Formulário de Login -->
         <div class="forma-box login">
-            <form method="post" action="{% url 'usuarios:login' %}">
+            <form id="login-form" method="post" action="{% url 'usuarios:login' %}">
                 {% csrf_token %}
                 <h1>Entrar</h1>
+                <div id="login-error" class="alert alert-error" style="display: none; margin-bottom: 15px;"></div>
                 
                 {% if messages %}
                     {% for message in messages %}
@@ -132,6 +133,50 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        // Função para armazenar o token JWT
+        function setAuthToken(access, refresh = null) {
+            if (access) {
+                localStorage.setItem('access_token', access);
+                // Define o token como cookie também, para compatibilidade
+                document.cookie = `access_token=${access}; path=/; max-age=86400`; // 24 horas
+            }
+            if (refresh) {
+                localStorage.setItem('refresh_token', refresh);
+                document.cookie = `refresh_token=${refresh}; path=/; max-age=604800`; // 7 dias
+            }
+        }
+
+        // Função para fazer login via API
+        async function loginUser(email, password) {
+            try {
+                const response = await fetch('/api/token/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Erro ao fazer login');
+                }
+
+                const data = await response.json();
+                setAuthToken(data.access, data.refresh);
+                
+                return data;
+            } catch (error) {
+                console.error('Erro no login:', error);
+                throw error;
+            }
+        }
+
+        // Elementos da interface
         const container = document.querySelector('.container');
         const registrarBtn = document.querySelector('.registrar-btn');
         const entrarBtn = document.querySelector('.entrar-btn');
@@ -150,6 +195,45 @@
         function clearRegisterErrors() {
             const messages = document.getElementById('registerMessages');
             if (messages) messages.innerHTML = '';
+        }
+
+        // Elementos do formulário
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+
+        // Event listener para o formulário de login
+        if (loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = loginForm.querySelector('input[name="username"]').value;
+                const password = loginForm.querySelector('input[name="password"]').value;
+                const submitButton = loginForm.querySelector('button[type="submit"]');
+                
+                try {
+                    // Mostrar loading
+                    const originalButtonText = submitButton.innerHTML;
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Entrando...';
+                    
+                    // Fazer login
+                    await loginUser(email, password);
+                    
+                    // Redirecionar para a página inicial após login bem-sucedido
+                    window.location.href = '/';
+                    
+                } catch (error) {
+                    console.error('Erro no login:', error);
+                    if (loginError) {
+                        loginError.textContent = error.message || 'Erro ao fazer login. Verifique suas credenciais.';
+                        loginError.style.display = 'block';
+                    }
+                    
+                    // Restaurar botão
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = 'Entrar';
+                }
+            });
         }
 
         // Alternar para o formulário de registro

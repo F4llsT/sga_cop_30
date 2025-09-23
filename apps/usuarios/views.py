@@ -47,17 +47,40 @@ class LoginView(BaseLoginView):
         """
         O usuário foi autenticado com sucesso.
         """
+        from rest_framework_simplejwt.tokens import RefreshToken
+        from django.http import JsonResponse
+        
         # Obtém o usuário autenticado
         user = form.get_user()
         
-        # Faz o login do usuário
+        # Faz o login do usuário na sessão
         login(self.request, user)
+        
+        # Gera os tokens JWT
+        refresh = RefreshToken.for_user(user)
         
         # Mensagem de boas-vindas personalizada
         messages.success(self.request, f'Bem-vindo(a) de volta, {user.nome}!')
         
-        # Redireciona para a página de sucesso
-        return super().form_valid(form)
+        # Verifica se é uma requisição AJAX (para API)
+        if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'nome': user.nome
+                }
+            })
+        
+        # Para requisições normais, armazena o token no localStorage via JavaScript
+        response = super().form_valid(form)
+        response.set_cookie('access_token', str(refresh.access_token), httponly=True, max_age=86400)  # 24 horas
+        response.set_cookie('refresh_token', str(refresh), httponly=True, max_age=604800)  # 7 dias
+        
+        return response
     
     def form_invalid(self, form):
         """

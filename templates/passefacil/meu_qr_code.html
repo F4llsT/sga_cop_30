@@ -60,6 +60,38 @@
         border-radius: 8px;
         display: none;
         animation: fadeIn 0.5s ease-in-out;
+        position: relative;
+        min-height: 300px;
+    }
+
+    .loading-overlay {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 10;
+        border-radius: 8px;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 1rem;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
     #qrCodeImage {
@@ -87,11 +119,6 @@
 
     .qr-code-info strong {
         font-weight: 600;
-    }
-
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
     }
 
     .qr-code-footer {
@@ -133,17 +160,14 @@
         </button>
 
         <div class="qr-code-placeholder" id="qrCodeContainer">
-            <img id="qrCodeImage" src="" alt="QR Code de Validação" style="display: none; max-width: 100%;">
-            <p id="qrCodeStatus" class="text-muted">Clique no botão abaixo para exibir seu QR Code</p>
-            <!-- Debug info -->
-            <div id="debugInfo" style="display: none; margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px; font-family: monospace;">
-                <p><strong>Debug Info:</strong></p>
-                <p>ID do Usuário: {{ user.id }}</p>
-                <p>Nome: {{ user.nome|default:user.get_full_name|default:user.email }}</p>
-                <p>Código do Passe: <span id="codigoPasse">{{ codigo_passe }}</span></p>
-                <button onclick="copyToClipboard('{{ codigo_passe }}')" class="btn btn-sm btn-outline-secondary mt-2">
-                    <i class="fas fa-copy"></i> Copiar Código
-                </button>
+            <div id="loadingOverlay" class="loading-overlay">
+                <div class="spinner"></div>
+                <p>Gerando seu QR Code...</p>
+            </div>
+            <img id="qrCodeImage" src="" alt="Seu QR Code">
+            <div class="qr-code-info">
+                <p><strong>Última atualização:</strong> <span id="lastUpdated">Agora mesmo</span></p>
+                <p><strong>Status:</strong> <span id="qrStatus">Pronto para uso</span></p>
             </div>
         </div>
 
@@ -173,41 +197,88 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicialmente esconde o container do QR Code
     container.style.display = 'none';
     
+    // Função para mostrar o loading
+    function showLoading() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const qrStatus = document.getElementById('qrStatus');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'flex';
+            qrStatus.textContent = 'Gerando novo código...';
+            qrStatus.style.color = '#e67e22';
+        }
+    }
+    
+    // Função para esconder o loading
+    function hideLoading() {
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const qrStatus = document.getElementById('qrStatus');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+            qrStatus.textContent = 'Pronto para uso';
+            qrStatus.style.color = '#27ae60';
+        }
+    }
+    
+    // Configura o evento de clique no botão
     toggleButton.addEventListener('click', function() {
         console.log('Botão clicado');
         
-        if (container.style.display === 'none' || container.style.display === '') {
-            console.log('Mostrando QR Code...');
+        if (container.style.display === 'none') {
+            console.log('Mostrando QR Code');
             
-            // Sempre carrega uma nova imagem para evitar problemas de cache
-            qrImage.src = getQrCodeUrl();
+            // Mostra o loading
+            showLoading();
             
-            // Mostra o container imediatamente
+            // Atualiza a URL com um timestamp para evitar cache
+            const timestamp = new Date().getTime();
+            qrImage.src = getQrCodeUrl() + '&t=' + timestamp;
+            
             container.style.display = 'block';
-            toggleButton.innerHTML = '<i class="fas fa-sync-alt fa-spin me-2"></i> Carregando...';
+            toggleButton.innerHTML = '<i class="fas fa-sync-alt me-2"></i> Atualizar QR Code';
+            
+            // Atualiza a data/hora da última atualização
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = 
+                `Hoje às ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
             
             // Quando a imagem carregar
             qrImage.onload = function() {
-                console.log('QR Code carregado com sucesso');
-                toggleButton.innerHTML = '<i class="fas fa-eye-slash me-2"></i> Ocultar QR Code';
-                document.getElementById('qrCodeStatus').style.display = 'none';
-                qrImage.style.display = 'block';
-                document.getElementById('debugInfo').style.display = 'block';
+                console.log('QR Code carregado com sucesso!');
+                // Esconde o loading
+                hideLoading();
                 
-                // Log para depuração
-                console.log('Código do passe:', document.getElementById('codigoPasse').textContent);
+                // Adiciona uma classe de animação suave
+                qrImage.style.opacity = '0';
+                setTimeout(() => {
+                    qrImage.style.transition = 'opacity 0.3s ease-in-out';
+                    qrImage.style.opacity = '1';
+                }, 100);
+                
+                // Mostra notificação de sucesso
+                const event = new CustomEvent('qrCodeGenerated', { detail: { success: true } });
+                document.dispatchEvent(event);
             };
             
             // Tratamento de erro
             qrImage.onerror = function(error) {
                 console.error('Erro ao carregar o QR Code:', error);
-                container.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Erro ao carregar o QR Code. <button class="btn btn-sm btn-outline-primary ms-2" onclick="location.reload()">Tentar novamente</button>
-                    </div>
-                `;
-                toggleButton.innerHTML = '<i class="fas fa-sync-alt me-2"></i> Tentar novamente';
+                hideLoading();
+                
+                const qrStatus = document.getElementById('qrStatus');
+                qrStatus.textContent = 'Erro ao gerar o código';
+                qrStatus.style.color = '#e74c3c';
+                
+                qrImage.alt = 'Erro ao carregar o QR Code';
+                
+                // Mostra notificação de erro
+                const event = new CustomEvent('qrCodeGenerated', { detail: { success: false, error: error } });
+                document.dispatchEvent(event);
+                
+                // Tenta recarregar após 2 segundos
+                setTimeout(() => {
+                    showLoading();
+                    qrImage.src = getQrCodeUrl() + '&t=' + new Date().getTime();
+                }, 2000);
             };
             
         } else {
@@ -216,6 +287,120 @@ document.addEventListener('DOMContentLoaded', function() {
             toggleButton.innerHTML = '<i class="fas fa-qrcode me-2"></i> Mostrar QR Code';
         }
     });
+    
+    // Adiciona um listener para o evento de notificação de validação
+    document.addEventListener('qrCodeValidated', function(event) {
+        const { valid, timestamp, location } = event.detail;
+        const statusElement = document.getElementById('qrStatus');
+        
+        if (valid) {
+            statusElement.textContent = `Validado em ${new Date(timestamp).toLocaleString()}`;
+            statusElement.style.color = '#27ae60';
+            
+            // Mostra uma notificação toast
+            showToast('Seu código foi validado com sucesso!', 'success');
+        } else {
+            statusElement.textContent = 'Tentativa de validação inválida';
+            statusElement.style.color = '#e74c3c';
+            
+            // Mostra uma notificação de erro
+            showToast('Tentativa de validação inválida detectada', 'error');
+        }
+        
+        // Atualiza a lista de validações recentes
+        updateRecentValidations();
+    });
+    
+    // Função para mostrar notificações toast
+    function showToast(message, type = 'info') {
+        // Verifica se já existe um container de notificações
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.style.position = 'fixed';
+            container.style.top = '20px';
+            container.style.right = '20px';
+            container.style.zIndex = '9999';
+            document.body.appendChild(container);
+        }
+        
+        // Cria o elemento da notificação
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.style.padding = '12px 20px';
+        toast.style.marginBottom = '10px';
+        toast.style.borderRadius = '4px';
+        toast.style.color = 'white';
+        toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+        toast.style.transform = 'translateX(120%)';
+        toast.style.transition = 'transform 0.3s ease-in-out';
+        
+        // Define a cor de fundo com base no tipo
+        const colors = {
+            'success': '#27ae60',
+            'error': '#e74c3c',
+            'info': '#3498db',
+            'warning': '#f39c12'
+        };
+        toast.style.backgroundColor = colors[type] || colors['info'];
+        
+        // Adiciona o ícone
+        const icons = {
+            'success': '✓',
+            'error': '✕',
+            'info': 'ℹ',
+            'warning': '⚠'
+        };
+        
+        toast.innerHTML = `
+            <span style="margin-right: 10px; font-weight: bold;">${icons[type] || ''}</span>
+            <span>${message}</span>
+        `;
+        
+        // Adiciona a notificação ao container
+        container.prepend(toast);
+        
+        // Anima a entrada
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 10);
+        
+        // Remove a notificação após 5 segundos
+        setTimeout(() => {
+            toast.style.transform = 'translateX(120%)';
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 5000);
+    }
+    
+    // Função para atualizar a lista de validações recentes
+    function updateRecentValidations() {
+        // Aqui você pode adicionar uma chamada AJAX para buscar as validações mais recentes
+        // e atualizar a seção de histórico na página
+        console.log('Atualizando histórico de validações...');
+    }
+    
+    // Exemplo de como disparar um evento de validação (para teste)
+    // Descomente para testar
+    /*
+    setTimeout(() => {
+        const event = new CustomEvent('qrCodeValidated', {
+            detail: {
+                valid: true,
+                timestamp: new Date().toISOString(),
+                location: 'Portaria Principal'
+            }
+        });
+        document.dispatchEvent(event);
+    }, 3000);
+    */
 });
+
+// Carrega o script de notificações em tempo real
+const script = document.createElement('script');
+script.src = '{% static 'js/qr-code-notifications.js' %}';
+document.head.appendChild(script);
 </script>
 {% endblock %}

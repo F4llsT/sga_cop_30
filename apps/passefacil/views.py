@@ -1,15 +1,19 @@
 # apps/passefacil/views.py
 from django.http import JsonResponse, HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
-from .models import PasseFacil, ValidacaoQRCode
+from django.contrib import messages
 from django.utils import timezone
+from .models import PasseFacil, ValidacaoQRCode
+from apps.notificacoes.models import Notificacao
+from apps.notificacoes.push import send_push_to_user
 import logging
 import io
 import uuid
 import qrcode
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +59,21 @@ def validar_qr_code(request):
         )
         validacao.save()
         
+        # Cria notificação para o usuário
+        notificacao = Notificacao.objects.create(
+            usuario=user,
+            titulo='Passe Fácil Validado',
+            mensagem=f'Seu código foi validado em {timezone.localtime().strftime("%d/%m/%Y %H:%M")} (IP: {ip_address})',
+            tipo='success'
+        )
+        
+        # Envia notificação push se o usuário estiver online
+        send_push_to_user(
+            user_external_id=str(user.id),
+            title='Passe Fácil Validado',
+            message=f'Seu código foi validado em {timezone.localtime().strftime("%d/%m/%Y %H:%M")}'
+        )
+        
         return JsonResponse({
             'valido': True,
             'mensagem': f'Passe válido para {nome_preferido}',
@@ -64,6 +83,7 @@ def validar_qr_code(request):
                 'email': user.email,
             },
             'codigo': str(codigo_uuid),
+            'notificacao_id': notificacao.id
         })
         
     except PasseFacil.DoesNotExist:
@@ -90,6 +110,9 @@ def gerar_qr_code_dinamico(request):
         print("\n=== Iniciando geração de QR Code ===")
         print(f"Usuário: {getattr(request.user, 'email', 'sem-email')} (ID: {request.user.id})")
         
+        # Verifica se é uma requisição AJAX para mostrar loading
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         # Obtém ou cria o PasseFacil se não existir
         if not hasattr(request.user, 'passe_facil'):
             passe_facil = PasseFacil.objects.create(
@@ -98,6 +121,10 @@ def gerar_qr_code_dinamico(request):
                 codigo=uuid.uuid4()
             )
             print(f"Novo PasseFacil criado com código: {passe_facil.codigo}")
+            
+            # Adiciona mensagem de sucesso
+            if not is_ajax:
+                messages.success(request, "Seu Passe Fácil foi criado com sucesso!")
         else:
             passe_facil = request.user.passe_facil
             print(f"PasseFacil existente encontrado. Código: {passe_facil.codigo}")
@@ -106,7 +133,7 @@ def gerar_qr_code_dinamico(request):
             if not passe_facil.codigo:
                 passe_facil.codigo = uuid.uuid4()
                 passe_facil.save()
-                print(f"Novo código gerado para PasseFacil: {passe_facil.codigo}")
+                print(f"Código gerado para PasseFacil existente: {passe_facil.codigo}")
         
         if not passe_facil.ativo:
             print("ERRO: Passe Fácil está inativo")
@@ -152,37 +179,22 @@ def gerar_qr_code_dinamico(request):
 
 @login_required
 def meu_qr_code_view(request):
-    # Verifica se o usuário já tem um Passe Fácil
     if not hasattr(request.user, 'passe_facil'):
-        # Cria um novo Passe Fácil para o usuário com um código gerado automaticamente
-        passe = PasseFacil.objects.create(
-            user=request.user,
-            ativo=True,
-            codigo=uuid.uuid4()  # Gera um novo UUID automaticamente
-        )
-        print(f"Novo PasseFacil criado com código: {passe.codigo}")
-        # Recarrega o usuário para garantir que o passe_facil esteja disponível
-        request.user.refresh_from_db()
-    else:
-        # Garante que o passe existente tenha um código
-        passe = request.user.passe_facil
-        if not passe.codigo:
-            passe.codigo = uuid.uuid4()
-            passe.save()
-            print(f"Código gerado para PasseFacil existente: {passe.codigo}")
+        # Redireciona para gerar o QR Code se o usuário não tiver um PasseFacil
+        return redirect('passefacil:gerar_qr_code_dinamico')
     
-    # Debug: verifica o código atual
-    codigo_atual = request.user.passe_facil.codigo
-    nome_preferido = (getattr(request.user, 'nome', '') or request.user.get_full_name() or '').strip() or request.user.email
-    print(f"Código atual para o usuário {nome_preferido}: {codigo_atual}")
+    # Adiciona mensagem de sucesso se for um redirecionamento após a geração
+    if 'qr_gerado' in request.session:
+        messages.success(request, "QR Code gerado com sucesso!")
+        del request.session['qr_gerado']
     
-    # Adiciona o código ao contexto para depuração
     context = {
-        'user': request.user,
-        'codigo_passe': str(codigo_atual) if codigo_atual else 'NENHUM_CÓDIGO_GERADO',
-        'usuario_nome': nome_preferido
+        'passe_facil': request.user.passe_facil,
+        'ultimas_validacoes': ValidacaoQRCode.objects.filter(
+            passe_facil=request.user.passe_facil,
+            valido=True
+        ).order_by('-data_validacao')[:5]
     }
-    
     return render(request, 'passefacil/meu_qr_code.html', context)
 
 @login_required
