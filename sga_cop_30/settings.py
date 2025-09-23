@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     'apps.passefacil.apps.PassefacilConfig',
     'django_bootstrap5',
     'rest_framework',
-    'rest_framework_simplejwt',
 ]
 
 # Configuração do modelo de usuário personalizado
@@ -83,7 +82,10 @@ SESSION_SAVE_EVERY_REQUEST = True  # Renova a sessão a cada requisição
 # Configurações do Django REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
@@ -92,24 +94,10 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/day',
         'user': '1000/day',
-        'qr_validation': '10/minute',  # Limite para validação de QR Code
     }
 }
 
-# Configurações do JWT
-from datetime import timedelta
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': True,
-    'UPDATE_LAST_LOGIN': True,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'VERIFYING_KEY': None,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-}
+# Configurações de autenticação padrão do Django
 
 # Configurações de senha
 AUTH_PASSWORD_VALIDATORS = [

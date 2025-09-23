@@ -1,45 +1,28 @@
-// Função para obter o token JWT do armazenamento local ou cookie
-function getAuthToken() {
-    // Tenta obter do armazenamento local
-    const token = localStorage.getItem('access_token') || getCookie('access_token');
-    return token ? `Bearer ${token}` : null;
-}
-
 // Função para verificar se o usuário tem notificações de validação pendentes
 function checkForValidations() {
     // Verifica se o usuário está na página do QR Code
     if (!document.getElementById('qrStatus')) return;
     
-    const token = getAuthToken();
-    if (!token) {
-        console.log('Usuário não autenticado. Ignorando verificação de validações.');
-        return;
-    }
-    
-    // Configuração do cabeçalho com o token JWT
-    const headers = new Headers({
-        'Content-Type': 'application/json',
-        'Authorization': token
-    });
-    
     // Faz uma requisição para verificar validações recentes
+    // Usa credentials: 'same-origin' para incluir os cookies de sessão
     fetch('/api/passefacil/ultimas-validacoes/', {
         method: 'GET',
-        headers: headers,
-        credentials: 'same-origin' // Inclui cookies na requisição
+        credentials: 'same-origin' // Importante: inclui os cookies de autenticação
     })
     .then(response => {
         if (!response.ok) {
             if (response.status === 401) {
-                console.error('Erro de autenticação: Token inválido ou expirado');
-                // Opcional: redirecionar para a página de login
-                // window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+                console.log('Usuário não autenticado. Redirecionando para login...');
+                // Redireciona para a página de login, mantendo a URL atual para redirecionamento posterior
+                window.location.href = '/login/?next=' + encodeURIComponent(window.location.pathname);
+                return null;
             }
             throw new Error('Erro na requisição: ' + response.status);
         }
         return response.json();
     })
     .then(data => {
+        if (!data) return; // Se data for null (usuário não autenticado), sai da função
             if (data.validacoes && data.validacoes.length > 0) {
                 // Dispara eventos para cada validação recente
                 data.validacoes.forEach(validacao => {
@@ -64,6 +47,37 @@ setInterval(checkForValidations, 30000);
 document.addEventListener('DOMContentLoaded', function() {
     // Verifica após um pequeno atraso para garantir que o DOM esteja totalmente carregado
     setTimeout(checkForValidations, 2000);
+    
+    // Adiciona um listener para o evento de validação do QR Code
+    document.addEventListener('qrCodeValidated', function(event) {
+        const { valid, timestamp, location } = event.detail;
+        
+        if (valid) {
+            // Chama a função de animação de sucesso
+            if (typeof onQRCodeValidated === 'function') {
+                onQRCodeValidated({
+                    location: location || 'Ponto de Controle',
+                    timestamp: timestamp || new Date().toISOString()
+                });
+            }
+            
+            // Atualiza o status do QR Code
+            const qrStatus = document.getElementById('qrStatus');
+            if (qrStatus) {
+                qrStatus.textContent = 'Validado agora há pouco';
+                qrStatus.style.color = '#4CAF50';
+                qrStatus.style.fontWeight = 'bold';
+            }
+            
+            // Atualiza o horário da última atualização
+            const lastUpdated = document.getElementById('lastUpdated');
+            if (lastUpdated) {
+                const now = new Date(timestamp || new Date());
+                const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                lastUpdated.textContent = `Hoje às ${timeString}`;
+            }
+        }
+    });
     
     // Configura o Service Worker para notificações push
     if ('serviceWorker' in navigator) {

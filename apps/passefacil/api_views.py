@@ -3,10 +3,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.throttling import UserRateThrottle
-from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.vary import vary_on_cookie
+from django.views.decorators.csrf import csrf_exempt
 import logging
 
 from .services import PasseFacilService
@@ -19,10 +19,9 @@ class ValidarQRCodeThrottle(UserRateThrottle):
 
 class ValidarQRCodeAPIView(APIView):
     """
-    API para validação de QR Code com autenticação JWT e rate limiting
+    API para validação de QR Code com autenticação de sessão e rate limiting
     """
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # Usa a autenticação de sessão do Django
     throttle_classes = [ValidarQRCodeThrottle]
     
     @method_decorator(cache_page(5))  # Cache de 5 segundos
@@ -81,10 +80,9 @@ class ValidarQRCodeAPIView(APIView):
 
 class GerarQRCodeAPIView(APIView):
     """
-    API para geração de QR Code com autenticação JWT
+    API para geração de QR Code com autenticação de sessão
     """
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # Usa a autenticação de sessão do Django
     
     def get(self, request, format=None):
         """Gera um novo QR Code para o usuário"""
@@ -122,8 +120,7 @@ class UltimasValidacoesAPIView(APIView):
     """
     API para buscar as validações recentes do usuário
     """
-    authentication_classes = [JWTAuthentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated]  # Usa a autenticação de sessão do Django
     
     def get(self, request, format=None):
         """Retorna as últimas validações do usuário"""
