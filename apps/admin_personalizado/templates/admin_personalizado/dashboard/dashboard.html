@@ -71,48 +71,5 @@
     {{ eventos_labels|json_script:"eventos-labels" }}
     {{ eventos_values|json_script:"eventos-values" }}
 
-    <script>
-      document.addEventListener('DOMContentLoaded', () => {
-        const eventosLabels = JSON.parse(document.getElementById('eventos-labels').textContent || '[]');
-        const eventosValues = JSON.parse(document.getElementById('eventos-values').textContent || '[]');
-        // Cria rótulos encurtados para o eixo, preservando os completos para tooltip
-        const eventosLabelsShort = eventosLabels.map(l => (typeof l === 'string' && l.length > 22) ? (l.slice(0, 22) + '…') : l);
-
-        const eventosCtx = document.getElementById('eventosChart');
-        if (eventosCtx && window.Chart) {
-          new Chart(eventosCtx, {
-            type: 'bar',
-            data: {
-              labels: eventosLabelsShort,
-              datasets: [{
-                label: 'Favoritações',
-                data: eventosValues,
-                backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-              }]
-            },
-            options: {
-              responsive: true,
-              plugins: {
-                legend: { display: false },
-                tooltip: {
-                  callbacks: {
-                    title: function(items) {
-                      // Mostra o nome completo no tooltip
-                      if (!items || !items.length) return '';
-                      const idx = items[0].dataIndex;
-                      return eventosLabels[idx] || '';
-                    }
-                  }
-                }
-              },
-              scales: { y: { beginAtZero: true } }
-            }
-          });
-        }
-
-        // Removido gráfico de Passe Fácil conforme solicitado
-      });
-    </script>
+    <!-- Gráficos são renderizados por static/admin_personalizado/js/base&dahs.js -->
 {% endblock %}
