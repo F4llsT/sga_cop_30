@@ -94,6 +94,23 @@
   flex: 1 1 auto;
 }
 
+/* Evita que o ícone (estrela) deforme quando o título é muito grande */
+.summary-card .card-icon {
+  flex: 0 0 50px; /* não encolhe, largura fixa igual ao width padrão */
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.summary-card .card-icon i { flex: 0 0 auto; }
+
+/* Garante que o texto use ellipsis dentro do espaço disponível */
+.summary-card .card-content .stat-text {
+  display: block;
+  max-width: 100%;
+}
+
 /* Links da sidebar com textos longos não devem quebrar o layout */
 .sidebar .nav-link span {
   min-width: 0;
