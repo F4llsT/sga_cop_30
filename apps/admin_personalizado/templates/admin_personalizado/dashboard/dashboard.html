@@ -21,6 +21,10 @@
             <div class="card-content"><p>Usuários Ativos Hoje</p><span class="stat-number">{{ summary.active_today }}</span></div>
         </div>
         <div class="summary-card">
+            <div class="card-icon passe-facil"><i class="fa-solid fa-ticket-simple"></i></div>
+            <div class="card-content"><p>Usos do Passe Fácil</p><span class="stat-number">{{ summary.passe_uses }}</span></div>
+        </div>
+        <div class="summary-card">
             <div class="card-icon events"><i class="fa-solid fa-star"></i></div>
             <div class="card-content"><p>Evento Mais Favoritado</p><span class="stat-text ellipsis" title="{{ summary.top_event }}">{{ summary.top_event }}</span></div>
         </div>

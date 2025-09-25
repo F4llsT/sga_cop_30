@@ -6,6 +6,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.db.models import Count
 from apps.agenda.models import UserAgenda, Event
+from apps.passefacil.models import ValidacaoQRCode
 
 @staff_member_required
 @login_required
@@ -46,6 +47,12 @@ def dashboard(request):
     # Top event para o card de destaque
     top_event = eventos_labels[0] if eventos_labels else "—"
 
+    # Passe Fácil: total de usos (validações válidas) no período selecionado
+    passe_uses = ValidacaoQRCode.objects.filter(
+        data_validacao__gte=start_dt,
+        valido=True,
+    ).count()
+
     # Dados de gráficos (exemplos funcionais; substitua quando tiver dados reais)
     if not eventos_labels:
         # Fallback amistoso quando não há dados
@@ -57,6 +64,7 @@ def dashboard(request):
             "total_users": total_users,
             "active_today": active_today,
             "top_event": top_event,
+            "passe_uses": passe_uses,
         },
         "period": period,
         "period_label": period_label,
