@@ -1,3 +1,62 @@
+    
+    // =======================================================================
+    // === LÓGICA DO MENU LATERAL (MOBILE) ===
+    // =======================================================================
+    const menuButton = document.getElementById('admin-menu-button');
+    const closeButton = document.getElementById('admin-close-button');
+    const mobileNav = document.getElementById('admin-mobile-nav');
+    const overlay = document.getElementById('admin-overlay');
+
+    if (menuButton && closeButton && mobileNav && overlay) {
+        const openMenu = () => {
+            mobileNav.classList.add('active');
+            overlay.classList.add('active');
+        };
+
+        const closeMenu = () => {
+            mobileNav.classList.remove('active');
+            overlay.classList.remove('active');
+        };
+        menuButton.addEventListener('click', openMenu);
+        closeButton.addEventListener('click', closeMenu);
+        overlay.addEventListener('click', closeMenu);
+    }
+
+    // =======================================================================
+    // === ANIMAÇÃO DAS LOGOS (DESKTOP E MOBILE) ===
+    // =======================================================================
+    
+    // Função genérica para animar qualquer logo que siga a estrutura
+    const setupLogoAnimation = (logoElement) => {
+        if (!logoElement) return;
+
+        const planetIcon = logoElement.querySelector('.planet-icon');
+        const letters = logoElement.querySelectorAll('.letter');
+        let isAnimating = false;
+
+        const playAnimation = () => {
+            if (isAnimating || !letters.length) return;
+            isAnimating = true;
+            logoElement.classList.add('animating');
+
+            setTimeout(() => {
+                logoElement.classList.remove('animating');
+                isAnimating = false;
+            }, 2000);
+        };
+
+        logoElement.addEventListener('mouseover', playAnimation);
+    };
+
+    // Seleciona as duas logos pelos seus IDs
+    const mainLogo = document.getElementById('admin-main-logo');
+    const sidebarLogo = document.getElementById('admin-sidebar-logo');
+    
+    // Aplica a funcionalidade de animação para ambas
+    setupLogoAnimation(mainLogo);
+    setupLogoAnimation(sidebarLogo);
+
+
 const getJsonData = (id) => {
     const el = document.getElementById(id);
     if (!el) return [];
