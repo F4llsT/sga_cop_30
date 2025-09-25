@@ -1,0 +1,95 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Painel Admin - COP30{% endblock %}</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{% static 'admin_personalizado/css/base&dahs.css' %}">
+    <link rel="stylesheet" href="{% static 'admin_personalizado/css/overrides.css' %}">
+    
+    <!-- Fontes -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+</head>
+<body>
+
+    <!-- Top Navbar -->
+    <header class="top-nav">
+        <div class="nav-content-wrapper">
+            <a href="{% url 'home' %}" class="logo" id="admin-main-logo">
+                <i class="fa-solid fa-earth-americas planet-icon"></i>
+                <h1 class="logo-text">
+                    <span class="letter">C</span><span class="letter">O</span><span class="letter">P</span><span class="letter">3</span><span class="letter">0</span>
+                </h1>
+            </a>
+            <button class="hub-button" id="admin-menu-button">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+        </div>
+    </header>
+
+    <div class="admin-wrapper">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="{% url 'home' %}" class="logo" id="admin-sidebar-logo">
+                    <i class="fa-solid fa-earth-americas planet-icon"></i>
+                    <h1 class="logo-text">
+                        <span class="letter">C</span><span class="letter">O</span><span class="letter">P</span><span class="letter">3</span><span class="letter">0</span>
+                    </h1>
+                </a>
+                <span class="admin-tag">Admin</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{% url 'admin_personalizado:dashboard' %}" class="nav-link"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
+                <a href="{% url 'usuarios:login' %}" class="nav-link"><i class="fa-solid fa-users"></i><span>Usuários</span></a>
+                <a href="{% url 'agenda:agenda_oficial' %}" class="nav-link"><i class="fa-solid fa-calendar-days"></i><span>Agenda</span></a>
+                <a href="{% url 'notificacoes:listar' %}" class="nav-link"><i class="fa-solid fa-bullhorn"></i><span>Notificações</span></a>
+                <a href="{% url 'passefacil:meu_qr_code' %}" class="nav-link"><i class="fa-solid fa-ticket"></i><span>Passe Fácil</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="{% url 'home' %}" class="nav-link">
+                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    <span>Voltar ao Site</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Conteúdo principal -->
+        <main class="main-content">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <!-- Menu Mobile -->
+    <nav class="mobile-nav" id="admin-mobile-nav">
+        <div class="mobile-nav-header">
+            <h3>Menu Admin</h3>
+            <button class="close-button" id="admin-close-button" aria-label="Fechar menu">&times;</button>
+        </div>
+        <a href="{% url 'admin_personalizado:dashboard' %}" class="nav-link"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
+        <a href="{% url 'usuarios:login' %}" class="nav-link"><i class="fa-solid fa-users"></i><span>Usuários</span></a>
+        <a href="{% url 'agenda:agenda_oficial' %}" class="nav-link"><i class="fa-solid fa-calendar-days"></i><span>Agenda</span></a>
+        <a href="{% url 'notificacoes:listar' %}" class="nav-link"><i class="fa-solid fa-bullhorn"></i><span>Notificações</span></a>
+        <a href="{% url 'passefacil:meu_qr_code' %}" class="nav-link"><i class="fa-solid fa-ticket"></i><span>Passe Fácil</span></a>
+        <hr class="nav-divider">
+        <a href="{% url 'home' %}" class="nav-link"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Voltar ao Site</span></a>
+    </nav>
+    <div class="overlay" id="admin-overlay"></div>
+
+    <script src="{% static 'admin_personalizado/js/base&dahs.js' %}"></script>
+</body>
+</html>

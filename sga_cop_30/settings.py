@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'apps.agenda.apps.AgendaConfig',
     'apps.notificacoes.apps.NotificacoesConfig',
     'apps.passefacil.apps.PassefacilConfig',
+    'apps.admin_personalizado.apps.AdminPersonalizadoConfig',
     'django_bootstrap5',
     'rest_framework',
 ]
@@ -159,7 +160,11 @@ ROOT_URLCONF = "sga_cop_30.urls"
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'apps/admin_personalizado/templates'),
+            # ou
+            os.path.join(BASE_DIR, 'templates'),
+        ],
         'APP_DIRS': True,
         "OPTIONS": {
             "context_processors": [
@@ -222,11 +227,18 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Onde os arquivos estáticos serão coletados
+
+# Configurações adicionais para arquivos estáticos
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, 'static'),  # Pasta global de arquivos estáticos
 ]
 
+# Isso deve estar fora do INSTALLED_APPS
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
 # Configurações de arquivos de mídia
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

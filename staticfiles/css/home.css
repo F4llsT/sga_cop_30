@@ -797,20 +797,40 @@ h1.logo-text {
 }
 
 /* Admin Button */
-.admin-button {
+#admin-button {
     color: #333;
-    font-size: 1.8rem;  
-    margin-left: 10px;
+    font-size: 2.5rem;
+    margin-left: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 46px;        
-    height: 46px;       
+    width: 70px;
+    height: 70px;
     border-radius: 50%;
     transition: all 0.3s ease;
+    position: relative;
+    z-index: 1000;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: none;
 }
 
-.admin-button:hover {
+#admin-button i {
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+#admin-button:hover {
     background-color: #f0f0f0;
     color: #0066cc;
+    transform: scale(1.05);
+}
+
+/* Se ainda assim não funcionar, adicione isso no final do arquivo */
+.notification-container a#admin-button {
+    width: 70px !important;
+    height: 70px !important;
+    font-size: 2.5rem !important;
 }

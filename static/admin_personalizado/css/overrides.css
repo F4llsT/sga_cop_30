@@ -1,0 +1,73 @@
+/* Admin Personalizado – Overrides focados no Dashboard */
+
+/* 1) Deixar o card do gráfico de eventos ocupar toda a largura */
+.charts-section {
+  grid-template-columns: 1fr !important;
+}
+
+/* 2) Garantir que nada "vaze" dos cards */
+.chart-container,
+.summary-card,
+.shortcut-card {
+  overflow: hidden;
+}
+
+/* 3) Wrapper de gráfico mais alto e sem overflow visual */
+.chart-container .chart-wrapper {
+  height: 460px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* 4) Canvas responsivo e contido */
+.chart-container canvas {
+  display: block;
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* 5) Tabelas (ou conteúdos em grid) dentro dos cards não devem estourar */
+.chart-container table,
+.summary-card table,
+.shortcut-card table,
+.main-content table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.main-content table th,
+.main-content table td {
+  word-break: break-word;
+}
+
+/* 6) Toolbar de filtros (Hoje / 7d / 30d) com botões compactos */
+.charts-toolbar {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: .5rem;
+}
+
+.charts-toolbar .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: .85rem;
+}
+
+.charts-toolbar .btn:hover {
+  background: #f3f4f6;
+}
+
+.charts-toolbar .btn.btn-small {
+  padding: 4px 8px;
+  font-size: .8rem;
+}
