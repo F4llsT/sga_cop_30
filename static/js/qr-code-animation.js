@@ -91,35 +91,60 @@ function simulateQRCodeValidation() {
     showSuccessAnimation(randomLocation);
 }
 
-// Adiciona um evento de clique ao QR Code para teste (remova em produção)
+// Adiciona um evento de clique ao QR Code para teste (apenas em ambiente de desenvolvimento)
 document.addEventListener('DOMContentLoaded', function() {
     const qrCodeImage = document.getElementById('qrCodeImage');
-    if (qrCodeImage) {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    if (qrCodeImage && isLocalhost) {
+        console.log('Modo de desenvolvimento ativado: Clique no QR Code para testar a animação');
+        
         qrCodeImage.addEventListener('click', function() {
-            // Descomente a linha abaixo para testar a animação ao clicar no QR Code
-            // simulateQRCodeValidation();
+            console.log('Teste manual: Iniciando animação de validação...');
+            simulateQRCodeValidation();
         });
     }
 });
 
 // Função para ser chamada quando o QR Code for validado
-function onQRCodeValidated(validationData) {
-    const location = validationData.location || 'Ponto de Controle';
-    showSuccessAnimation(location);
+const handleQRCodeValidated = function(validationData) {
+    console.log('Evento qrCodeValidated recebido com dados:', validationData);
     
-    // Atualiza o status do QR Code
-    const qrStatus = document.getElementById('qrStatus');
-    if (qrStatus) {
-        qrStatus.textContent = 'Validado agora há pouco';
-        qrStatus.style.color = '#4CAF50';
-        qrStatus.style.fontWeight = 'bold';
+    try {
+        const location = validationData.detail?.location || validationData.location || 'Ponto de Controle';
+        const timestamp = validationData.detail?.timestamp || validationData.timestamp;
+        
+        console.log('Mostrando animação de sucesso para local:', location);
+        
+        // Mostra a animação de sucesso
+        showSuccessAnimation(location);
+        
+        // Atualiza o status do QR Code
+        const qrStatus = document.getElementById('qrStatus');
+        if (qrStatus) {
+            qrStatus.textContent = 'Validado agora há pouco';
+            qrStatus.style.color = '#4CAF50';
+            qrStatus.style.fontWeight = 'bold';
+        }
+        
+        // Atualiza o horário da última atualização
+        const lastUpdated = document.getElementById('lastUpdated');
+        if (lastUpdated) {
+            const now = timestamp ? new Date(timestamp) : new Date();
+            const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            lastUpdated.textContent = `Hoje às ${timeString}`;
+            console.log('Horário de atualização definido para:', lastUpdated.textContent);
+        }
+    } catch (error) {
+        console.error('Erro ao processar validação do QR Code:', error);
     }
-    
-    // Atualiza o horário da última atualização
-    const lastUpdated = document.getElementById('lastUpdated');
-    if (lastUpdated) {
-        const now = new Date();
-        const timeString = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        lastUpdated.textContent = `Hoje às ${timeString}`;
-    }
-}
+};
+
+// Registra a função global para ser chamada de outros scripts
+window.onQRCodeValidated = handleQRCodeValidated;
+
+// Adiciona um listener de evento para o evento personalizado
+document.addEventListener('qrCodeValidated', handleQRCodeValidated);
+
+// Log para confirmar que o script foi carregado
+console.log('qr-code-animation.js carregado e aguardando eventos de validação...');
