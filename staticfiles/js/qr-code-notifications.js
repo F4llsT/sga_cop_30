@@ -11,18 +11,26 @@ async function checkForValidations(isInitialCheck = false) {
     
     isChecking = true;
     
-    // Se for a verificação inicial, apenas marcamos como verificada e não fazemos nada
+    // Se for a verificação inicial, apenas registramos e retornamos
     if (isInitialCheck) {
-        initialValidationsChecked = true;
+        console.log('Verificação inicial de validações concluída.');
         return;
     }
     
     // Se for uma verificação subsequente, verificamos apenas validações novas
+    console.log('Buscando validações em /api/passefacil/ultimas-validacoes/...');
+    
     fetch('/api/passefacil/ultimas-validacoes/', {
         method: 'GET',
-        credentials: 'same-origin'
+        credentials: 'same-origin',
+        headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
     })
     .then(response => {
+        console.log('Resposta da API recebida. Status:', response.status);
+        
         if (!response.ok) {
             if (response.status === 401) {
                 console.log('Usuário não autenticado. Redirecionando para login...');
@@ -32,6 +40,10 @@ async function checkForValidations(isInitialCheck = false) {
             throw new Error('Erro na requisição: ' + response.status);
         }
         return response.json();
+    })
+    .then(data => {
+        console.log('Dados recebidos da API:', data);
+        return data;
     })
     .then(data => {
         if (!data || !data.validacoes || data.validacoes.length === 0) return;
@@ -48,8 +60,11 @@ async function checkForValidations(isInitialCheck = false) {
         if (latestValidation.id !== lastValidationId) {
             lastValidationId = latestValidation.id;
             
+            console.log('Nova validação detectada:', latestValidation);
+            
             // Só dispara o evento se não for a verificação inicial
             if (initialValidationsChecked) {
+                console.log('Disparando evento qrCodeValidated...');
                 const event = new CustomEvent('qrCodeValidated', {
                     detail: {
                         valid: latestValidation.valido,
@@ -84,10 +99,22 @@ function startValidationChecks() {
 
 // Verifica por validações quando a página é carregada
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando verificação de validações...');
+    
     // Marca a verificação inicial, mas não dispara notificações
     checkForValidations(true);
     
-    // Inicia a verificação periódica após um atraso
+    // Marca que as verificações iniciais foram concluídas após um curto atraso
+    // Isso evita que a primeira verificação periódica seja ignorada
+    setTimeout(() => {
+        initialValidationsChecked = true;
+        console.log('Verificações iniciais concluídas. Iniciando monitoramento...');
+        
+        // Força uma verificação imediatamente após a inicialização
+        checkForValidations(false);
+    }, 1000);
+    
+    // Inicia a verificação periódica
     setTimeout(startValidationChecks, 5000);
     
     // Pausa as verificações quando a aba não está visível
@@ -112,12 +139,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const { valid, timestamp, location } = event.detail;
         
         if (valid) {
+            console.log('Evento de validação recebido:', { timestamp, location });
+            
             // Chama a função de animação de sucesso
-            if (typeof onQRCodeValidated === 'function') {
-                onQRCodeValidated({
+            if (typeof window.onQRCodeValidated === 'function') {
+                console.log('Chamando onQRCodeValidated...');
+                window.onQRCodeValidated({
                     location: location || 'Ponto de Controle',
                     timestamp: timestamp || new Date().toISOString()
                 });
+            } else {
+                console.error('Função onQRCodeValidated não encontrada');
             }
             
             // Atualiza o status do QR Code

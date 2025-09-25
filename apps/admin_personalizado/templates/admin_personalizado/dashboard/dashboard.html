@@ -22,7 +22,7 @@
         </div>
         <div class="summary-card">
             <div class="card-icon events"><i class="fa-solid fa-star"></i></div>
-            <div class="card-content"><p>Evento Mais Favoritado</p><span class="stat-text">{{ summary.top_event }}</span></div>
+            <div class="card-content"><p>Evento Mais Favoritado</p><span class="stat-text ellipsis" title="{{ summary.top_event }}">{{ summary.top_event }}</span></div>
         </div>
     </section>
 
@@ -30,9 +30,9 @@
         <div class="chart-container" style="width:100%">
             <div class="charts-toolbar" style="display:flex; gap:.5rem; align-items:center; justify-content:flex-end; margin-bottom:.5rem">
                 <span style="opacity:.8; font-size:.9rem">Período:</span>
-                <a href="?period=today" class="btn btn-small">Hoje</a>
-                <a href="?period=7d" class="btn btn-small">7 dias</a>
-                <a href="?period=30d" class="btn btn-small">30 dias</a>
+                <a href="?period=today" class="btn btn-small{% if period == 'today' %} active{% endif %}"{% if period == 'today' %} aria-current="page"{% endif %}>Hoje</a>
+                <a href="?period=7d" class="btn btn-small{% if period == '7d' %} active{% endif %}"{% if period == '7d' %} aria-current="page"{% endif %}>7 dias</a>
+                <a href="?period=30d" class="btn btn-small{% if period == '30d' %} active{% endif %}"{% if period == '30d' %} aria-current="page"{% endif %}>30 dias</a>
             </div>
             <h3>Eventos Mais Favoritados</h3>
             <div class="chart-wrapper">
@@ -75,13 +75,15 @@
       document.addEventListener('DOMContentLoaded', () => {
         const eventosLabels = JSON.parse(document.getElementById('eventos-labels').textContent || '[]');
         const eventosValues = JSON.parse(document.getElementById('eventos-values').textContent || '[]');
+        // Cria rótulos encurtados para o eixo, preservando os completos para tooltip
+        const eventosLabelsShort = eventosLabels.map(l => (typeof l === 'string' && l.length > 22) ? (l.slice(0, 22) + '…') : l);
 
         const eventosCtx = document.getElementById('eventosChart');
         if (eventosCtx && window.Chart) {
           new Chart(eventosCtx, {
             type: 'bar',
             data: {
-              labels: eventosLabels,
+              labels: eventosLabelsShort,
               datasets: [{
                 label: 'Favoritações',
                 data: eventosValues,
@@ -92,7 +94,19 @@
             },
             options: {
               responsive: true,
-              plugins: { legend: { display: false } },
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    title: function(items) {
+                      // Mostra o nome completo no tooltip
+                      if (!items || !items.length) return '';
+                      const idx = items[0].dataIndex;
+                      return eventosLabels[idx] || '';
+                    }
+                  }
+                }
+              },
               scales: { y: { beginAtZero: true } }
             }
           });

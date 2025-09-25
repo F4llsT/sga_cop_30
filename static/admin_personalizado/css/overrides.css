@@ -71,3 +71,33 @@
   padding: 4px 8px;
   font-size: .8rem;
 }
+
+/* 7) Tratamento de títulos longos (ellipsis) */
+.ellipsis {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-content .stat-text,
+.chart-container h3 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Permite que o conteúdo do card encolha para o ellipsis funcionar dentro de flex */
+.summary-card .card-content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Links da sidebar com textos longos não devem quebrar o layout */
+.sidebar .nav-link span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
