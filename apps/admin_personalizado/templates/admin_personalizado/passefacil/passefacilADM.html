@@ -1,0 +1,290 @@
+{% extends 'admin_personalizado/baseadmin.html' %}
+{% load static %}
+
+{% block title %}Passe Fácil - Painel de Administração{% endblock %}
+
+{% block content %}
+  <!-- CSS específico da página -->
+  <link rel="stylesheet" href="{% static 'admin_personalizado/css/passefacilADM.css' %}">
+
+  <div class="passefacil-admin">
+    <!-- Cabeçalho (estilo do dashboard) -->
+    <header class="main-header">
+      <h2>Painel de Administração • Passe Fácil</h2>
+      <div class="user-area">
+        <div class="view-toggle">
+          <button id="listViewBtn" class="view-btn active" data-view="list">
+            <i class="fa-solid fa-list"></i>
+            <span>Lista de Passes</span>
+          </button>
+          <button id="validateViewBtn" class="view-btn" data-view="validate">
+            <i class="fa-solid fa-qrcode"></i>
+            <span>Validar Passe</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="passefacil-main">
+      <!-- Resumo Estatístico -->
+      <div class="stats-container">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="icon-chart-line"></i>
+          </div>
+          <div class="stat-info">
+            <div class="card-header-row">
+              <h3>{{ period_label|default:"Últimos 7 dias" }}</h3>
+              <div class="charts-toolbar">
+                <a href="?period=7d" class="btn btn-small{% if period == '7d' %} active{% endif %}"{% if period == '7d' %} aria-current="page"{% endif %}>7 dias</a>
+                <a href="?period=30d" class="btn btn-small{% if period == '30d' %} active{% endif %}"{% if period == '30d' %} aria-current="page"{% endif %}>30 dias</a>
+                <a href="?period=all" class="btn btn-small{% if period == 'all' %} active{% endif %}"{% if period == 'all' %} aria-current="page"{% endif %}>Desde sempre</a>
+              </div>
+            </div>
+            <div class="mini-chart" id="miniChart"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tela de Listagem -->
+      <section id="listView" class="view-content active">
+        <div class="search-container">
+          <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Pesquisar por usuário ou código...">
+            <i class="icon-search"></i>
+          </div>
+          <div class="results-count">
+            <span id="totalResults">{{ passes|length }}</span> resultados encontrados
+          </div>
+        </div>
+
+        <div class="table-container">
+          <table id="passesTable">
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>Código</th>
+                <th>Última Validação</th>
+              </tr>
+            </thead>
+            <tbody id="passesTableBody">
+              {% for passe in passes %}
+              <tr>
+                <td>
+                  <div class="user-info">
+                    <div class="user-avatar">
+                      {{ passe.user.first_name|first|upper }}{{ passe.user.last_name|first|upper }}
+                    </div>
+                    <div class="user-details">
+                      <span class="user-name">{{ passe.user.nome|default_if_none:''|default:passe.user.get_full_name|default:passe.user.username }}</span>
+                      <span class="user-email">{{ passe.user.email }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="code-cell">
+                  <span class="code-value">{{ passe.codigo }}</span>
+                  <button class="copy-btn" data-clipboard-text="{{ passe.codigo }}" title="Copiar código">
+                    <i class="icon-copy"></i>
+                  </button>
+                </td>
+                <td>
+                  {% if passe.last_validacao_data %}
+                    {{ passe.last_validacao_data|date:"d/m/Y H:i" }}
+                    <span class="status-badge {% if passe.last_validacao_valido %}success{% else %}error{% endif %}">
+                      {% if passe.last_validacao_valido %}Válido{% else %}Inválido{% endif %}
+                    </span>
+                  {% else %}
+                    <span class="text-muted">Nunca validado</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center">Nenhum passe encontrado</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tela de Validação -->
+      <section id="validateView" class="view-content">
+        <div class="validation-container">
+          <!-- Abas de navegação -->
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="qrTab">
+              <i class="icon-qr"></i>
+              Validar por QR Code
+            </button>
+            <button class="tab-btn" data-tab="manualTab">
+              <i class="icon-keyboard"></i>
+              Validar por Código
+            </button>
+          </div>
+
+          <!-- Conteúdo das abas -->
+          <div class="tab-content">
+            <!-- Aba de QR Code -->
+            <div id="qrTab" class="tab-pane active">
+              <div class="camera-container">
+                <div class="camera-placeholder" id="cameraFeed">
+                  <div class="scanner-frame">
+                    <div class="scanner-corner top-left"></div>
+                    <div class="scanner-corner top-right"></div>
+                    <div class="scanner-corner bottom-left"></div>
+                    <div class="scanner-corner bottom-right"></div>
+                  </div>
+                  <p class="camera-hint">Posicione o QR Code dentro da área destacada</p>
+                </div>
+                <button id="toggleCameraBtn" class="btn btn-primary">
+                  <i class="icon-camera"></i>
+                  <span>Iniciar Câmera</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Aba de Código Manual -->
+            <div id="manualTab" class="tab-pane">
+              <div class="manual-validation">
+                <div class="input-group">
+                  <input type="text" id="manualCodeInput" placeholder="Digite o código do passe...">
+                  <button id="validateManualBtn" class="btn btn-primary" disabled>
+                    <i class="icon-check"></i>
+                    Validar
+                  </button>
+                </div>
+                <p class="input-hint">Digite o código completo do passe e clique em Validar</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Histórico de Validações -->
+          <div class="validation-history">
+            <div class="section-header">
+              <h3>Últimas Validações</h3>
+              <span class="badge" id="recentValidationsCount">{{ validacoes_recentes|length }}</span>
+            </div>
+            <div class="validations-list" id="validationsList">
+              {% if validacoes_recentes %}
+                {% for v in validacoes_recentes %}
+                  <div class="validation-item">
+                    <div class="validation-icon">
+                      {% if v.valido %}
+                        <i class="icon-check"></i>
+                      {% else %}
+                        <i class="icon-clock"></i>
+                      {% endif %}
+                    </div>
+                    <div class="validation-details">
+                      <h4>
+                        {% if v.passe_facil and v.passe_facil.user %}
+                          {{ v.passe_facil.user.nome|default_if_none:''|default:v.passe_facil.user.get_full_name|default:v.passe_facil.user.username }}
+                        {% else %}
+                          Código: {{ v.codigo }}
+                        {% endif %}
+                      </h4>
+                      <div class="validation-meta">
+                        <span class="validation-time">
+                          <i class="icon-clock"></i>
+                          {{ v.data_validacao|date:"d/m/Y H:i" }}
+                        </span>
+                        <span class="validation-status {% if v.valido %}status-success{% else %}status-error{% endif %}">
+                          {% if v.valido %}Válido{% else %}Inválido{% endif %}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="empty-state">
+                  <i class="icon-clock"></i>
+                  <p>Nenhuma validação recente</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal de Detalhes -->
+  <div id="validationModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Validação Realizada</h3>
+        <button class="close-btn" id="closeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="validation-result success" id="validationResult">
+          <div class="result-icon">
+            <i class="icon-check-circle"></i>
+          </div>
+          <div class="result-details">
+            <h4>Passe Válido</h4>
+            <p>O passe foi validado com sucesso.</p>
+          </div>
+        </div>
+        <div class="validation-info">
+          <div class="info-row">
+            <span class="info-label">Usuário:</span>
+            <span class="info-value" id="modalUser">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Código:</span>
+            <span class="info-value" id="modalCode">-</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Data/Hora:</span>
+            <span class="info-value" id="modalDateTime">-</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="closeModalBtn">Fechar</button>
+        <button class="btn btn-primary" id="newValidationBtn">
+          <i class="icon-plus"></i>
+          Nova Validação
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dados para o gráfico -->
+  <script>
+    window.chartData = {
+      labels: {{ dias|safe }},
+      datasets: [
+        {
+          label: 'Total de Validações',
+          data: {{ totais|safe }},
+          borderColor: '#4e73df',
+          backgroundColor: 'rgba(78, 115, 223, 0.05)',
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: 'Válidas',
+          data: {{ validas_list|safe }},
+          borderColor: '#1cc88a',
+          borderDash: [5, 5],
+          backgroundColor: 'transparent',
+          tension: 0.3
+        },
+        {
+          label: 'Inválidas',
+          data: {{ invalidas_list|safe }},
+          borderColor: '#e74a3b',
+          borderDash: [5, 5],
+          backgroundColor: 'transparent',
+          tension: 0.3
+        }
+      ]
+    };
+  </script>
+  
+  <!-- JavaScript da aplicação -->
+  <script src="{% static 'admin_personalizado/js/passefacilADM.js' %}"></script>
+{% endblock %}

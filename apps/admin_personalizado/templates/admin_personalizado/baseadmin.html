@@ -57,7 +57,8 @@
                 <a href="{% url 'usuarios:login' %}" class="nav-link"><i class="fa-solid fa-users"></i><span>Usuários</span></a>
                 <a href="{% url 'agenda:agenda_oficial' %}" class="nav-link"><i class="fa-solid fa-calendar-days"></i><span>Agenda</span></a>
                 <a href="{% url 'notificacoes:listar' %}" class="nav-link"><i class="fa-solid fa-bullhorn"></i><span>Notificações</span></a>
-                <a href="{% url 'passefacil:meu_qr_code' %}" class="nav-link"><i class="fa-solid fa-ticket"></i><span>Passe Fácil</span></a>
+                <a href="{% url 'admin_personalizado:passefacil_admin' %}" class="nav-link"><i class="fa-solid fa-ticket"></i><span>Meu Passe Fácil</span></a>
+               
             </nav>
             <div class="sidebar-footer">
                 <a href="{% url 'home' %}" class="nav-link">
@@ -84,7 +85,8 @@
         <a href="{% url 'usuarios:login' %}" class="nav-link"><i class="fa-solid fa-users"></i><span>Usuários</span></a>
         <a href="{% url 'agenda:agenda_oficial' %}" class="nav-link"><i class="fa-solid fa-calendar-days"></i><span>Agenda</span></a>
         <a href="{% url 'notificacoes:listar' %}" class="nav-link"><i class="fa-solid fa-bullhorn"></i><span>Notificações</span></a>
-        <a href="{% url 'passefacil:meu_qr_code' %}" class="nav-link"><i class="fa-solid fa-ticket"></i><span>Passe Fácil</span></a>
+        <a href="{% url 'passefacil:meu_qr_code' %}" class="nav-link"><i class="fa-solid fa-ticket"></i><span>Meu Passe Fácil</span></a>
+        <a href="{% url 'admin_personalizado:passefacil_admin' %}" class="nav-link"><i class="fa-solid fa-id-card"></i><span>Passe Fácil Admin</span></a>
         <hr class="nav-divider">
         <a href="{% url 'home' %}" class="nav-link"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Voltar ao Site</span></a>
     </nav>
