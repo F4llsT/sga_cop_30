@@ -253,7 +253,6 @@
           <i class="icon-plus"></i>
           Nova Validação
         </button>
-      </div>
     </div>
   </div>
 
@@ -263,38 +262,70 @@
   
   <!-- Dados para o gráfico -->
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      if (typeof Chart !== 'undefined') {
-        // Usando JSON.parse para garantir que os dados sejam interpretados corretamente
-        window.chartData = {
-          labels: JSON.parse('{{ dias|escapejs }}'),
-          datasets: [
-            {
-              label: 'Total de Validações',
-              data: JSON.parse('{{ totais|escapejs }}'),
-              borderColor: '#4e73df',
-              backgroundColor: 'rgba(78, 115, 223, 0.05)',
-              tension: 0.3,
-              fill: true
+    // Função global para inicializar o gráfico
+    window.initChart = function() {
+      const ctx = document.createElement('canvas');
+      const container = document.getElementById('miniChart');
+      if (!container) return;
+      
+      // Limpa o container antes de adicionar o novo canvas
+      container.innerHTML = '';
+      container.appendChild(ctx);
+      
+      return new Chart(ctx, {
+        type: 'line',
+        data: window.chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
             },
-            {
-              label: 'Válidas',
-              data: JSON.parse('{{ validas_list|escapejs }}'),
-              borderColor: '#1cc88a',
-              borderDash: [5, 5],
-              backgroundColor: 'transparent',
-              tension: 0.3
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              displayColors: false,
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${context.raw}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              grid: {
+                display: false
+              },
+              ticks: {
+                maxRotation: 0,
+                padding: 5
+              }
             },
-            {
-              label: 'Inválidas',
-              data: JSON.parse('{{ invalidas_list|escapejs }}'),
-              borderColor: '#e74a3b',
-              borderDash: [5, 5],
-              backgroundColor: 'transparent',
+            y: {
+              display: false,
+              beginAtZero: true
+            }
+          },
+          elements: {
+            point: {
+              radius: 0
+            },
+            line: {
+              borderWidth: 2,
               tension: 0.3
             }
-          ]
-        };
+          }
+        }
+      });
+    };
+    
+    // Inicializa o gráfico quando o DOM estiver pronto
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof Chart !== 'undefined' && window.initChart) {
+        window.initChart();
       } else {
         console.warn('Chart.js não está carregado. O gráfico não será exibido.');
       }
