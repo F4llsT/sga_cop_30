@@ -262,72 +262,126 @@
   
   <!-- Dados para o gráfico -->
   <script>
-    // Função global para inicializar o gráfico
-    window.initChart = function() {
-      const ctx = document.createElement('canvas');
-      const container = document.getElementById('miniChart');
-      if (!container) return;
-      
-      // Limpa o container antes de adicionar o novo canvas
-      container.innerHTML = '';
-      container.appendChild(ctx);
-      
-      return new Chart(ctx, {
-        type: 'line',
-        data: window.chartData,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              mode: 'index',
-              intersect: false,
-              displayColors: false,
-              callbacks: {
-                label: function(context) {
-                  return `${context.dataset.label}: ${context.raw}`;
-                }
-              }
-            }
-          },
-          scales: {
-            x: {
-              display: true,
-              grid: {
-                display: false
-              },
-              ticks: {
-                maxRotation: 0,
-                padding: 5
-              }
-            },
-            y: {
-              display: false,
-              beginAtZero: true
-            }
-          },
-          elements: {
-            point: {
-              radius: 0
-            },
-            line: {
-              borderWidth: 2,
-              tension: 0.3
-            }
-          }
+    // Dados do gráfico
+    window.chartData = {
+      labels: {{ dias|safe }},
+      datasets: [
+        {
+          label: 'Total de Validações',
+          data: {{ totais|safe }},
+          borderColor: '#4e73df',
+          backgroundColor: 'rgba(78, 115, 223, 0.05)',
+          tension: 0.3,
+          fill: true
+        },
+        {
+          label: 'Válidas',
+          data: {{ validas_list|safe }},
+          borderColor: '#1cc88a',
+          borderDash: [5, 5],
+          backgroundColor: 'transparent',
+          tension: 0.3
+        },
+        {
+          label: 'Inválidas',
+          data: {{ invalidas_list|safe }},
+          borderColor: '#e74a3b',
+          borderDash: [5, 5],
+          backgroundColor: 'transparent',
+          tension: 0.3
         }
-      });
+      ]
     };
-    
+
     // Inicializa o gráfico quando o DOM estiver pronto
     document.addEventListener('DOMContentLoaded', function() {
-      if (typeof Chart !== 'undefined' && window.initChart) {
-        window.initChart();
-      } else {
-        console.warn('Chart.js não está carregado. O gráfico não será exibido.');
+      try {
+        const container = document.getElementById('miniChart');
+        
+        if (!container) {
+          console.error('Elemento do gráfico não encontrado');
+          return;
+        }
+        
+        // Verifica se existem dados para exibir
+        if (!window.chartData || window.chartData.labels.length === 0 || !window.chartData.datasets || window.chartData.datasets.length === 0) {
+          console.warn('Nenhum dado disponível para exibir no gráfico');
+          container.innerHTML = '<div class="no-data">Nenhum dado disponível para o período selecionado</div>';
+          return;
+        }
+        
+        // Limpa o container
+        container.innerHTML = '';
+        const canvas = document.createElement('canvas');
+        container.appendChild(canvas);
+        
+        // Cria o gráfico
+        const ctx = canvas.getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: window.chartData,
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'bottom',
+                labels: {
+                  padding: 20,
+                  usePointStyle: true,
+                  pointStyle: 'circle'
+                }
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                titleFont: { size: 14, weight: 'bold' },
+                bodyFont: { size: 13 },
+                padding: 12,
+                displayColors: true,
+                callbacks: {
+                  label: function(context) {
+                    return `${context.dataset.label}: ${context.raw}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: { display: false },
+                ticks: {
+                  maxRotation: 45,
+                  minRotation: 45
+                }
+              },
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(0, 0, 0, 0.05)' },
+                ticks: { stepSize: 1 }
+              }
+            },
+            elements: {
+              point: {
+                radius: 0, // Remove os pontos da linha
+                hoverRadius: 0, // Remove o hover dos pontos
+                borderWidth: 0 // Remove a borda dos pontos
+              },
+              line: {
+                tension: 0.4,
+                borderWidth: 2,
+                fill: false
+              }
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Erro ao inicializar o gráfico:', error);
+        const container = document.getElementById('miniChart');
+        if (container) {
+          container.innerHTML = '<div class="error-message">Erro ao carregar o gráfico. Por favor, recarregue a página.</div>';
+        }
       }
     });
   </script>

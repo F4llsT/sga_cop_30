@@ -19,22 +19,27 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Iniciando aplicação...');
         console.log('Elementos encontrados:', {
             listView: document.getElementById('listView'),
-            validateView: document.getElementById('validateView'),
             listViewBtn: document.getElementById('listViewBtn'),
             validateViewBtn: document.getElementById('validateViewBtn')
         });
         
         setupEventListeners();
-        // Inicializa o gráfico somente agora (elements já inicializado)
-        if (window.chartData) {
-            initChart();
-        } else {
-            console.warn('Dados do gráfico não encontrados');
+        // Inicializa o gráfico
+        try {
+            if (typeof getChartData === 'function') {
+                window.chartData = getChartData();
+                if (window.chartData) {
+                    initChart();
+                } else {
+                    console.warn('Dados do gráfico não encontrados');
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao inicializar o gráfico:', error);
         }
-        showView('list');
-        updateDateTime();
         
-        // Atualiza a data a cada minuto
+        // Atualiza a data/hora a cada minuto
+        updateDateTime();
         setInterval(updateDateTime, 60000);
         
         // Atualiza os resultados da busca inicial
@@ -58,6 +63,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Elementos da interface
     const elements = {
+        // Views
+        listView: document.getElementById('listView'),
+        validateView: document.getElementById('validateView'),
+        
+        // Botões de navegação
+        listViewBtn: document.getElementById('listViewBtn'),
+        validateViewBtn: document.getElementById('validateViewBtn'),
+        
+        // Outros elementos
         // Views
         listView: document.getElementById('listView'),
         validateView: document.getElementById('validateView'),
@@ -233,7 +247,6 @@ document.addEventListener('DOMContentLoaded', function() {
             noResultsRow.innerHTML = '<td colspan="3" class="text-center">Nenhum resultado encontrado para "' + searchTerm + '"</td>';
             elements.passesTableBody.appendChild(noResultsRow);
         }
-        
         console.log('Busca concluída. Resultados encontrados:', visibleCount);
     }
     
@@ -246,22 +259,13 @@ document.addEventListener('DOMContentLoaded', function() {
             listViewBtn: elements.listViewBtn,
             validateViewBtn: elements.validateViewBtn
         });
+        
         // Navegação entre views
         if (elements.listViewBtn) {
-            elements.listViewBtn.addEventListener('click', () => showView('list'));
-        }
-        
-        if (elements.validateViewBtn) {
-            elements.validateViewBtn.addEventListener('click', () => showView('validate'));
-        }
-        
-        // Navegação entre abas
-        if (elements.tabButtons) {
-            elements.tabButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const tabId = btn.getAttribute('data-tab');
-                    showTab(tabId);
-                });
+            elements.listViewBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                console.log('Botão Lista clicado');
+                showView('list');
             });
         }
         
@@ -927,8 +931,12 @@ function renderPassesList() {
 
     // Inicialização única
     console.log('Inicializando app (chamada única dentro do DOMContentLoaded)');
+    
+    // Inicializa a aplicação
     init();
-    initClipboard();
+    
+    // Mostra a view inicial (lista)
+    showView('list');
     updateDateTime();
     setInterval(updateDateTime, 60000);
 });
