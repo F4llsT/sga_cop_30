@@ -4,6 +4,11 @@
 {% block title %}Passe Fácil - Painel de Administração{% endblock %}
 
 {% block content %}
+<!-- No cabeçalho do seu template passefacilADM.html, adicione: -->
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js?noext"></script>
+{% endblock %}
   <!-- CSS específico da página -->
   <link rel="stylesheet" href="{% static 'admin_personalizado/css/passefacilADM.css' %}">
 
@@ -252,39 +257,50 @@
     </div>
   </div>
 
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
   <!-- Dados para o gráfico -->
   <script>
-    window.chartData = {
-      labels: {{ dias|safe }},
-      datasets: [
-        {
-          label: 'Total de Validações',
-          data: {{ totais|safe }},
-          borderColor: '#4e73df',
-          backgroundColor: 'rgba(78, 115, 223, 0.05)',
-          tension: 0.3,
-          fill: true
-        },
-        {
-          label: 'Válidas',
-          data: {{ validas_list|safe }},
-          borderColor: '#1cc88a',
-          borderDash: [5, 5],
-          backgroundColor: 'transparent',
-          tension: 0.3
-        },
-        {
-          label: 'Inválidas',
-          data: {{ invalidas_list|safe }},
-          borderColor: '#e74a3b',
-          borderDash: [5, 5],
-          backgroundColor: 'transparent',
-          tension: 0.3
-        }
-      ]
-    };
+    document.addEventListener('DOMContentLoaded', function() {
+      if (typeof Chart !== 'undefined') {
+        // Usando JSON.parse para garantir que os dados sejam interpretados corretamente
+        window.chartData = {
+          labels: JSON.parse('{{ dias|escapejs }}'),
+          datasets: [
+            {
+              label: 'Total de Validações',
+              data: JSON.parse('{{ totais|escapejs }}'),
+              borderColor: '#4e73df',
+              backgroundColor: 'rgba(78, 115, 223, 0.05)',
+              tension: 0.3,
+              fill: true
+            },
+            {
+              label: 'Válidas',
+              data: JSON.parse('{{ validas_list|escapejs }}'),
+              borderColor: '#1cc88a',
+              borderDash: [5, 5],
+              backgroundColor: 'transparent',
+              tension: 0.3
+            },
+            {
+              label: 'Inválidas',
+              data: JSON.parse('{{ invalidas_list|escapejs }}'),
+              borderColor: '#e74a3b',
+              borderDash: [5, 5],
+              backgroundColor: 'transparent',
+              tension: 0.3
+            }
+          ]
+        };
+      } else {
+        console.warn('Chart.js não está carregado. O gráfico não será exibido.');
+      }
+    });
   </script>
   
   <!-- JavaScript da aplicação -->
-  <script src="{% static 'admin_personalizado/js/passefacilADM.js' %}"></script>
+  <script src="{% static 'admin_personalizado/js/passefacilADM.js' %}" defer></script>
 {% endblock %}

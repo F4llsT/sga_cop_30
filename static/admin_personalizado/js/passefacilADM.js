@@ -2,9 +2,17 @@
  * Passe Fácil - Painel de Administração
  * Script principal para funcionalidades do painel
  */
-
+// No início do seu arquivo passefacilADM.js, adicione:
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM completamente carregado');
+    console.log('=== INICIALIZAÇÃO DO SISTEMA ===');
+    console.log('Versão do Chart.js:', Chart ? Chart.version : 'Chart.js não carregado');
+    console.log('Elementos encontrados:', {
+        passesTableBody: document.getElementById('passesTableBody'),
+        searchInput: document.getElementById('searchInput'),
+        totalResults: document.getElementById('totalResults'),
+        validationsList: document.getElementById('validationsList')
+    });
+
     
     // Inicializa a aplicação
     function init() {
@@ -177,7 +185,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
     // Configura a busca
     function setupSearch() {
         elements.searchInput.addEventListener('input', handleSearch);
@@ -185,22 +192,51 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Manipula a busca
     function handleSearch(e) {
-        const searchTerm = e.target.value.toLowerCase();
+        console.log('Buscando por:', e.target.value);
+        
+        if (!elements.passesTableBody || !elements.totalResults) {
+            console.warn('Elementos necessários não encontrados');
+            return;
+        }
+        
+        const searchTerm = e.target.value.toLowerCase().trim();
         const rows = elements.passesTableBody.querySelectorAll('tr');
         let visibleCount = 0;
         
+        // Remove mensagens de "Nenhum resultado" anteriores
+        const existingNoResults = elements.passesTableBody.querySelector('.no-results');
+        if (existingNoResults) {
+            existingNoResults.remove();
+        }
+        
         rows.forEach(row => {
+            // Pula linhas vazias ou de mensagem
+            if (row.classList.contains('empty-row') || row.classList.contains('no-results')) {
+                row.style.display = 'none';
+                return;
+            }
+            
             const text = row.textContent.toLowerCase();
-            const isVisible = text.includes(searchTerm);
+            const isVisible = searchTerm === '' || text.includes(searchTerm);
             row.style.display = isVisible ? '' : 'none';
+            
             if (isVisible) visibleCount++;
         });
         
+        // Atualiza a contagem de resultados
         elements.totalResults.textContent = visibleCount;
+        
+        // Mostra mensagem se não houver resultados
+        if (visibleCount === 0 && searchTerm !== '') {
+            const noResultsRow = document.createElement('tr');
+            noResultsRow.className = 'no-results';
+            noResultsRow.innerHTML = '<td colspan="3" class="text-center">Nenhum resultado encontrado para "' + searchTerm + '"</td>';
+            elements.passesTableBody.appendChild(noResultsRow);
+        }
+        
+        console.log('Busca concluída. Resultados encontrados:', visibleCount);
     }
     
-    // (removido) Versão antiga de updateDateTime substituída pela versão com null-checks abaixo
-
     // Configura os event listeners
     function setupEventListeners() {
         console.log('Configurando event listeners...');
@@ -387,46 +423,61 @@ document.addEventListener('DOMContentLoaded', function() {
     // (removido) Versão alternativa de handleSearch evitada para manter consistência com elements.passesTableBody
 
     // Renderiza a lista de passes
-    function renderPassesList() {
-        // A renderização é feita pelo Django template
-        // Esta função é mantida para compatibilidade
-        if (!elements.passesTableBody) return;
-        
-        if (elements.searchInput) {
-            const searchTerm = elements.searchInput.value.toLowerCase();
-            const rows = elements.passesTableBody.querySelectorAll('tr');
-            let visibleCount = 0;
-            let hasVisibleRows = false;
-            
-            rows.forEach(row => {
-                if (row.classList.contains('empty-row')) return;
-                
-                const text = row.textContent.toLowerCase();
-                const isVisible = text.includes(searchTerm);
-                row.style.display = isVisible ? '' : 'none';
-                
-                if (isVisible) {
-                    visibleCount++;
-                    hasVisibleRows = true;
-                }
-            });
-            
-            // Mostra mensagem de "Nenhum resultado" se não houver linhas visíveis
-            const emptyRow = elements.passesTableBody.querySelector('.empty-row');
-            if (emptyRow) {
-                emptyRow.style.display = hasVisibleRows ? 'none' : '';
-            } else if (!hasVisibleRows) {
-                const emptyRow = document.createElement('tr');
-                emptyRow.className = 'empty-row';
-                emptyRow.innerHTML = '<td colspan="4">Nenhum resultado encontrado</td>';
-                elements.passesTableBody.appendChild(emptyRow);
-            }
-            
-            if (elements.totalResults) {
-                elements.totalResults.textContent = hasVisibleRows ? visibleCount : 0;
-            }
-        }
+   // Renderiza a lista de passes
+function renderPassesList() {
+    console.log('Atualizando lista de passes...');
+    
+    if (!elements.passesTableBody) {
+        console.warn('Elemento passesTableBody não encontrado');
+        return;
     }
+    
+    const searchTerm = elements.searchInput ? elements.searchInput.value.toLowerCase().trim() : '';
+    const rows = elements.passesTableBody.querySelectorAll('tr');
+    let visibleCount = 0;
+    
+    // Remove mensagens de "Nenhum resultado" anteriores
+    const existingNoResults = elements.passesTableBody.querySelector('.no-results, .empty-row');
+    if (existingNoResults) {
+        existingNoResults.remove();
+    }
+    
+    // Se não houver linhas, não há nada para fazer
+    if (rows.length === 0) {
+        console.log('Nenhuma linha encontrada na tabela');
+        return;
+    }
+    
+    // Conta as linhas visíveis
+    rows.forEach(row => {
+        // Pula linhas vazias ou de mensagem
+        if (row.classList.contains('empty-row') || row.classList.contains('no-results')) {
+            row.style.display = 'none';
+            return;
+        }
+        
+        const text = row.textContent.toLowerCase();
+        const isVisible = searchTerm === '' || text.includes(searchTerm);
+        row.style.display = isVisible ? '' : 'none';
+        
+        if (isVisible) visibleCount++;
+    });
+    
+    // Atualiza a contagem de resultados
+    if (elements.totalResults) {
+        elements.totalResults.textContent = visibleCount;
+    }
+    
+    // Mostra mensagem se não houver resultados
+    if (visibleCount === 0 && searchTerm !== '') {
+        const noResultsRow = document.createElement('tr');
+        noResultsRow.className = 'no-results';
+        noResultsRow.innerHTML = '<td colspan="4" class="text-center">Nenhum resultado encontrado para "' + searchTerm + '"</td>';
+        elements.passesTableBody.appendChild(noResultsRow);
+    }
+    
+    console.log('Lista de passes atualizada. Resultados encontrados:', visibleCount);
+}
 
     // Renderiza a lista de validações recentes
     function renderValidationsList() {
@@ -586,16 +637,65 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Valida um código (comum para QR Code e validação manual)
     function validateCode(code) {
-        if (!code) return;
+        if (!code) {
+            console.error('Nenhum código fornecido para validação');
+            return;
+        }
         
         showLoading(true);
         
-        // Envia a requisição para o backend Django via GET (conforme apps/passefacil/views.py::validar_qr_code)
-        fetch(`/passefacil/api/validar-qr-code/?codigo=${encodeURIComponent(code)}`)
-        .then(response => response.json())
+        const url = `/passefacil/api/validar-qr-code/?codigo=${encodeURIComponent(code)}`;
+        console.log('=== VALIDAÇÃO DE CÓDIGO ===');
+        console.log('Código a ser validado:', code);
+        console.log('URL da requisição:', url);
+        
+        fetch(url, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            credentials: 'same-origin',
+            cache: 'no-store' // Evita cache para garantir requisições sempre atualizadas
+        })
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            const isJson = contentType.includes('application/json');
+            const text = await response.text();
+            
+            console.log('=== RESPOSTA DO SERVIDOR ===');
+            console.log('Status:', response.status, response.statusText);
+            console.log('Content-Type:', contentType);
+            console.log('Resposta bruta:', text);
+            
+            if (!response.ok) {
+                const error = new Error(`Erro HTTP! status: ${response.status} ${response.statusText}`);
+                error.response = { status: response.status, statusText: response.statusText };
+                throw error;
+            }
+            
+            if (!isJson) {
+                console.warn('A resposta não é um JSON válido. Content-Type:', contentType);
+                try {
+                    // Tenta fazer parse mesmo assim, caso o content-type esteja incorreto
+                    const data = JSON.parse(text);
+                    return data;
+                } catch (e) {
+                    console.error('Falha ao fazer parse do JSON:', e);
+                    throw new Error('Resposta do servidor não é um JSON válido');
+                }
+            }
+            
+            return JSON.parse(text);
+        })
         .then(data => {
+            if (!data) {
+                throw new Error('Nenhum dado retornado pelo servidor');
+            }
+            
+            console.log('Dados da resposta:', JSON.stringify(data, null, 2));
+            
             const now = new Date();
             const timeString = now.toLocaleTimeString('pt-BR', { 
                 hour: '2-digit', 
@@ -604,107 +704,129 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             if (data.valido) {
-                // Validação bem-sucedida
+                console.log('Validação bem-sucedida para o código:', truncateCode(code));
                 showValidationResult(
-                    true, 
-                    (data.usuario && (data.usuario.nome || data.usuario.email)) || 'Usuário', 
-                    truncateCode(code), 
+                    true,
+                    (data.usuario && (data.usuario.nome || data.usuario.email)) || 'Usuário',
+                    truncateCode(code),
                     timeString,
                     data.mensagem || 'Validação bem-sucedida'
                 );
-
-                // Atualiza UI localmente: linha da tabela (Última Validação) e histórico recente
-                try {
-                    // Normaliza códigos para comparação (removendo hífens para match flexível)
-                    const apiCode = (data.codigo || '').replace(/-/g, '').toLowerCase();
-                    const inputCode = String(code).replace(/-/g, '').toLowerCase();
-
-                    // Atualiza a tabela de passes
-                    if (elements.passesTableBody) {
-                        const rows = elements.passesTableBody.querySelectorAll('tr');
-                        rows.forEach(tr => {
-                            const codeEl = tr.querySelector('.code-cell .code-value');
-                            const lastValCell = tr.querySelector('td:nth-child(3)');
-                            if (codeEl && lastValCell) {
-                                const rowCode = (codeEl.textContent || '').trim();
-                                const rowCodeNorm = rowCode.replace(/-/g, '').toLowerCase();
-                                if (rowCodeNorm === apiCode || rowCodeNorm === inputCode) {
-                                    // Atualiza data e badge
-                                    lastValCell.innerHTML = `
-                                        ${now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                        ${timeString}
-                                        <span class="status-badge success">Válido</span>
-                                    `;
-                                }
-                            }
-                        });
-                    }
-
-                    // Atualiza a lista de últimas validações
-                    if (elements.validationsList) {
-                        const item = document.createElement('div');
-                        item.className = 'validation-item';
-                        const displayName = (data.usuario && (data.usuario.nome || data.usuario.email)) || 'Usuário';
-                        item.innerHTML = `
-                            <div class="validation-icon">
-                                <i class="icon-check"></i>
-                            </div>
-                            <div class="validation-details">
-                                <h4>${displayName}</h4>
-                                <div class="validation-meta">
-                                    <span class="validation-time">
-                                        <i class="icon-clock"></i>
-                                        ${now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${timeString}
-                                    </span>
-                                    <span class="validation-status status-success">Válido</span>
-                                </div>
-                            </div>
-                        `;
-
-                        // Remove empty-state se existir e adiciona no topo
-                        const emptyState = elements.validationsList.querySelector('.empty-state');
-                        if (emptyState) emptyState.remove();
-                        elements.validationsList.prepend(item);
-
-                        // Atualiza badge de contagem
-                        if (elements.recentValidationsCount) {
-                            const current = parseInt(elements.recentValidationsCount.textContent || '0', 10) || 0;
-                            elements.recentValidationsCount.textContent = String(current + 1);
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Falha ao atualizar UI local pós-validação:', e);
-                }
+                
+                // Atualiza a tabela localmente
+                updateLocalUI(code, data, now, timeString);
             } else {
-                // Erro na validação
+                console.warn('Validação falhou para o código:', truncateCode(code), 'Motivo:', data.mensagem || 'Não especificado');
                 showValidationResult(
-                    false, 
-                    (data.usuario && (data.usuario.nome || data.usuario.email)) || 'Código inválido', 
-                    truncateCode(code), 
+                    false,
+                    (data.usuario && (data.usuario.nome || data.usuario.email)) || 'Código inválido',
+                    truncateCode(code),
                     timeString,
                     data.mensagem || 'Não foi possível validar o código'
                 );
             }
         })
         .catch(error => {
-            console.error('Erro ao validar código:', error);
+            console.error('=== ERRO NA VALIDAÇÃO ===');
+            console.error('Mensagem:', error.message);
+            console.error('Stack:', error.stack);
+            if (error.response) {
+                console.error('Detalhes da resposta:', error.response);
+            }
+            
             const timeString = new Date().toLocaleTimeString('pt-BR', { 
                 hour: '2-digit', 
                 minute: '2-digit', 
                 second: '2-digit' 
             });
             
+            let errorMessage = `Erro: ${error.message || 'Erro desconhecido'}`;
+            if (error.response) {
+                errorMessage += ` (Status: ${error.response.status})`;
+            }
+            
             showValidationResult(
                 false, 
                 'Erro', 
                 truncateCode(code), 
                 timeString,
-                'Erro ao conectar ao servidor. Tente novamente.'
+                errorMessage
             );
         })
         .finally(() => {
             showLoading(false);
+            console.log('=== FIM DA VALIDAÇÃO ===\n');
         });
+    }
+    
+    // Função auxiliar para atualizar a interface
+    function updateLocalUI(code, data, now, timeString) {
+        try {
+            // Atualiza a tabela de passes
+            if (elements.passesTableBody) {
+                const rows = elements.passesTableBody.querySelectorAll('tr');
+                const apiCode = (data.codigo || '').toString().replace(/-/g, '').toLowerCase();
+                const inputCode = String(code).replace(/-/g, '').toLowerCase();
+                
+                rows.forEach(tr => {
+                    const codeEl = tr.querySelector('.code-cell .code-value');
+                    const lastValCell = tr.querySelector('td:nth-child(3)');
+                    
+                    if (codeEl && lastValCell) {
+                        const rowCode = (codeEl.textContent || '').trim();
+                        const rowCodeNorm = rowCode.replace(/-/g, '').toLowerCase();
+                        
+                        if (rowCodeNorm === apiCode || rowCodeNorm === inputCode) {
+                            lastValCell.innerHTML = `
+                                ${now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                                ${timeString}
+                                <span class="status-badge success">Válido</span>
+                            `;
+                        }
+                    }
+                });
+            }
+    
+            // Atualiza o histórico de validações
+            if (elements.validationsList) {
+                const item = document.createElement('div');
+                item.className = 'validation-item';
+                const displayName = (data.usuario && (data.usuario.nome || data.usuario.email)) || 'Usuário';
+                
+                item.innerHTML = `
+                    <div class="validation-icon">
+                        <i class="icon-check"></i>
+                    </div>
+                    <div class="validation-details">
+                        <h4>${displayName}</h4>
+                        <div class="validation-meta">
+                            <span class="validation-time">
+                                <i class="icon-clock"></i>
+                                ${now.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })} ${timeString}
+                            </span>
+                            <span class="validation-status status-success">Válido</span>
+                        </div>
+                    </div>
+                `;
+    
+                // Remove mensagem de estado vazio se existir
+                const emptyState = elements.validationsList.querySelector('.empty-state');
+                if (emptyState) {
+                    emptyState.remove();
+                }
+    
+                // Adiciona a nova validação no início da lista
+                elements.validationsList.prepend(item);
+    
+                // Atualiza o contador
+                if (elements.recentValidationsCount) {
+                    const current = parseInt(elements.recentValidationsCount.textContent || '0', 10) || 0;
+                    elements.recentValidationsCount.textContent = current + 1;
+                }
+            }
+        } catch (e) {
+            console.error('Erro ao atualizar a interface:', e);
+        }
     }
     
     // Função auxiliar para obter o token CSRF
