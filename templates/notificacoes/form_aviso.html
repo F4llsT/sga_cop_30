@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% load static i18n crispy_forms_tags %}
+
+{% block title %}{{ titulo_pagina }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">{{ titulo_pagina }}</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'notificacoes:lista_avisos' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> {% trans 'Voltar' %}
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i> {% trans 'Salvar' %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar o datetime picker para o campo de data de expiração
+        const dataExpiracaoField = document.getElementById('id_data_expiracao');
+        if (dataExpiracaoField) {
+            flatpickr(dataExpiracaoField, {
+                enableTime: true,
+                dateFormat: 'Y-m-d H:i',
+                time_24hr: true,
+                locale: 'pt',
+                minDate: 'today',
+                defaultDate: '{{ form.data_expiracao.value|default:'' }}',
+                allowInput: true
+            });
+        }
+    });
+</script>
+{% endblock %}

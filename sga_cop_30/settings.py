@@ -173,6 +173,8 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 # Expose OneSignal App ID to templates
                 'apps.core.context_processors.onesignal',
+                # Avisos ativos para templates
+                'apps.notificacoes.context_processors.avisos_ativos',
             ],
         },
     },

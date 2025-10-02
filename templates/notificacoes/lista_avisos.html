@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static i18n %}
+
+{% block title %}{% trans 'Gerenciar Avisos' %}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3">{% trans 'Gerenciar Avisos' %}</h1>
+        </div>
+        <div class="col text-end">
+            <a href="{% url 'notificacoes:criar_aviso' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> {% trans 'Novo Aviso' %}
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{% trans 'Título' %}</th>
+                            <th>{% trans 'Nível' %}</th>
+                            <th>{% trans 'Criado em' %}</th>
+                            <th>{% trans 'Expira em' %}</th>
+                            <th>{% trans 'Status' %}</th>
+                            <th class="text-end">{% trans 'Ações' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for aviso in object_list %}
+                        <tr>
+                            <td>
+                                <i class="fas fa-{{ aviso.icone }} text-{{ aviso.classe_css }} me-2"></i>
+                                {{ aviso.titulo }}
+                                {% if aviso.fixo_no_topo %}
+                                    <span class="badge bg-info ms-2">{% trans 'Fixo' %}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ aviso.get_nivel_display }}</td>
+                            <td>{{ aviso.data_criacao|date:"d/m/Y H:i" }}</td>
+                            <td>{{ aviso.data_expiracao|default:"-"|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <form method="post" action="{% url 'notificacoes:toggle_aviso' aviso.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm {% if aviso.ativo %}btn-success{% else %}btn-secondary{% endif %}">
+                                        {% if aviso.ativo %}{% trans 'Ativo' %}{% else %}{% trans 'Inativo' %}{% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                            <td class="text-end">
+                                <a href="{% url 'notificacoes:editar_aviso' aviso.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'notificacoes:excluir_aviso' aviso.pk %}" class="btn btn-sm btn-outline-danger" 
+                                   onclick="return confirm('{% trans 'Tem certeza que deseja excluir este aviso?' %}')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">{% trans 'Nenhum aviso cadastrado.' %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,29 +1,13 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load i18n %}
 
 {% block title %}COP30 Dashboard - Home{% endblock %}
 
 {% block content %}
 <div class="container">
     <main>
-        <section class="alert-section">
-            <h2>Avisos Importantes</h2>
-            <div class="alert-cards-container">
-                <div class="alert-card blue-alert">
-                    <i class="fa-solid fa-cloud-sun"></i>
-                    <p>Previsão de tempo estável para a manhã. Aproveite!</p>
-                </div>
-                <div class="alert-card red-alert">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    
-                    <p>O fluxo de acesso ao Pavilhão 5 está alterado. Use a entrada B.</p>
-                </div>
-                <div class="alert-card green-alert">
-                    <i class="fa-solid fa-leaf"></i>
-                    <p>Ajude a manter o evento verde. Use as lixeiras seletivas.</p>
-                </div>
-            </div>
-        </section>
+        {% include 'notificacoes/_avisos_home.html' %}
         
         <section class="upcoming-section">
             <h2>Próximos Eventos</h2>

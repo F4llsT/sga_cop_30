@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from apps.agenda.models import Event
 
 User = get_user_model()
@@ -52,3 +53,65 @@ class Notificacao(models.Model):
             return f"há {minutos} minuto{'s' if minutos > 1 else ''}"
         else:
             return "agora mesmo"
+
+
+class Aviso(models.Model):
+    NIVEL_IMPORTANCIA = [
+        ('info', 'Informativo'),
+        ('alerta', 'Alerta'),
+        ('critico', 'Crítico'),
+    ]
+    
+    titulo = models.CharField(_('título'), max_length=200)
+    mensagem = models.TextField(_('mensagem'))
+    nivel = models.CharField(
+        _('nível de importância'),
+        max_length=10, 
+        choices=NIVEL_IMPORTANCIA, 
+        default='info'
+    )
+    data_criacao = models.DateTimeField(_('data de criação'), auto_now_add=True)
+    data_expiracao = models.DateTimeField(_('data de expiração'), null=True, blank=True)
+    fixo_no_topo = models.BooleanField(_('fixo no topo'), default=False)
+    ativo = models.BooleanField(_('ativo'), default=True)
+    criado_por = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        related_name='avisos_criados',
+        verbose_name=_('criado por')
+    )
+    
+    class Meta:
+        verbose_name = _('Aviso')
+        verbose_name_plural = _('Avisos')
+        ordering = ['-fixo_no_topo', '-data_criacao']
+    
+    def __str__(self):
+        return self.titulo
+    
+    @property
+    def esta_expirado(self):
+        if self.data_expiracao:
+            return timezone.now() > self.data_expiracao
+        return False
+    
+    @property
+    def esta_visivel(self):
+        return self.ativo and not self.esta_expirado
+    
+    @property
+    def classe_css(self):
+        return {
+            'info': 'info',
+            'alerta': 'warning',
+            'critico': 'danger'
+        }.get(self.nivel, 'info')
+    
+    @property
+    def icone(self):
+        return {
+            'info': 'info-circle',
+            'alerta': 'exclamation-triangle',
+            'critico': 'exclamation-circle'
+        }.get(self.nivel, 'info')

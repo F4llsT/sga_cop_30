@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load i18n static %}
+
+{% block title %}{% trans 'Histórico de Avisos' %}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{% trans 'Histórico de Avisos' %}</h1>
+        <a href="{% url 'notificacoes:lista_avisos' %}" class="btn btn-outline-primary">
+            <i class="fas fa-arrow-left me-1"></i> {% trans 'Voltar para Avisos Ativos' %}
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>{% trans 'Título' %}</th>
+                            <th>{% trans 'Mensagem' %}</th>
+                            <th>{% trans 'Nível' %}</th>
+                            <th>{% trans 'Criado em' %}</th>
+                            <th>{% trans 'Expirou em' %}</th>
+                            <th>{% trans 'Status' %}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for aviso in object_list %}
+                        <tr>
+                            <td>{{ aviso.titulo }}</td>
+                            <td>{{ aviso.mensagem|truncatechars:50 }}</td>
+                            <td>
+                                <span class="badge bg-{{ aviso.classe_css }}">
+                                    {{ aviso.get_nivel_display }}
+                                </span>
+                            </td>
+                            <td>{{ aviso.data_criacao|date:'d/m/Y H:i' }}</td>
+                            <td>{{ aviso.data_expiracao|default:'-'|date:'d/m/Y H:i' }}</td>
+                            <td>
+                                {% if aviso.esta_expirado %}
+                                    <span class="badge bg-secondary">{% trans 'Expirado' %}</span>
+                                {% elif not aviso.ativo %}
+                                    <span class="badge bg-dark">{% trans 'Arquivado' %}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center">
+                                <div class="alert alert-info mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    {% trans 'Nenhum aviso arquivado encontrado.' %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if is_paginated %}
+            <div class="d-flex justify-content-center mt-4">
+                <nav aria-label="{% trans 'Navegação de páginas' %}">
+                    <ul class="pagination">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1">&laquo; {% trans 'primeira' %}</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">{% trans 'anterior' %}</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">
+                                {% blocktrans with number=page_obj.number num_pages=page_obj.paginator.num_pages %}
+                                    Página {{ number }} de {{ num_pages }}
+                                {% endblocktrans %}
+                            </span>
+                        </li>
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">{% trans 'próxima' %}</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }">{% trans 'última' %} &raquo;</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
