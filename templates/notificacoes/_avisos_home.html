@@ -12,11 +12,6 @@
             <div class="alert-content">
                 <h4>{{ aviso.titulo }}</h4>
                 <p>{{ aviso.mensagem }}</p>
-                {% if aviso.data_expiracao %}
-                <small class="text-muted">
-                    {% trans 'Válido até' %} {{ aviso.data_expiracao|date:'d/m/Y H:i' }}
-                </small>
-                {% endif %}
             </div>
         </div>
         {% empty %}
