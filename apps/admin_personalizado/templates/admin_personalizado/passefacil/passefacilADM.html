@@ -8,11 +8,12 @@
 {% block extrahead %}
 {{ block.super }}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js?noext"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 {% endblock %}
   <!-- CSS específico da página -->
   <link rel="stylesheet" href="{% static 'admin_personalizado/css/passefacilADM.css' %}">
 
-  <div class="passefacil-admin">
+  <div class="passe-facil-container passefacil-admin">
     <!-- Cabeçalho (estilo do dashboard) -->
     <header class="main-header">
       <h2>Painel de Administração • Passe Fácil</h2>

@@ -1,5 +1,7 @@
-/* ===== VARIÁVEIS E RESET ===== */
-:root {
+/* ===== VARIÁVEIS E ESTILOS DO PASSE FÁCIL ===== */
+/* Aplicar a classe .passe-facil-container ao container principal do Passe Fácil */
+.passe-facil-container,
+.passefacil-admin {
   /* Cores */
   --primary-color: #2563eb;
   --primary-light: #3b82f6;
@@ -36,49 +38,70 @@
   
   /* Transições */
   --transition: all 0.2s ease-in-out;
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
+  
+  /* Reset de estilos para garantir isolamento */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-primary);
+  font-size: 16px;
   line-height: 1.5;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ===== TIPOGRAFIA ===== */
-h1, h2, h3, h4, h5, h6 {
+.passe-facil-container h1,
+.passe-facil-container h2,
+.passe-facil-container h3,
+.passe-facil-container h4,
+.passe-facil-container h5,
+.passe-facil-container h6,
+.passefacil-admin h1,
+.passefacil-admin h2,
+.passefacil-admin h3,
+.passefacil-admin h4,
+.passefacil-admin h5,
+.passefacil-admin h6 {
   font-weight: 600;
   line-height: 1.25;
   margin-bottom: 0.75rem;
   color: var(--text-primary);
 }
 
-h1 { font-size: 1.875rem; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.25rem; }
-h4 { font-size: 1.125rem; }
+.passe-facil-container h1,
+.passefacil-admin h1 { 
+  font-size: 1.875rem; 
+}
 
-p {
+.passe-facil-container h2,
+.passefacil-admin h2 { 
+  font-size: 1.5rem; 
+}
+
+.passe-facil-container h3,
+.passefacil-admin h3 { 
+  font-size: 1.25rem; 
+}
+
+.passe-facil-container h4,
+.passefacil-admin h4 { 
+  font-size: 1.125rem; 
+}
+
+.passe-facil-container p,
+.passefacil-admin p {
   margin-bottom: 1rem;
   color: var(--text-secondary);
 }
 
-.subtitle {
+.passe-facil-container .subtitle,
+.passefacil-admin .subtitle {
   font-size: 1rem;
   color: var(--text-secondary);
   margin-bottom: 0;
 }
 
 /* ===== BOTÕES ===== */
-.btn {
+.passe-facil-container .btn,
+.passefacil-admin .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -94,33 +117,39 @@ p {
   user-select: none;
 }
 
-.btn i {
+.passe-facil-container .btn i,
+.passefacil-admin .btn i {
   margin-right: 0.5rem;
   font-size: 1.1em;
 }
 
-.btn-primary {
+.passe-facil-container .btn-primary,
+.passefacil-admin .btn-primary {
   background-color: var(--primary-color);
   color: white;
   border-color: var(--primary-color);
 }
 
-.btn-primary:hover {
+.passe-facil-container .btn-primary:hover,
+.passefacil-admin .btn-primary:hover {
   background-color: var(--primary-dark);
   border-color: var(--primary-dark);
 }
 
-.btn-secondary {
+.passe-facil-container .btn-secondary,
+.passefacil-admin .btn-secondary {
   background-color: white;
   color: var(--primary-color);
   border: 1px solid var(--border-color);
 }
 
-.btn-secondary:hover {
+.passe-facil-container .btn-secondary:hover,
+.passefacil-admin .btn-secondary:hover {
   background-color: var(--hover-color);
 }
 
 /* ===== LAYOUT ===== */
+.passe-facil-container .passefacil-admin,
 .passefacil-admin {
   min-height: 100vh;
   display: flex;
@@ -129,68 +158,85 @@ p {
 }
 
 /* Ajustes para alinhar com o header do dashboard */
+.passe-facil-container .passefacil-admin .main-header,
 .passefacil-admin .main-header {
   margin-bottom: 1rem;
 }
 
+.passe-facil-container .passefacil-admin .main-header .view-toggle,
 .passefacil-admin .main-header .view-toggle {
   display: flex;
-  gap: .5rem;
+  gap: 0.5rem;
 }
 
 /* Estatísticas */
-.stats-container {
+.passe-facil-container .stats-container,
+.passefacil-admin .stats-container {
   display: grid;
-  grid-template-columns: 1fr; /* Apenas um card, ocupar toda a largura */
+  grid-template-columns: 1fr;
   gap: 1rem;
   margin-bottom: 2rem;
 }
 
-.stat-card {
+.passe-facil-container .stat-card,
+.passefacil-admin .stat-card {
   border-radius: var(--border-radius);
-  padding: 1rem; /* mais fino */
+  padding: 1rem;
   box-shadow: var(--shadow);
   display: flex;
-  flex-direction: column; /* título acima, gráfico abaixo */
-  align-items: stretch; /* ocupar toda largura útil */
-  width: 100%; /* ocupa toda a largura */
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
 }
-.stat-card h3 {
-  font-size: 1.5rem; /* título maior */
+
+.passe-facil-container .stat-card h3,
+.passefacil-admin .stat-card h3 {
+  font-size: 1.5rem;
 }
-.stat-card:hover {
+
+.passe-facil-container .stat-card:hover,
+.passefacil-admin .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
 /* Esconde o ícone no card do gráfico para centralizar o conteúdo */
-.stats-container .stat-card .stat-icon { display: none; }
+.passe-facil-container .stats-container .stat-card .stat-icon,
+.passefacil-admin .stats-container .stat-card .stat-icon {
+  display: none;
+}
 
-.stat-info h3 {
-  font-size: 1.25rem; /* maior para destacar o título do card */
+.passe-facil-container .stat-info h3,
+.passefacil-admin .stat-info h3 {
+  font-size: 1.25rem;
   font-weight: 500;
   color: var(--text-secondary);
   margin-bottom: 0.25rem;
 }
 
-.stat-number {
+.passe-facil-container .stat-number,
+.passefacil-admin .stat-number {
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-primary);
   line-height: 1.2;
 }
 
+.passe-facil-container .stat-meta,
+.passefacil-admin .stat-meta {
   font-size: 0.8rem;
   color: var(--text-muted);
   margin-top: 0.25rem;
 }
 
 /* ===== ESTILOS DO GRÁFICO MINIMALISTA ===== */
-.stats-container {
+.passe-facil-container .stats-container,
+.passefacil-admin .stats-container {
   margin-bottom: 1.5rem;
 }
 
-.stat-card {
+.passe-facil-container .stat-card,
+.passefacil-admin .stat-card {
   background: transparent;
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
@@ -199,12 +245,14 @@ p {
   margin-bottom: 1rem;
 }
 
-.stat-card:hover {
+.passe-facil-container .stat-card:hover,
+.passefacil-admin .stat-card:hover {
   border-color: var(--primary-light);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.mini-chart {
+.passe-facil-container .mini-chart,
+.passefacil-admin .mini-chart {
   width: 100%;
   height: 200px;
   position: relative;

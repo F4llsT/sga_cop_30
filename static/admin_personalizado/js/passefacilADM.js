@@ -256,7 +256,7 @@ class PasseFacilAdmin {
      * Alterna o estado da câmera (ligar/desligar)
      */
     async toggleCamera() {
-        const { elements, state } = this;
+        const { state, elements } = this;
         
         if (state.isCameraActive) {
             // Desativa a câmera
@@ -307,21 +307,78 @@ class PasseFacilAdmin {
             state.isCameraActive = true;
             
             if (elements.cameraFeed) {
-                elements.cameraFeed.innerHTML = '<video autoplay playsinline></video>';
-                const video = elements.cameraFeed.querySelector('video');
+                elements.cameraFeed.innerHTML = `
+                    <video id="qr-video" autoplay playsinline></video>
+                    <canvas id="qr-canvas" style="display: none;"></canvas>
+                `;
+                const video = elements.cameraFeed.querySelector('#qr-video');
+                const canvas = elements.cameraFeed.querySelector('#qr-canvas');
+                const canvasContext = canvas.getContext('2d');
+                
                 video.srcObject = stream;
                 
-                // Aqui você pode adicionar a lógica de leitura de QR Code
-                // Por exemplo, usando uma biblioteca como jsQR ou ZXing
+                // Set canvas dimensions to match video
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                };
+                
+                // QR Code scanning function
+                const scanQRCode = () => {
+                    if (!state.isCameraActive) return;
+                    
+                    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                        // Draw video frame to canvas
+                        canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        
+                        // Get image data from canvas
+                        const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+                        
+                        // Try to decode QR code
+                        try {
+                            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                                inversionAttempts: 'dontInvert',
+                            });
+                            
+                            // If QR code is found
+                            if (code) {
+                                console.log('QR Code detected:', code.data);
+                                this.validateCode(code.data);
+                                // Pause scanning after successful detection
+                                this.toggleCamera();
+                            }
+                        } catch (e) {
+                            console.error('Error scanning QR code:', e);
+                        }
+                    }
+                    
+                    // Continue scanning
+                    if (state.isCameraActive) {
+                        requestAnimationFrame(scanQRCode);
+                    }
+                };
+                
+                // Start scanning
+                video.play().then(() => {
+                    scanQRCode();
+                }).catch(err => {
+                    console.error('Error starting video:', err);
+                    this.showNotification('error', 'Erro ao iniciar a câmera');
+                });
             }
             
             if (elements.toggleCameraBtn) {
                 elements.toggleCameraBtn.innerHTML = '<i class="icon-camera-off"></i><span>Desligar Câmera</span>';
+                elements.toggleCameraBtn.disabled = false;
             }
             
         } catch (err) {
             console.error('Erro ao acessar a câmera:', err);
             this.showNotification('error', 'Não foi possível acessar a câmera. Verifique as permissões do navegador.');
+            if (elements.toggleCameraBtn) {
+                elements.toggleCameraBtn.innerHTML = '<i class="icon-camera"></i><span>Tentar Novamente</span>';
+                elements.toggleCameraBtn.disabled = false;
+            }
         }
     }
 
@@ -334,76 +391,59 @@ class PasseFacilAdmin {
             return;
         }
         
+        const { elements } = this;
         this.showLoading(true);
         
-        const url = `/passefacil/api/validar-qr-code/?codigo=${encodeURIComponent(code)}`;
-        
         try {
-            const response = await fetch(url, {
+            const response = await fetch(`/passefacil/api/validar-qr-code/?codigo=${encodeURIComponent(code)}`, {
+                method: 'GET',
                 headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': this.getCookie('csrftoken') || ''
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
-                credentials: 'same-origin',
-                cache: 'no-store'
+                credentials: 'same-origin'
             });
             
-            const contentType = response.headers.get('content-type') || '';
-            const isJson = contentType.includes('application/json');
-            const text = await response.text();
-            
-            if (!response.ok) {
-                throw new Error(`Erro HTTP! status: ${response.status} ${response.statusText}`);
-            }
-            
-            const data = isJson ? JSON.parse(text) : { valido: false, mensagem: 'Formato de resposta inválido' };
-            
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('pt-BR', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit' 
-            });
+            const data = await response.json();
+            this.showLoading(false);
             
             if (data.valido) {
-                this.showValidationResult(
-                    true,
-                    (data.usuario && (data.usuario.nome || data.usuario.email)) || 'Usuário',
-                    this.truncateCode(code),
-                    timeString,
-                    data.mensagem || 'Validação bem-sucedida'
-                );
-                
-                this.updateLocalUI(code, data, now, timeString);
+                this.showValidationResult(true, data.usuario || 'Usuário', code, new Date().toLocaleTimeString(), data.mensagem || 'Código válido');
+                // Atualiza a interface com o novo código validado
+                this.updateLocalUI(code, data, new Date(), new Date().toLocaleTimeString());
             } else {
-                this.showValidationResult(
-                    false,
-                    (data.usuario && (data.usuario.nome || data.usuario.email)) || 'Código inválido',
-                    this.truncateCode(code),
-                    timeString,
-                    data.mensagem || 'Não foi possível validar o código'
-                );
+                this.showValidationResult(false, 'Código inválido', code, new Date().toLocaleTimeString(), data.mensagem || 'Código inválido ou expirado');
             }
             
         } catch (error) {
             console.error('Erro na validação:', error);
-            const timeString = new Date().toLocaleTimeString('pt-BR', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit' 
-            });
-            
-            this.showValidationResult(
-                false, 
-                'Erro', 
-                this.truncateCode(code), 
-                timeString,
-                error.message || 'Erro ao validar o código'
-            );
-            
-        } finally {
             this.showLoading(false);
+            this.showValidationResult(false, 'Erro', code, new Date().toLocaleTimeString(), 'Erro ao validar o código. Tente novamente.');
+        }
+    }
+
+    /**
+     * Fecha o modal de validação
+     */
+    closeModal() {
+        const { elements } = this;
+        if (!elements.modal) return;
+        
+        elements.modal.classList.remove('show');
+        
+        // Limpa o resultado da validação
+        if (elements.validationResult) {
+            elements.validationResult.className = 'validation-result';
+        }
+        
+        // Limpa os campos do modal
+        if (elements.modalUser) elements.modalUser.textContent = '--';
+        if (elements.modalCode) elements.modalCode.textContent = '--';
+        if (elements.modalDateTime) elements.modalDateTime.textContent = '--';
+        
+        // Reativa a câmera se estiver na aba de QR Code
+        if (this.state.currentTab === 'qrTab' && this.state.isCameraActive) {
+            this.initCamera();
         }
     }
 
