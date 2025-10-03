@@ -7,7 +7,7 @@
 <!-- No cabeçalho do seu template passefacilADM.html, adicione: -->
 {% block extrahead %}
 {{ block.super }}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js?noext"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 {% endblock %}
   <!-- CSS específico da página -->
@@ -256,77 +256,104 @@
         </button>
     </div>
   </div>
-
-  
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   
   <!-- Dados para o gráfico -->
   <script>
-    // Dados do gráfico
-    window.chartData = {
-      labels: {{ dias|safe }},
-      datasets: [
-        {
-          label: 'Total de Validações',
-          data: {{ totais|safe }},
-          borderColor: '#4e73df',
-          backgroundColor: 'rgba(78, 115, 223, 0.05)',
-          tension: 0.3,
-          fill: true
-        },
-        {
-          label: 'Válidas',
-          data: {{ validas_list|safe }},
-          borderColor: '#1cc88a',
-          borderDash: [5, 5],
-          backgroundColor: 'transparent',
-          tension: 0.3
-        },
-        {
-          label: 'Inválidas',
-          data: {{ invalidas_list|safe }},
-          borderColor: '#e74a3b',
-          borderDash: [5, 5],
-          backgroundColor: 'transparent',
-          tension: 0.3
-        }
-      ]
-    };
-
-    // Inicializa o gráfico quando o DOM estiver pronto
-    document.addEventListener('DOMContentLoaded', function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    try {
+      console.log('Iniciando inicialização do gráfico...');
+      
+      // Elemento container do gráfico
+      const container = document.getElementById('miniChart');
+      if (!container) {
+        console.error('Elemento do gráfico não encontrado');
+        return;
+      }
+      
+      // Tenta obter os dados do template
+      let labels, totais, validas, invalidas;
+      
       try {
-        const container = document.getElementById('miniChart');
+        labels = JSON.parse('{{ dias|safe|escapejs }}');
+        totais = JSON.parse('{{ totais|safe|escapejs }}');
+        validas = JSON.parse('{{ validas_list|safe|escapejs }}');
+        invalidas = JSON.parse('{{ invalidas_list|safe|escapejs }}');
         
-        if (!container) {
-          console.error('Elemento do gráfico não encontrado');
-          return;
+        console.log('Dados recebidos:', { labels, totais, validas, invalidas });
+        
+        if (!Array.isArray(labels) || !Array.isArray(totais) || 
+            !Array.isArray(validas) || !Array.isArray(invalidas)) {
+          throw new Error('Dados inválidos recebidos do servidor');
         }
-        
-        // Verifica se existem dados para exibir
-        if (!window.chartData || window.chartData.labels.length === 0 || !window.chartData.datasets || window.chartData.datasets.length === 0) {
-          console.warn('Nenhum dado disponível para exibir no gráfico');
-          container.innerHTML = '<div class="no-data">Nenhum dado disponível para o período selecionado</div>';
-          return;
-        }
-        
-        // Limpa o container
-        container.innerHTML = '';
-        const canvas = document.createElement('canvas');
-        container.appendChild(canvas);
-        
-        // Cria o gráfico
-        const ctx = canvas.getContext('2d');
-        new Chart(ctx, {
-          type: 'line',
-          data: window.chartData,
+      } catch (e) {
+        console.error('Erro ao processar dados do gráfico:', e);
+        container.innerHTML = '<div class="no-data">Erro ao carregar dados do gráfico</div>';
+        return;
+      }
+      
+      // Prepara os dados do gráfico
+      const chartData = {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Total de Validações',
+            data: totais,
+            borderColor: '#4e73df',
+            backgroundColor: 'rgba(78, 115, 223, 0.05)',
+            tension: 0.3,
+            fill: true
+          },
+          {
+            label: 'Válidas',
+            data: validas,
+            borderColor: '#1cc88a',
+            borderDash: [5, 5],
+            backgroundColor: 'transparent',
+            tension: 0.3
+          },
+          {
+            label: 'Inválidas',
+            data: invalidas,
+            borderColor: '#e74a3b',
+            borderDash: [5, 5],
+            backgroundColor: 'transparent',
+            tension: 0.3
+          }
+        ]
+      };
+      
+      console.log('Dados do gráfico preparados:', chartData);
+      
+      // Verifica se há dados para exibir
+      if (!chartData.labels.length || !chartData.datasets.some(ds => ds.data && ds.data.length > 0)) {
+        console.warn('Nenhum dado disponível para exibir no gráfico');
+        container.innerHTML = '<div class="no-data">Nenhum dado disponível para o período selecionado</div>';
+        return;
+      }
+      
+      // Limpa o container e cria o canvas
+      container.innerHTML = '<canvas></canvas>';
+      const canvas = container.querySelector('canvas');
+      
+      if (!canvas) {
+        throw new Error('Falha ao criar elemento canvas');
+      }
+      
+      // Cria o gráfico
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error('Não foi possível obter o contexto 2D do canvas');
+      }
+      
+      console.log('Criando gráfico...');
+      new Chart(ctx, {
+        type: 'line',
+        data: chartData,
           options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
               legend: {
-                display: true,
                 position: 'bottom',
                 labels: {
                   padding: 20,
