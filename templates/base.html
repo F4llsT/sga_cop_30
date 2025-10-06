@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}COP30 Dashboard{% endblock %}</title>
+    <title>{% block title %}COP30{% endblock %}</title>
+    <link rel="shortcut icon" href="{% static 'img/favicon.ico' %}" type="image/x-icon">
     
     <link rel="stylesheet" href="{% static 'css/home.css' %}?v=5">
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     
@@ -19,32 +19,37 @@
     
     <!-- OneSignal Web SDK -->
     <script>
-      window.OneSignalDeferred = window.OneSignalDeferred || [];
-      OneSignalDeferred.push(function(OneSignal) {
-        OneSignal.init({
-          appId: "{{ ONESIGNAL_APP_ID|default:'' }}",
-          safari_web_id: undefined,
-          allowLocalhostAsSecureOrigin: true
+      document.addEventListener('DOMContentLoaded', function() {
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(function(OneSignal) {
+          OneSignal.init({
+            appId: "{{ ONESIGNAL_APP_ID|default:'' }}",
+            safari_web_id: undefined,
+            allowLocalhostAsSecureOrigin: true
+          });
+        
+          {% if user.is_authenticated %}
+          // Associa o usuário logado como external_id no OneSignal
+          OneSignal.setExternalUserId("{{ user.id }}");
+          {% endif %}
         });
-        {% if user.is_authenticated %}
-        // Associa o usuário logado como external_id no OneSignal
-        OneSignal.login("{{ user.id }}");
-        {% endif %}
       });
     </script>
-    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
-</head>
-<body>
-
+  </head>
+  <body>
     <header class="top-nav">
-        <div class="top-bar">
-            <div class="nav-content-wrapper">
-                <a href="{% url 'home' %}" class="logo" id="main-logo">
-                    <i class="fa-solid fa-earth-americas planet-icon"></i>
-                    <h1 class="logo-text">
-                        <span class="letter">C</span><span class="letter">O</span><span class="letter">P</span><span class="letter">3</span><span class="letter">0</span>
-                    </h1>
-                </a>
+      <div class="top-bar">
+        <div class="nav-content-wrapper">
+          <a href="{% url 'home' %}" class="logo" id="main-logo">
+            <i class="fa-solid fa-earth-americas planet-icon"></i>
+            <span class="logo-text">
+              <span class="letter">C</span>
+              <span class="letter">O</span>
+              <span class="letter">P</span>
+              <span class="letter">3</span>
+              <span class="letter">0</span>
+            </span>
+          </a>
                 <div class="user-area">
                     <div class="notification-container">
                         {% if user.is_staff %}
@@ -193,5 +198,5 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{% static 'js/home.js' %}?v=1.0.0"></script>
     {% block extra_js %}{% endblock %}
-</body>
+    </body>
 </html>
