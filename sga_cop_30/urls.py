@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import RedirectView
+from django.contrib.staticfiles.storage import staticfiles_storage
 from apps.core import views as core_views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -28,6 +30,9 @@ urlpatterns = [
     
     # Passe Fácil
     path('passefacil/', include('apps.passefacil.urls', namespace='passefacil')),
+    
+    # Favicon - Rota explícita
+    path('favicon.ico', RedirectView.as_view(url='/static/img/favicon.ico', permanent=True)),
     
     # API Passe Fácil
     path('api/passefacil/', include('apps.passefacil.api_urls', namespace='passefacil_api')),
