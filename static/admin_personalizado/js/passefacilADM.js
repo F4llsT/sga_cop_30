@@ -454,6 +454,11 @@ class PasseFacilAdmin {
         const { elements } = this;
         if (!elements.modal) return;
         
+        // Extrai o nome do usuário (pode ser um objeto ou string)
+        const userName = (user && typeof user === 'object' && user.nome) ? 
+                        user.nome : 
+                        (user || '-');
+        
         // Atualiza o conteúdo do modal com base no resultado
         if (success) {
             elements.modalTitle.textContent = 'Validação Realizada';
@@ -482,9 +487,9 @@ class PasseFacilAdmin {
         }
         
         // Preenche as informações
-        elements.modalUser.textContent = user || '-';
+        elements.modalUser.textContent = userName;
         elements.modalCode.textContent = code || '-';
-        elements.modalDateTime.textContent = time || '-';
+        elements.modalDateTime.textContent = time || new Date().toLocaleString();
         
         // Mostra o modal
         elements.modal.classList.add('show');

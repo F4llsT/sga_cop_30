@@ -175,6 +175,10 @@ def passefacil_admin(request):
             validas_list.append(0)
             invalidas_list.append(0)
     
+    from django.core.serializers.json import DjangoJSONEncoder
+    import json
+    
+    # Converte as listas para JSON manualmente
     context = {
         'title': 'Passe Fácil - Admin',
         'active_menu': 'passefacil_admin',
@@ -184,10 +188,10 @@ def passefacil_admin(request):
         'validas': validas,
         'invalidas': invalidas,
         'total_usuarios': total_usuarios,
-        'dias': dias,
-        'totais': totais,
-        'validas_list': validas_list,
-        'invalidas_list': invalidas_list,
+        'dias': json.dumps(dias, cls=DjangoJSONEncoder),
+        'totais': json.dumps(totais, cls=DjangoJSONEncoder),
+        'validas_list': json.dumps(validas_list, cls=DjangoJSONEncoder),
+        'invalidas_list': json.dumps(invalidas_list, cls=DjangoJSONEncoder),
         'period': period,
         'period_label': period_label,
     }
