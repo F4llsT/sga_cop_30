@@ -48,22 +48,22 @@
     <section class="shortcuts-section">
         <h2>Ações Rápidas</h2>
         <div class="shortcuts-grid">
-            <a href="#" class="shortcut-card users-shortcut">
+            <a href="/admin/auth/user/" class="shortcut-card users-shortcut">
                 <i class="fa-solid fa-users-gear"></i>
                 <h3>Gerenciar Usuários</h3>
                 <p>Adicionar, remover e editar permissões de usuários.</p>
             </a>
-            <a href="#" class="shortcut-card agenda-shortcut">
+            <a href="/admin/agenda/" class="shortcut-card agenda-shortcut">
                 <i class="fa-solid fa-calendar-plus"></i>
                 <h3>Gestão de Agenda</h3>
                 <p>Criar, editar e publicar eventos na agenda oficial.</p>
             </a>
-            <a href="#" class="shortcut-card notifications-shortcut">
+            <a href="/admin/notificacoes/" class="shortcut-card notifications-shortcut">
                 <i class="fa-solid fa-paper-plane"></i>
                 <h3>Enviar Notificações</h3>
                 <p>Mandar alertas e comunicados para todos os usuários.</p>
             </a>
-            <a href="#" class="shortcut-card passe-facil-shortcut">
+            <a href="{% url 'admin_personalizado:passefacil_admin' %}" class="shortcut-card passe-facil-shortcut">
                 <i class="fa-solid fa-ticket-simple"></i>
                 <h3>Validar Passe Fácil</h3>
                 <p>Acessar o leitor de QR Code para validar ingressos e passes.</p>
