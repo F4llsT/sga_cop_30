@@ -1,0 +1,176 @@
+{% extends "admin/change_list.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<style>
+    body {
+        font-family: 'Roboto', sans-serif;
+        background-color: #0f1629 !important;
+        color: #e0e0e0;
+    }
+
+    #content {
+        background-color: #0f1629 !important;
+    }
+
+    h1, h2 {
+        color: #fff;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .dashboard-container {
+        margin-bottom: 2rem;
+    }
+
+    .stats-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1.5rem;
+    }
+
+    /* CARD BASE */
+    .stat-card {
+        background: linear-gradient(145deg, #1b233a, #141b2e);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        border: 1px solid #2c3554;
+        box-shadow: 0 0.3rem 1rem rgba(0,0,0,0.4);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    /* EFEITO AO PASSAR O MOUSE */
+    .stat-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 0.5rem 1.8rem rgba(0,0,0,0.6);
+        border-color: #4e73df;
+    }
+
+    /* GRADIENTE PARA EVENTOS IMPORTANTES - CORREÇÃO DE ESTILO (Azul Neon) */
+    .stat-card.important {
+        /* Degradê de azul escuro para um azul mais vivo */
+        background: linear-gradient(145deg, #1f2940, #141b2e);
+        /* Borda azul vibrante */
+        border-left: 0.4rem solid #4e73df; 
+        /* Adiciona um brilho sutil na borda para um efeito mais estilizado */
+        box-shadow: 0 0 10px rgba(78, 115, 223, 0.4); 
+    }
+
+    /* ÍCONE DE DELETAR */
+    .delete-icon {
+        position: absolute;
+        top: 10px;
+        right: 12px;
+        color: #e74a3b; /* Mantido em vermelho para indicar perigo */
+        font-size: 1.1rem;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    
+    /* Mudar a cor do ícone do lixo para a cor azul para combinar com o cartão importante */
+    .stat-card.important .delete-icon {
+        color: #4e73df;
+    }
+
+    .stat-card:hover .delete-icon {
+        opacity: 1;
+    }
+
+    /* CONTEÚDO DO CARD */
+    .stat-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        font-size: 0.95rem;
+        color: #cfcfcf;
+    }
+
+    .stat-info i {
+        margin-right: 0.5rem;
+        color: #4e73df;
+    }
+
+    /* SEÇÃO INFERIOR */
+    hr {
+        border: none;
+        border-top: 1px solid #333;
+        margin: 2rem 0;
+    }
+
+    /* ESTILO FINAL DA TABELA: Força o preto no fundo e cabeçalhos */
+    #result_list thead th,
+    #result_list tfoot th,
+    #result_list tbody tr,
+    #result_list tbody tr:nth-child(even),
+    #result_list tbody tr:nth-child(odd),
+    #result_list tbody td {
+        background-color: #1a2035 !important; 
+        color: #e0e0e0 !important;
+        border-color: #333 !important;
+    }
+    
+    /* Links na tabela */
+    #result_list tbody tr a {
+        color: #4e73df !important; 
+    }
+
+    a {
+        color: #4e73df;
+        text-decoration: none;
+        transition: color 0.2s;
+    }
+
+    a:hover {
+        color: #82aaff;
+    }
+    
+    /* Oculta a barra de pesquisa padrão do Django para evitar duplicidade */
+    .search-form {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content_title %}
+<h1>Painel de Eventos</h1>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h2>Eventos Próximos e Importantes</h2>
+    <div class="stats-cards">
+        {% for event in dashboard_events %}
+        <div class="stat-card {% if event.importante %}important{% endif %}">
+            <a href="{% url 'admin:agenda_event_delete' event.id %}" class="delete-icon" title="Remover evento">
+                <i class="fa-solid fa-trash"></i>
+            </a>
+            <div class="stat-title">{{ event.titulo }}</div>
+            <div class="stat-info">
+                <div><i class="fa-solid fa-calendar-day"></i> {{ event.start_time|date:"d/m/Y H:i" }}</div>
+                <div><i class="fa-solid fa-location-dot"></i> {{ event.local }}</div>
+            </div>
+        </div>
+        {% empty %}
+        <p>Nenhum evento importante ou próximo encontrado.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<hr>
+
+<h2>Lista Completa (Administração)</h2>
+{{ block.super }}
+{% endblock %}

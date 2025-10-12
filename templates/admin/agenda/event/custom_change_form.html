@@ -1,0 +1,62 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+       
+        /* Aplica o fundo escuro e cor de texto clara em toda a página de formulário */
+        body, #content {
+            background-color: #1a2035 !important; 
+            color: #e0e0e0 !important;
+            font-family: 'Roboto', sans-serif !important;
+        }
+
+        /* Estiliza os títulos e divisores (fieldsets) */
+        .module h2, .module caption, legend {
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid #333;
+        }
+
+        /* Estiliza os blocos de campos (módulos) */
+        .module {
+            background: #1f2940 !important;
+            border: 1px solid #333 !important;
+            border-radius: 0.35rem;
+        }
+        
+        /* Estiliza os inputs (caixas de texto, áreas de texto, selects) */
+        input[type="text"], input[type="url"], input[type="email"], input[type="password"], 
+        input[type="number"], input[type="tel"], textarea, select, .vDateField {
+            background: #333 !important;
+            color: #e0e0e0 !important;
+            border: 1px solid #555 !important;
+        }
+        
+        /* Estilo para labels e textos de tabela (se houver) */
+        label, th, td {
+            color: #e0e0e0 !important;
+        }
+        
+        /* Garante que o texto de ajuda e mensagens de erro sejam visíveis */
+        p.help, .errorlist li {
+            color: #a0a0a0 !important;
+        }
+        
+        /* Ajuste para o botão Salvar */
+        .submit-row input[type="submit"] {
+            background: #4e73df;
+            color: white;
+            border: none;
+        }
+        
+      
+    </style>
+{% endblock %}
+
+{% block content %}
+    {{ block.super }}
+{% endblock %}

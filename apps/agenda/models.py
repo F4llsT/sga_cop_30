@@ -12,6 +12,7 @@ class EventManager(models.Manager):
             models.Q(start_time__gte=ten_hours_ago)  # Inclui eventos das últimas 10 horas
         )
 
+
 class Event(models.Model):
     titulo = models.CharField(max_length=200)
     descricao = models.TextField('Descrição', blank=True, null=True, help_text='Descrição detalhada do evento')
@@ -24,7 +25,10 @@ class Event(models.Model):
     start_time = models.DateTimeField('Data e Hora do Evento', null=True, blank=True)
     end_time = models.DateTimeField('Data e Hora de Término', null=True, blank=True)
     created_at = models.DateTimeField('Criado em', auto_now_add=True)
-    
+
+    # Novo campo
+    importante = models.BooleanField(default=False, help_text="Marque se este evento é importante")
+
     # Gerenciadores
     objects = EventManager()
     all_objects = models.Manager()  # Gerenciador para acessar todos os registros
@@ -47,7 +51,7 @@ class Event(models.Model):
 
 class UserAgenda(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    event = models.ForeignKey('Event', on_delete=models.CASCADE)
+    event = models.ForeignKey("agenda.Event", on_delete=models.CASCADE)
     added_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
