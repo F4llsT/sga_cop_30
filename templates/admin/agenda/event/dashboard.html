@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
 <style>
+    /* ======== GERAL ======== */
     body {
         font-family: 'Roboto', sans-serif;
         background-color: #0f1629 !important;
@@ -18,11 +19,41 @@
     }
 
     h1, h2 {
-        color: #fff;
+        color: #e3f2fd; /* tom azul suave padrão */
         margin-bottom: 1rem;
         font-weight: 600;
     }
 
+    /* ======== MUDANÇA DE COR DOS TÍTULOS DO PAINEL ======== */
+    .dashboard-container h2,
+    .content h1 {
+        color: #ffffff !important; /* branco */
+    }
+
+    hr {
+        border: none;
+        border-top: 1px solid #1f2940;
+        margin: 2rem 0;
+    }
+
+    /* ======== BOTÃO PADRÃO ======== */
+    .btn-admin-action {
+        background-color: #64b5f6 !important;
+        color: #fff !important;
+        padding: 6px 12px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-size: 13px;
+        display: inline-block;
+        transition: all 0.25s ease;
+    }
+
+    .btn-admin-action:hover {
+        background-color: #42a5f5 !important;
+        transform: translateY(-2px);
+    }
+
+    /* ======== CARDS ======== */
     .dashboard-container {
         margin-bottom: 2rem;
     }
@@ -33,111 +64,101 @@
         gap: 1.5rem;
     }
 
-    /* CARD BASE */
     .stat-card {
-        background: linear-gradient(145deg, #1b233a, #141b2e);
+        background: linear-gradient(145deg, #1a2239, #111827);
         border-radius: 1rem;
         padding: 1.5rem;
-        border: 1px solid #2c3554;
+        border: 1px solid #1f2940;
         box-shadow: 0 0.3rem 1rem rgba(0,0,0,0.4);
         transition: all 0.3s ease;
-        cursor: pointer;
         position: relative;
         overflow: hidden;
+        cursor: pointer;
     }
 
-    /* EFEITO AO PASSAR O MOUSE */
     .stat-card:hover {
         transform: translateY(-6px);
-        box-shadow: 0 0.5rem 1.8rem rgba(0,0,0,0.6);
-        border-color: #4e73df;
+        box-shadow: 0 0 20px rgba(100, 181, 246, 0.35);
+        border-color: #64b5f6;
     }
 
-    /* GRADIENTE PARA EVENTOS IMPORTANTES - CORREÇÃO DE ESTILO (Azul Neon) */
     .stat-card.important {
-        /* Degradê de azul escuro para um azul mais vivo */
-        background: linear-gradient(145deg, #1f2940, #141b2e);
-        /* Borda azul vibrante */
-        border-left: 0.4rem solid #4e73df; 
-        /* Adiciona um brilho sutil na borda para um efeito mais estilizado */
-        box-shadow: 0 0 10px rgba(78, 115, 223, 0.4); 
+        border-left: 5px solid #64b5f6;
+        box-shadow: 0 0 10px rgba(100, 181, 246, 0.4);
     }
 
-    /* ÍCONE DE DELETAR */
+    /* ======== ÍCONE DE DELETAR ======== */
     .delete-icon {
         position: absolute;
-        top: 10px;
-        right: 12px;
-        color: #e74a3b; /* Mantido em vermelho para indicar perigo */
-        font-size: 1.1rem;
+        top: 12px;
+        right: 14px;
+        color: #ff5c5c;
+        font-size: 1.2rem;
         opacity: 0;
-        transition: opacity 0.3s;
-    }
-    
-    /* Mudar a cor do ícone do lixo para a cor azul para combinar com o cartão importante */
-    .stat-card.important .delete-icon {
-        color: #4e73df;
+        transition: all 0.3s ease;
     }
 
     .stat-card:hover .delete-icon {
         opacity: 1;
+        transform: scale(1.1);
+        text-shadow: 0 0 6px rgba(255, 90, 90, 0.8);
     }
 
-    /* CONTEÚDO DO CARD */
+    .delete-icon:hover {
+        color: #ff8080;
+    }
+
+    /* ======== CONTEÚDO DO CARD ======== */
     .stat-title {
-        font-size: 1.2rem;
+        font-size: 1.3rem;
         font-weight: 600;
+        color: #bbdefb; /* azul suave e limpo */
         margin-bottom: 0.5rem;
     }
 
     .stat-info {
         display: flex;
         flex-direction: column;
-        gap: 0.3rem;
+        gap: 0.35rem;
         font-size: 0.95rem;
-        color: #cfcfcf;
+        color: #cfd8dc;
     }
 
     .stat-info i {
         margin-right: 0.5rem;
-        color: #4e73df;
+        color: #64b5f6; /* azul acinzentado */
     }
 
-    /* SEÇÃO INFERIOR */
-    hr {
-        border: none;
-        border-top: 1px solid #333;
-        margin: 2rem 0;
-    }
-
-    /* ESTILO FINAL DA TABELA: Força o preto no fundo e cabeçalhos */
+    /* ======== TABELA ======== */
     #result_list thead th,
     #result_list tfoot th,
     #result_list tbody tr,
     #result_list tbody tr:nth-child(even),
     #result_list tbody tr:nth-child(odd),
     #result_list tbody td {
-        background-color: #1a2035 !important; 
+        background-color: #1a2035 !important;
         color: #e0e0e0 !important;
         border-color: #333 !important;
     }
-    
-    /* Links na tabela */
-    #result_list tbody tr a {
-        color: #4e73df !important; 
+
+    #result_list tbody tr:hover {
+        background-color: #22314a !important;
+        box-shadow: 0 0 8px rgba(100, 181, 246, 0.3);
+        cursor: pointer;
     }
 
+    /* ======== LINKS ======== */
     a {
-        color: #4e73df;
+        color: #64b5f6;
         text-decoration: none;
         transition: color 0.2s;
     }
 
     a:hover {
-        color: #82aaff;
+        color: #90caf9;
     }
-    
-    /* Oculta a barra de pesquisa padrão do Django para evitar duplicidade */
+
+    /* Remove busca duplicada */
     .search-form {
         display: none;
     }
@@ -159,7 +180,15 @@
             </a>
             <div class="stat-title">{{ event.titulo }}</div>
             <div class="stat-info">
-                <div><i class="fa-solid fa-calendar-day"></i> {{ event.start_time|date:"d/m/Y H:i" }}</div>
+                <div>
+                    <i class="fa-solid fa-calendar-day"></i>
+                    {{ event.start_time|date:"d/m/Y H:i" }}
+                    {% if event.start_time.date != event.end_time.date %}
+                        (Até {{ event.end_time|date:"d/m/Y H:i" }})
+                    {% elif event.start_time.time != event.end_time.time %}
+                        (Até {{ event.end_time|date:"H:i" }})
+                    {% endif %}
+                </div>
                 <div><i class="fa-solid fa-location-dot"></i> {{ event.local }}</div>
             </div>
         </div>
