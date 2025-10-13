@@ -22,12 +22,18 @@ class Notificacao(models.Model):
     criada_em = models.DateTimeField(auto_now_add=True)
     lida_em = models.DateTimeField(null=True, blank=True)
     evento = models.ForeignKey(Event, on_delete=models.CASCADE, null=True, blank=True, related_name='notificacoes_evento')
-    
+    data_expiracao = models.DateTimeField('Data de Expiração',null=True,blank=True,help_text='Data em que a notificação será considerada expirada')
     class Meta:
         ordering = ['-criada_em']
         verbose_name = 'Notificação'
         verbose_name_plural = 'Notificações'
-    
+
+    def save(self, *args, **kwargs):
+        # Set default expiration to 30 days from creation if not set
+        if not self.pk and not self.data_expiracao:
+            self.data_expiracao = timezone.now() + timedelta(days=30)
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.titulo} - {self.usuario.nome}"
     
@@ -36,6 +42,28 @@ class Notificacao(models.Model):
             self.lida = True
             self.lida_em = timezone.now()
             self.save()
+
+# apps/notificacoes/models.py
+    def save(self, *args, **kwargs):
+        # Se for uma nova notificação
+        if not self.pk:
+            # Define a expiração padrão para 10 dias
+            self.data_expiracao = timezone.now() + timezone.timedelta(days=10)
+        
+        # Se a notificação for marcada como lida, atualiza a expiração para 1 hora
+        if self.lida and not self.lida_em:
+            self.lida_em = timezone.now()
+            self.data_expiracao = timezone.now() + timezone.timedelta(hours=1)
+        
+        super().save(*args, **kwargs)
+
+
+    @property
+    def expirada(self):
+        """Verifica se a notificação expirou"""
+        if self.data_expiracao:
+            return timezone.now() > self.data_expiracao
+        return False
     
     @property
     def tempo_decorrido(self):
