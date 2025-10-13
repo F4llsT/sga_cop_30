@@ -1,16 +1,19 @@
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import Count, Q, OuterRef, Subquery, Prefetch
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.db import transaction
 from datetime import timedelta
 
 from apps.passefacil.models import PasseFacil, ValidacaoQRCode
-from datetime import timedelta
-from django.db.models import Count
 from apps.agenda.models import UserAgenda, Event
-from apps.passefacil.models import ValidacaoQRCode
+from apps.notificacoes.models import Notificacao
+from .models import NotificacaoPersonalizada
 
 @staff_member_required
 @login_required
@@ -197,3 +200,163 @@ def passefacil_admin(request):
     }
     
     return render(request, 'admin_personalizado/passefacil/passefacilADM.html', context)
+
+@staff_member_required
+@require_http_methods(["GET", "POST"])
+def enviar_notificacao(request):
+    """
+    View para envio de notificações personalizadas.
+    
+    GET: Exibe o formulário de envio de notificações.
+    POST: Processa o formulário e cria uma nova notificação.
+    
+    Permissões requeridas:
+    - Usuário deve ser staff (gerenciado pelo decorador staff_member_required)
+    """
+    ultimas_notificacoes = NotificacaoPersonalizada.objects.order_by('-data_criacao')[:10]
+    
+    if request.method == 'POST':
+        # Processar o formulário
+        titulo = request.POST.get('titulo', '').strip()
+        mensagem = request.POST.get('mensagem', '').strip()
+        
+        # Validação básica
+        erros = []
+        if not titulo:
+            erros.append('O título é obrigatório.')
+        elif len(titulo) > 200:
+            erros.append('O título não pode ter mais de 200 caracteres.')
+            
+        if not mensagem:
+            erros.append('A mensagem é obrigatória.')
+        
+        if erros:
+            for erro in erros:
+                messages.error(request, erro)
+        else:
+            try:
+                notificacao = NotificacaoPersonalizada.objects.create(
+                    titulo=titulo,
+                    mensagem=mensagem,
+                    criado_por=request.user
+                )
+                messages.success(request, 'Notificação agendada com sucesso!')
+                return redirect('admin_personalizado:enviar_notificacao')
+                
+            except Exception as e:
+                messages.error(
+                    request,
+                    f'Ocorreu um erro ao salvar a notificação: {str(e)}'
+                )
+    
+    # Se for GET ou se houver erros no POST, mostra o formulário
+    context = {
+        'title': 'Enviar Notificação',
+        'opts': NotificacaoPersonalizada._meta,
+        'has_view_permission': True,
+        'has_add_permission': True,
+        'has_change_permission': True,
+        'has_delete_permission': True,
+        'has_file_field': False,
+        'has_editable_inline_admin_formsets': False,
+        'ultimas_notificacoes': ultimas_notificacoes,
+        'is_popup': False,
+        'show_save': True,
+        'show_save_as_new': False,
+        'show_save_and_add_another': False,
+        'show_save_and_continue': False,
+        'show_close': True,
+    }
+    
+    return render(
+        request,
+        'admin_personalizado/notificacao/enviar_notificacao.html',
+        context
+    )
+
+@staff_member_required
+@login_required
+@require_http_methods(['POST'])
+def enviar_notificacao_ajax(request):
+    """
+    View para envio de notificação via AJAX
+    Retorna JSON com o resultado da operação
+    """
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'error', 'message': 'Requisição inválida'}, status=400)
+    
+    mensagem = request.POST.get('mensagem', '').strip()
+    
+    if not mensagem:
+        return JsonResponse(
+            {'status': 'error', 'message': 'A mensagem não pode estar vazia'}, 
+            status=400
+        )
+    
+    try:
+        User = get_user_model()
+        usuarios = User.objects.filter(is_active=True)
+        total_usuarios = usuarios.count()
+        
+        # Usa transação atômica para garantir que todas as notificações sejam criadas
+        with transaction.atomic():
+            notificacoes = [
+                Notificacao(
+                    usuario=usuario,
+                    titulo='Nova notificação',
+                    mensagem=mensagem,
+                    tipo='info',
+                    criado_por=request.user
+                )
+                for usuario in usuarios
+            ]
+            
+            notificacoes_criadas = Notificacao.objects.bulk_create(notificacoes)
+            
+            # Atualiza o campo criado_por para todas as notificações
+            Notificacao.objects.filter(
+                id__in=[n.id for n in notificacoes_criadas]
+            ).update(criado_por=request.user)
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': f'Notificação enviada para {len(notificacoes_criadas)} usuários',
+            'total_usuarios': total_usuarios
+        })
+        
+    except Exception as e:
+        return JsonResponse(
+            {'status': 'error', 'message': f'Erro ao enviar notificações: {str(e)}'}, 
+            status=500
+        )
+def editar_notificacao(request, pk):
+    notificacao = get_object_or_404(NotificacaoPersonalizada, pk=pk)
+    
+    if request.method == 'POST':
+        titulo = request.POST.get('titulo', '').strip()
+        mensagem = request.POST.get('mensagem', '').strip()
+        
+        if not titulo or not mensagem:
+            messages.error(request, 'Por favor, preencha todos os campos obrigatórios.')
+        else:
+            notificacao.titulo = titulo
+            notificacao.mensagem = mensagem
+            notificacao.save()
+            messages.success(request, 'Notificação atualizada com sucesso!')
+            return redirect('admin_personalizado:enviar_notificacao')
+    
+    context = {
+        'notificacao': notificacao,
+        'title': 'Editar Notificação'
+    }
+    return render(request, 'admin_personalizado/notificacao/editar_notificacao.html', context)
+
+@staff_member_required
+@login_required
+@require_http_methods(['POST'])
+def excluir_notificacao(request, pk):
+    notificacao = get_object_or_404(NotificacaoPersonalizada, pk=pk)
+    notificacao.delete()
+    messages.success(request, 'Notificação excluída com sucesso!')
+    return redirect('admin_personalizado:enviar_notificacao')
+    

@@ -9,9 +9,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
 
-    path('meu-admin/', include('apps.admin_personalizado.urls')),
-
-    path("admin/", admin.site.urls),
+    path('meu-admin/', include('apps.admin_personalizado.urls', namespace='admin_personalizado')),
+    path('admin/', admin.site.urls),
 
     # Página inicial
     path("", core_views.pagina_inicial, name="home"),

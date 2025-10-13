@@ -1,0 +1,52 @@
+<!-- templates/admin_personalizado/notificacao/editar_notificacao.html -->
+{% extends 'admin_personalizado/baseadmin.html' %}
+{% load static %}
+
+{% block title %}Editar Notificação - Painel de Administração{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin_personalizado/css/notificacoes.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="passe-facil-container notificacao-admin">
+    <header class="main-header">
+        <h2>Painel de Administração • Editar Notificação</h2>
+    </header>
+
+    <main class="passefacil-main">
+        <div class="card">
+            <div class="card-header">
+                <i class="fa-solid fa-edit me-2"></i>
+                <span>Editar Notificação</span>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="titulo" class="form-label">Título:</label>
+                        <input type="text" class="form-control" id="titulo" name="titulo" required 
+                               value="{{ notificacao.titulo }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="mensagem" class="form-label">Mensagem:</label>
+                        <textarea class="form-control" id="mensagem" name="mensagem" rows="5" required>{{ notificacao.mensagem }}</textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'admin_personalizado:enviar_notificacao' %}" class="btn btn-secondary me-md-2">
+                            <i class="fa-solid fa-arrow-left me-2"></i>Cancelar
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa-solid fa-save me-2"></i>Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</div>
+{% endblock %}

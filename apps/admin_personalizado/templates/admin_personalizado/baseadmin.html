@@ -27,6 +27,24 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+
+        <!-- DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.bootstrap5.min.css">
+    
+    <!-- jQuery (necessário para DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- DataTables JS -->
+    <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.9/js/responsive.bootstrap5.min.js"></script>
+    
+    <!-- DataTables i18n - Português -->
+    <script type="text/javascript" src="https://cdn.datatables.net/plug-ins/1.11.5/i18n/pt-BR.json"></script>
+    {% block extra_css %}{% endblock %}
+
 </head>
 <body>
 
@@ -61,7 +79,7 @@
                 <a href="{% url 'admin_personalizado:dashboard' %}" class="nav-link"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
                 <a href="{% url 'admin:index' %}" class="nav-link"><i class="fa-solid fa-users"></i><span>Usuários</span></a>
                 <a href="{% url 'admin:index' %}" class="nav-link"><i class="fa-solid fa-calendar-days"></i><span>Agenda</span></a>
-                <a href="{% url 'admin:index' %}" class="nav-link"><i class="fa-solid fa-bullhorn"></i><span>Notificações</span></a>
+                <a href="{% url 'admin_personalizado:enviar_notificacao' %}"  class="nav-link"><i class="fa-solid fa-bullhorn"></i><span>Notificações</span></a>
                 <a href="{% url 'admin:index' %}" class="nav-link"><i class="fa-solid fa-triangle-exclamation"></i><span>Avisos</span></a>
                 <a href="{% url 'admin_personalizado:passefacil_admin' %}" class="nav-link"><i class="fa-solid fa-ticket"></i><span>Meu Passe Fácil</span></a>
                
@@ -90,14 +108,28 @@
         <a href="{% url 'admin_personalizado:dashboard' %}" class="nav-link"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span></a>
         <a href="{% url 'admin:index' %}" class="nav-link"><i class="fa-solid fa-users"></i><span>Usuários</span></a>
         <a href="{% url 'admin:index' %}" class="nav-link"><i class="fa-solid fa-calendar-days"></i><span>Agenda</span></a>
-        <a href="{% url 'admin:index' %}" class="nav-link"><i class="fa-solid fa-bullhorn"></i><span>Notificações</span></a>
+        <a href="{% url 'admin_personalizado:enviar_notificacao' %}"  class="nav-link"><i class="fa-solid fa-bullhorn"></i><span>Notificações</span></a>
         <a href="{% url 'admin:index' %}" class="nav-link"><i class="fa-solid fa-triangle-exclamation"></i><span>Avisos</span></a>
         <a href="{% url 'admin_personalizado:passefacil_admin' %}" class="nav-link"><i class="fa-solid fa-ticket"></i><span>Meu Passe Fácil</span></a>
         <hr class="nav-divider">
         <a href="{% url 'home' %}" class="nav-link"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Voltar ao Site</span></a>
-    </nav>
+    </nav>  
     <div class="overlay" id="admin-overlay"></div>
 
     <script src="{% static 'admin_personalizado/js/base&dahs.js' %}"></script>
+        <script>
+        $(document).ready(function() {
+            $('.data-table').DataTable({
+                responsive: true,
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/pt-BR.json'
+                },
+                // Configurações padrão
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
+                order: [[0, 'desc']] // Ordena pela primeira coluna (índice 0) de forma decrescente
+            });
+        });
+    </script>
 </body>
 </html>

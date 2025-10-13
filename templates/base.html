@@ -53,14 +53,15 @@
                 <div class="user-area">
                     <div class="notification-container">
                         {% if user.is_staff %}
-                        <a href="{% url 'admin_personalizado:dashboard' %}" id="admin-button" class="admin-button" title="Acessar Painel de Controle" style="width: 55px; height: 55px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">
+
+                        <a href="{% url 'admin_personalizado:dashboard' %}" id="admin-button" class="admin-button" title="Acessar Admin" style="width: 55px; height: 55px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;">
                             <i class='bx bx-badge-check' style="font-size: 1.5rem;"></i>
                         </a>   
                         {% endif %} 
                         <a href="#" class="notification-bell" id="notification-toggle">
                             <i class="fa-solid fa-bell"></i>
                             <span class="notification-dot"></span>
-{{ ... }}
+                        </a>
                         <div class="notification-dropdown" id="notification-dropdown">
                             <div class="notification-header">
                                 <h3>Notificações</h3>
