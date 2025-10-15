@@ -178,6 +178,42 @@
     </div>
 </div>
 
-{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('searchInput');
+    const tableBody = document.querySelector('#usersTable tbody');
+    const rows = tableBody.getElementsByTagName('tr');
+    const resultsCount = document.getElementById('totalResults');
 
- 
+    function filterUsers() {
+        const searchTerm = searchInput.value.toLowerCase();
+        let visibleCount = 0;
+
+        Array.from(rows).forEach(row => {
+            const userInfo = row.querySelector('.user-name, .user-email');
+            const userStatus = row.textContent.toLowerCase();
+            
+            if (userInfo && (userInfo.textContent.toLowerCase().includes(searchTerm) || 
+                userStatus.includes(searchTerm))) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Atualiza o contador de resultados
+        resultsCount.textContent = visibleCount;
+    }
+
+    // Adiciona o evento de input para filtrar em tempo real
+    searchInput.addEventListener('input', filterUsers);
+
+    // Inicializa a contagem de resultados
+    resultsCount.textContent = document.querySelectorAll('#usersTable tbody tr:not([style*="display: none"])').length;
+});
+</script>
+{% endblock %}
+{% endblock %}
