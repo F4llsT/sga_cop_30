@@ -6,344 +6,7 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'admin_personalizado/css/passefacilADM.css' %}">
-<style>
-    /* Estilos específicos para a página de usuários */
-    .passe-facil-container {
-        padding: 1.5rem;
-    }
-    
-    .main-header {
-        margin-bottom: 1.5rem;
-    }
-    
-    .main-header h2 {
-        color: var(--text-primary);
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 0;
-    }
-    
-    .stats-container {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    
-    .stat-card {
-        background: var(--surface-color);
-        border-radius: var(--border-radius);
-        padding: 1.25rem;
-        box-shadow: var(--shadow-sm);
-        border-left: 4px solid;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    
-    .stat-card .stat-content {
-        flex: 1;
-    }
-    
-    .stat-card .stat-value {
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 0.25rem;
-    }
-    
-    .stat-card .stat-label {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-    }
-    
-    .stat-card .stat-icon {
-        font-size: 1.5rem;
-        margin-left: 1rem;
-        opacity: 0.8;
-    }
-    
-    .table-container {
-        background: var(--surface-color);
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-sm);
-        overflow: hidden;
-    }
-    
-    .search-container {
-        padding: 1rem 1.25rem;
-        border-bottom: 1px solid var(--border-color);
-        background: var(--bg-color);
-    }
-    
-    .search-box {
-        position: relative;
-        max-width: 400px;
-    }
-    
-    .search-box input {
-        width: 100%;
-        padding: 0.5rem 1rem 0.5rem 2.25rem;
-        border: 1px solid var(--border-color);
-        border-radius: var(--border-radius);
-        font-size: 0.875rem;
-        transition: var(--transition);
-    }
-    
-    .search-box input:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
-    }
-    
-    .search-box i {
-        position: absolute;
-        left: 0.75rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: var(--text-muted);
-    }
-    
-    .results-count {
-        font-size: 0.875rem;
-        color: var(--text-secondary);
-        margin-top: 0.5rem;
-    }
-    
-    /* Estilos para a tabela */
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    
-    th, td {
-        padding: 1rem;
-        text-align: left;
-        font-size: 0.875rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-    
-    th {
-        background-color: var(--bg-color);
-        color: var(--text-secondary);
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.05em;
-    }
-    
-    tbody tr {
-        transition: var(--transition);
-    }
-    
-    tbody tr:hover {
-        background-color: var(--hover-color);
-    }
-    
-    /* Estilos para o avatar do usuário */
-    .user-info {
-        display: flex;
-        align-items: center;
-    }
-    
-    .user-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        margin-right: 0.75rem;
-        flex-shrink: 0;
-    }
-    
-    .user-details {
-        line-height: 1.3;
-        min-width: 0;
-    }
-    
-    .user-name {
-        font-weight: 500;
-        color: var(--text-primary);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: block;
-    }
-    
-    .user-email {
-        font-size: 0.75rem;
-        color: var(--text-muted);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: block;
-    }
-    
-    /* Estilos para os badges de status */
-    .badge {
-        display: inline-block;
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-        line-height: 1;
-        text-align: center;
-        white-space: nowrap;
-        vertical-align: baseline;
-        margin: 0.125rem;
-    }
-    
-    .badge-active {
-        background-color: rgba(16, 185, 129, 0.1);
-        color: var(--success-color);
-    }
-    
-    .badge-inactive {
-        background-color: rgba(239, 68, 68, 0.1);
-        color: var(--error-color);
-    }
-    
-    .bg-primary {
-        background-color: rgba(37, 99, 235, 0.1) !important;
-        color: var(--primary-color) !important;
-    }
-    
-    .bg-info {
-        background-color: rgba(14, 165, 233, 0.1) !important;
-        color: #0ea5e9 !important;
-    }
-    
-    .bg-secondary {
-        background-color: rgba(100, 116, 139, 0.1) !important;
-        color: var(--text-secondary) !important;
-    }
-    
-    /* Container para os botões de ação */
-    .actions-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        justify-content: flex-start;
-        min-width: 200px;
-    }
-    
-    /* Estilos para os botões de ação */
-    .btn-action {
-        min-width: 32px;
-        height: 32px;
-        padding: 0 0.75rem;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 0.25rem;
-        transition: var(--transition);
-        border: 1px solid transparent;
-        background-color: transparent;
-        white-space: nowrap;
-        font-size: 0.8125rem;
-        font-weight: 500;
-        line-height: 1.2;
-    }
-    
-    .btn-action i {
-        font-size: 0.875rem;
-        margin-right: 0.25rem;
-    }
-    
-    .btn-action.btn-icon-only {
-        width: 32px;
-        padding: 0;
-    }
-    
-    .btn-action.btn-icon-only i {
-        margin-right: 0;
-    }
-    
-    .btn-outline-primary {
-        border-color: var(--primary-color);
-        color: var(--primary-color);
-    }
-    
-    .btn-outline-primary:hover {
-        background-color: var(--primary-color);
-        color: white;
-    }
-    
-    .btn-outline-danger {
-        border-color: var(--error-color);
-        color: var(--error-color);
-    }
-    
-    .btn-outline-danger:hover {
-        background-color: var(--error-color);
-        color: white;
-    }
-    
-    .btn-outline-success {
-        border-color: var(--success-color);
-        color: var(--success-color);
-    }
-    
-    .btn-outline-success:hover {
-        background-color: var(--success-color);
-        color: white;
-    }
-    
-    }
-    
-    /* Estilos para o modal */
-    .modal-content {
-        border: none;
-        border-radius: var(--border-radius);
-        box-shadow: var(--shadow-lg);
-    }
-    
-    .modal-header {
-        border-bottom: 1px solid var(--border-color);
-        padding: 1.25rem;
-    }
-    
-    .modal-title {
-        font-weight: 600;
-        color: var(--text-primary);
-    }
-    
-    .modal-body {
-        padding: 1.5rem;
-    }
-    
-    .modal-footer {
-        border-top: 1px solid var(--border-color);
-        padding: 1rem 1.25rem;
-    }
-    
-    /* Responsividade */
-    @media (max-width: 768px) {
-        .stats-container {
-            grid-template-columns: 1fr;
-        }
-        
-        .search-box {
-            max-width: 100%;
-        }
-        
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        table {
-            min-width: 768px;
-        }
-        
-        .actions-container {
-            flex-wrap: wrap;
-        }
-    }
-</style>
+<link rel="stylesheet" href="{% static 'admin_personalizado/css/usuario_list.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -514,6 +177,7 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -579,8 +243,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Função para atualizar a contagem de resultados
     function updateResultsCount() {
-        const count = table.rows({ search: 'applied' }).count();
-        document.getElementById('totalResults').textContent = count;
+        const info = table.page.info();
+        const total = info.recordsTotal;
+        const filtered = info.recordsDisplay;
+        const currentPage = info.page + 1;
+        const totalPages = info.pages;
+        const start = info.start + 1;
+        const end = info.end < info.recordsDisplay ? info.end : info.recordsDisplay;
+        
+        $('#resultsCount').text(`Mostrando ${start} a ${end} de ${filtered} registros`);
     }
     
     // Atualiza a contagem ao pesquisar
@@ -588,36 +259,24 @@ document.addEventListener('DOMContentLoaded', function() {
         table.search(this.value).draw();
     });
     
-    // Inicialização dos tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
+    // Atualiza a contagem ao mudar o número de itens por página
+    $('#usersTable').on('length.dt', function() {
+        updateResultsCount();
     });
     
-    // Adiciona labels para acessibilidade em dispositivos móveis
-    if (window.innerWidth <= 768) {
-        $('#usersTable tbody td').each(function() {
-            var header = $(this).closest('table').find('th').eq($(this).index()).text();
-            $(this).attr('data-label', header);
-        });
-    }
-    
-    // Atualiza os labels quando a janela for redimensionada
-    $(window).on('resize', function() {
-        if (window.innerWidth <= 768) {
-            $('#usersTable tbody td').each(function() {
-                var header = $(this).closest('table').find('th').eq($(this).index()).text();
-                $(this).attr('data-label', header);
-            });
-        } else {
-            $('#usersTable tbody td').removeAttr('data-label');
-        }
+    // Atualiza a contagem ao navegar entre as páginas
+    $('#usersTable').on('page.dt', function() {
+        updateResultsCount();
     });
+    
+    // Inicializa a contagem
+    updateResultsCount();
 });
 
 // Função para editar usuário
 window.editarUsuario = function(usuarioId) {
-    window.location.href = `/admin/usuarios/editar/${usuarioId}/`;
+    const baseUrl = "{% url 'admin_personalizado:editar_usuario' 0 %}".replace('0', '');
+    window.location.href = baseUrl + usuarioId + '/';
 };
 
 // Função para alternar status do usuário
