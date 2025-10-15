@@ -1,0 +1,700 @@
+{% extends 'admin_personalizado/baseadmin.html' %}
+{% load static %}
+
+{% block title %}Gerenciar Usuários - Painel de Administração{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin_personalizado/css/passefacilADM.css' %}">
+<style>
+    /* Estilos específicos para a página de usuários */
+    .passe-facil-container {
+        padding: 1.5rem;
+    }
+    
+    .main-header {
+        margin-bottom: 1.5rem;
+    }
+    
+    .main-header h2 {
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+    }
+    
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-card {
+        background: var(--surface-color);
+        border-radius: var(--border-radius);
+        padding: 1.25rem;
+        box-shadow: var(--shadow-sm);
+        border-left: 4px solid;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .stat-card .stat-content {
+        flex: 1;
+    }
+    
+    .stat-card .stat-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .stat-card .stat-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+    
+    .stat-card .stat-icon {
+        font-size: 1.5rem;
+        margin-left: 1rem;
+        opacity: 0.8;
+    }
+    
+    .table-container {
+        background: var(--surface-color);
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-sm);
+        overflow: hidden;
+    }
+    
+    .search-container {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        background: var(--bg-color);
+    }
+    
+    .search-box {
+        position: relative;
+        max-width: 400px;
+    }
+    
+    .search-box input {
+        width: 100%;
+        padding: 0.5rem 1rem 0.5rem 2.25rem;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius);
+        font-size: 0.875rem;
+        transition: var(--transition);
+    }
+    
+    .search-box input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+    
+    .search-box i {
+        position: absolute;
+        left: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+    }
+    
+    .results-count {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-top: 0.5rem;
+    }
+    
+    /* Estilos para a tabela */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    th, td {
+        padding: 1rem;
+        text-align: left;
+        font-size: 0.875rem;
+        border-bottom: 1px solid var(--border-color);
+    }
+    
+    th {
+        background-color: var(--bg-color);
+        color: var(--text-secondary);
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+    
+    tbody tr {
+        transition: var(--transition);
+    }
+    
+    tbody tr:hover {
+        background-color: var(--hover-color);
+    }
+    
+    /* Estilos para o avatar do usuário */
+    .user-info {
+        display: flex;
+        align-items: center;
+    }
+    
+    .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+    
+    .user-details {
+        line-height: 1.3;
+        min-width: 0;
+    }
+    
+    .user-name {
+        font-weight: 500;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+    
+    .user-email {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block;
+    }
+    
+    /* Estilos para os badges de status */
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        line-height: 1;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+    }
+    
+    .badge-active {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: var(--success-color);
+    }
+    
+    .badge-inactive {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--error-color);
+    }
+    
+    .bg-primary {
+        background-color: rgba(37, 99, 235, 0.1) !important;
+        color: var(--primary-color) !important;
+    }
+    
+    .bg-info {
+        background-color: rgba(14, 165, 233, 0.1) !important;
+        color: #0ea5e9 !important;
+    }
+    
+    .bg-secondary {
+        background-color: rgba(100, 116, 139, 0.1) !important;
+        color: var(--text-secondary) !important;
+    }
+    
+    /* Estilos para os botões de ação */
+    .btn-action {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.25rem;
+        transition: var(--transition);
+    }
+    
+    .btn-action i {
+        font-size: 0.875rem;
+    }
+    
+    .btn-outline-primary {
+        border: 1px solid var(--primary-color);
+        color: var(--primary-color);
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        color: white;
+    }
+    
+    .btn-outline-danger {
+        border: 1px solid var(--error-color);
+        color: var(--error-color);
+    }
+    
+    .btn-outline-danger:hover {
+        background-color: var(--error-color);
+        color: white;
+    }
+    
+    .btn-outline-success {
+        border: 1px solid var(--success-color);
+        color: var(--success-color);
+    }
+    
+    .btn-outline-success:hover {
+        background-color: var(--success-color);
+        color: white;
+    }
+    
+    /* Estilos para o modal */
+    .modal-content {
+        border: none;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .modal-header {
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.25rem;
+    }
+    
+    .modal-title {
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-footer {
+        border-top: 1px solid var(--border-color);
+        padding: 1rem 1.25rem;
+    }
+    
+    /* Responsividade */
+    @media (max-width: 768px) {
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .search-box {
+            max-width: 100%;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        table {
+            min-width: 768px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="passe-facil-container">
+    <!-- Cabeçalho -->
+    <header class="main-header">
+        <h2>Gerenciar Usuários</h2>
+    </header>
+
+    <!-- Cards de Estatísticas -->
+    <div class="stats-container">
+        <div class="stat-card" style="border-left-color: var(--primary-color);">
+            <div class="stat-content">
+                <div class="stat-value text-primary">{{ total_usuarios|default:'0' }}</div>
+                <div class="stat-label">Total de Usuários</div>
+            </div>
+            <i class="fas fa-users stat-icon text-primary"></i>
+        </div>
+        
+        <div class="stat-card" style="border-left-color: var(--success-color);">
+            <div class="stat-content">
+                <div class="stat-value text-success">{{ ativos_count|default:'0' }}</div>
+                <div class="stat-label">Ativos</div>
+            </div>
+            <i class="fas fa-user-check stat-icon text-success"></i>
+        </div>
+        
+        <div class="stat-card" style="border-left-color: var(--warning-color);">
+            <div class="stat-content">
+                <div class="stat-value text-warning">{{ inativos_count|default:'0' }}</div>
+                <div class="stat-label">Inativos</div>
+            </div>
+            <i class="fas fa-user-times stat-icon text-warning"></i>
+        </div>
+        
+        <div class="stat-card" style="border-left-color: var(--error-color);">
+            <div class="stat-content">
+                <div class="stat-value text-danger">{{ admins_count|default:'0' }}</div>
+                <div class="stat-label">Administradores</div>
+            </div>
+            <i class="fas fa-user-shield stat-icon text-danger"></i>
+        </div>
+    </div>
+
+    <!-- Tabela de Usuários -->
+    <div class="table-container">
+        <div class="search-container">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Pesquisar usuários...">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="results-count">
+                <span id="totalResults">{{ object_list|length }}</span> resultados encontrados
+            </div>
+        </div>
+        
+        <div class="table-responsive">
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        <th>Usuário</th>
+                        <th>E-mail</th>
+                        <th>Status</th>
+                        <th>Último Acesso</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in object_list %}
+                    <tr>
+                        <td>
+                            <div class="user-info">
+                                <div class="user-avatar">
+                                    {% if usuario.first_name and usuario.first_name.strip %}
+                                        {{ usuario.first_name|first|upper }}
+                                    {% elif usuario.username and usuario.username.strip %}
+                                        {{ usuario.username|first|upper }}
+                                    {% else %}
+                                        U
+                                    {% endif %}
+                                </div>
+                                <div class="user-details">
+                                    <span class="user-name">{{ usuario.get_full_name|default:usuario.username|truncatechars:20 }}</span>
+                                    <span class="user-email">{{ usuario.email|default:'-'|truncatechars:25 }}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ usuario.email|default:'-'|truncatechars:25 }}</td>
+                        <td>
+                            {% if usuario.is_active %}
+                                <span class="badge badge-active">Ativo</span>
+                            {% else %}
+                                <span class="badge badge-inactive">Inativo</span>
+                            {% endif %}
+                            
+                            {% if usuario.is_superuser %}
+                                <span class="badge bg-primary">Admin</span>
+                            {% elif usuario.groups.all %}
+                                {% for group in usuario.groups.all %}
+                                    <span class="badge bg-info">{{ group.name }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="badge bg-secondary">Usuário</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if usuario.last_login %}
+                                <span data-order="{{ usuario.last_login|date:'Y-m-d H:i:s' }}">
+                                    {{ usuario.last_login|date:"d/m/Y H:i" }}
+                                </span>
+                            {% else %}
+                                <span data-order="0">Nunca</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            <div class="d-flex justify-content-center">
+                                <button type="button" 
+                                        class="btn btn-action btn-outline-primary me-1" 
+                                        onclick="editarUsuario({{ usuario.id }})"
+                                        title="Editar"
+                                        data-bs-toggle="tooltip">
+                                    <i class="fas fa-edit"></i>
+                                    <span class="visually-hidden">Editar</span>
+                                </button>
+                                
+                                {% if not usuario.is_superuser or usuario == request.user %}
+                                <button type="button" 
+                                        class="btn btn-action {% if usuario.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                                        onclick="toggleStatus({{ usuario.id }}, {{ usuario.is_active|lower }})"
+                                        title="{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}"
+                                        data-bs-toggle="tooltip">
+                                    <i class="fas fa-{% if usuario.is_active %}user-times{% else %}user-check{% endif %}"></i>
+                                    <span class="visually-hidden">{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}</span>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <i class="fas fa-user-slash fa-2x mb-3 text-muted"></i>
+                            <p class="mb-0">Nenhum usuário encontrado</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalTitle">Confirmar Ação</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                Tem certeza que deseja realizar esta ação?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirmButton">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<!-- Inclui o DataTables e seus plugins -->
+<script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
+
+<script>
+// Garante que o jQuery está carregado
+document.addEventListener('DOMContentLoaded', function() {
+    // Inicialização do DataTable
+    var table = $('#usersTable').DataTable({
+        responsive: true,
+        language: {
+            url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/pt-BR.json',
+            search: "Pesquisar:",
+            lengthMenu: "Mostrar _MENU_ itens por página",
+            info: "Mostrando _START_ a _END_ de _TOTAL_ itens",
+            infoEmpty: "Nenhum item encontrado",
+            infoFiltered: "(filtrado de _MAX_ itens totais)",
+            paginate: {
+                first: "Primeira",
+                last: "Última",
+                next: "Próxima",
+                previous: "Anterior"
+            }
+        },
+        columnDefs: [
+            { responsivePriority: 1, targets: 0 },  // Nome do usuário
+            { responsivePriority: 2, targets: -1 }, // Ações
+            { responsivePriority: 3, targets: 1 },  // E-mail
+            { responsivePriority: 4, targets: 2 },  // Status
+            { responsivePriority: 5, targets: 3 },  // Último acesso
+            { orderable: false, targets: -1 }       // Desativa ordenação na coluna de ações
+        ],
+        order: [[0, 'asc']],  // Ordena pelo nome do usuário por padrão
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
+        dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+             "<'row'<'col-sm-12'tr>>" +
+             "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+        initComplete: function() {
+            // Adiciona classe para estilização
+            $('.dataTables_length select').addClass('form-select form-select-sm');
+            $('.dataTables_filter input').addClass('form-control form-control-sm');
+            
+            // Reaplica os tooltips após o DataTable ser inicializado
+            $('[data-bs-toggle="tooltip"]').tooltip();
+            
+            // Atualiza a contagem de resultados
+            updateResultsCount();
+        },
+        drawCallback: function() {
+            // Reaplica os tooltips após cada desenho da tabela
+            $('[data-bs-toggle="tooltip"]').tooltip();
+            
+            // Atualiza a contagem de resultados
+            updateResultsCount();
+        }
+    });
+    
+    // Função para atualizar a contagem de resultados
+    function updateResultsCount() {
+        const count = table.rows({ search: 'applied' }).count();
+        document.getElementById('totalResults').textContent = count;
+    }
+    
+    // Atualiza a contagem ao pesquisar
+    $('#searchInput').on('keyup', function() {
+        table.search(this.value).draw();
+    });
+    
+    // Inicialização dos tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Adiciona labels para acessibilidade em dispositivos móveis
+    if (window.innerWidth <= 768) {
+        $('#usersTable tbody td').each(function() {
+            var header = $(this).closest('table').find('th').eq($(this).index()).text();
+            $(this).attr('data-label', header);
+        });
+    }
+    
+    // Atualiza os labels quando a janela for redimensionada
+    $(window).on('resize', function() {
+        if (window.innerWidth <= 768) {
+            $('#usersTable tbody td').each(function() {
+                var header = $(this).closest('table').find('th').eq($(this).index()).text();
+                $(this).attr('data-label', header);
+            });
+        } else {
+            $('#usersTable tbody td').removeAttr('data-label');
+        }
+    });
+});
+
+// Função para editar usuário
+window.editarUsuario = function(usuarioId) {
+    window.location.href = `/admin/usuarios/editar/${usuarioId}/`;
+};
+
+// Função para alternar status do usuário
+window.toggleStatus = function(usuarioId, isActive) {
+    const action = isActive ? 'desativar' : 'ativar';
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const modalTitle = document.getElementById('confirmModalTitle');
+    const modalBody = document.getElementById('confirmModalBody');
+    const confirmButton = document.getElementById('confirmButton');
+    
+    modalTitle.textContent = `Confirmar ${isActive ? 'Desativação' : 'Ativação'}`;
+    modalBody.innerHTML = `Tem certeza que deseja ${action} este usuário?`;
+    
+    // Remove event listeners anteriores
+    $(confirmButton).off('click');
+    
+    // Adiciona o novo event listener
+    $(confirmButton).on('click', function() {
+        // Desabilita o botão e mostra loading
+        const $button = $(this);
+        $button.prop('disabled', true).html(`
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Processando...
+        `);
+        
+        // Envia a requisição AJAX
+        $.ajax({
+            url: `/admin/usuarios/toggle-status/${usuarioId}/`,
+            type: 'POST',
+            data: {
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    // Mostra mensagem de sucesso
+                    showToast(
+                        'Sucesso!', 
+                        `Usuário ${isActive ? 'desativado' : 'ativado'} com sucesso.`, 
+                        'success'
+                    );
+                    
+                    // Atualiza a página após 1.5 segundos
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    // Mostra mensagem de erro
+                    showToast(
+                        'Erro!', 
+                        response.message || 'Ocorreu um erro ao processar sua solicitação.', 
+                        'error'
+                    );
+                    
+                    // Reativa o botão
+                    $button.prop('disabled', false).text('Confirmar');
+                }
+            },
+            error: function(xhr, status, error) {
+                // Mostra mensagem de erro
+                showToast(
+                    'Erro!', 
+                    'Ocorreu um erro ao processar sua solicitação. Tente novamente.', 
+                    'error'
+                );
+                
+                // Reativa o botão
+                $button.prop('disabled', false).text('Confirmar');
+            }
+        });
+        
+        // Fecha o modal
+        modal.hide();
+    });
+    
+    // Mostra o modal
+    modal.show();
+};
+
+// Função para exibir notificações toast
+window.showToast = function(title, message, type = 'info') {
+    const toastContainer = document.createElement('div');
+    toastContainer.className = 'position-fixed top-0 end-0 p-3';
+    toastContainer.style.zIndex = '1100';
+    toastContainer.innerHTML = `
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'primary'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong><br>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(toastContainer);
+    
+    const toastElement = toastContainer.querySelector('.toast');
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: 3000
+    });
+    
+    toast.show();
+    
+    // Remove o toast do DOM após ser escondido
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        document.body.removeChild(toastContainer);
+    });
+};
+</script>
+{% endblock %}
