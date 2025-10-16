@@ -1,7 +1,7 @@
-# urls.py
-from django.urls import path
+from django.urls import path, include  # Adicione o include aqui
 from . import views
 from . import views_usuarios
+
 app_name = 'admin_personalizado'
 
 urlpatterns = [
@@ -15,6 +15,13 @@ urlpatterns = [
     path('notificacoes/editar/<int:pk>/', views.editar_notificacao, name='editar_notificacao'),
     path('notificacoes/excluir/<int:pk>/', views.excluir_notificacao, name='excluir_notificacao'),
     path('api/notificacoes/enviar/', views.enviar_notificacao_ajax, name='enviar_notificacao_ajax'),
+    
+    # URLs de autenticação - escolha apenas uma das opções abaixo
+    # Opção 1: Se estiver usando Django Allauth
+#     path('accounts/', include('allauth.urls')),  # Para Django Allauth
+    
+    # Opção 2: Se estiver usando a autenticação padrão do Django
+    path('accounts/', include('django.contrib.auth.urls')),  # Para autenticação padrão do Django
     
     # URLs de gerenciamento de usuários
     path('usuarios/', views_usuarios.listar_usuarios, name='listar_usuarios'),

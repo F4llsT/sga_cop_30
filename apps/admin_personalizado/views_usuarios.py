@@ -47,6 +47,7 @@ def is_superuser(user):
 def is_gerente(user):
     """Verifica se o usuário é gerente."""
     return user.groups.filter(name='Gerente').exists() or user.is_superuser
+# No arquivo views_usuarios.py
 @staff_member_required
 @login_required
 @user_passes_test(lambda u: is_superuser(u) or is_gerente(u))
@@ -55,26 +56,29 @@ def detalhes_usuario(request, user_id):
     usuario = get_object_or_404(get_user_model(), id=user_id)
     
     # Verifica se o usuário tem permissão para ver os detalhes
-    if not (request.user.is_superuser or request.user == usuario or is_gerente(request.user)):
+    if not (request.user.is_superuser or is_gerente(request.user) or request.user == usuario):
         return HttpResponseForbidden("Você não tem permissão para acessar esta página.")
     
-    # Obtém o histórico de alterações de papel
-    historico_papeis = getattr(usuario, 'historico_papeis', [])
+    # Obtém os grupos disponíveis, exceto o grupo de superusuários
+    papeis_disponiveis = Group.objects.exclude(name='Superusuário')
+    
+    # Se o usuário for superusuário, adiciona uma entrada especial
+    if usuario.is_superuser:
+        papeis_disponiveis = list(papeis_disponiveis)  # Converte para lista para poder adicionar
+        papeis_disponiveis.append({'id': 'superuser', 'name': 'Superusuário'})
     
     context = {
         'usuario': usuario,
-        'historico_papeis': historico_papeis,
-        'papeis_disponiveis': Group.objects.all(),
+        'papeis_disponiveis': papeis_disponiveis,
         'agora': timezone.now(),
     }
     return render(request, 'admin_personalizado/usuarios/usuario_detalhes.html', context)
-
+@require_http_methods(["POST"])
 @staff_member_required
 @login_required
-@user_passes_test(lambda u: is_superuser(u) or is_gerente(u))
-@require_http_methods(["POST"])
+@user_passes_test(lambda u: u.is_superuser or is_gerente(u))
 def alterar_papel_usuario(request, user_id):
-    """Altera o papel de um usuário e registra no histórico."""
+    """Altera o papel de um usuário."""
     if not request.user.is_authenticated:
         return JsonResponse({'status': 'error', 'message': 'Usuário não autenticado'}, status=401)
     
@@ -86,33 +90,53 @@ def alterar_papel_usuario(request, user_id):
             return JsonResponse({'status': 'error', 'message': 'ID do papel não fornecido'}, status=400)
         
         usuario = get_user_model().objects.get(id=user_id)
+        
+        # Verifica se o usuário atual tem permissão para fazer a alteração
+        if not (request.user.is_superuser or (is_gerente(request.user) and not usuario.is_superuser)):
+            return JsonResponse({
+                'status': 'error', 
+                'message': 'Você não tem permissão para alterar este usuário'
+            }, status=403)
+        
+        # Obtém o nome do papel anterior
         papel_anterior = usuario.groups.first().name if usuario.groups.exists() else 'Nenhum'
         
         with transaction.atomic():
             # Remove todos os grupos atuais
             usuario.groups.clear()
             
-            # Adiciona o novo grupo
+            # Adiciona o novo grupo se não for 'nenhum'
             if novo_papel_id != 'nenhum':
                 novo_grupo = Group.objects.get(id=novo_papel_id)
                 usuario.groups.add(novo_grupo)
+                novo_papel_nome = novo_grupo.name
+            else:
+                novo_papel_nome = 'Nenhum'
             
             # Registra a alteração no histórico
             PapelHistorico.objects.create(
                 usuario=usuario,
                 papel_anterior=papel_anterior,
-                novo_papel=novo_grupo.name if novo_papel_id != 'nenhum' else 'Nenhum',
+                novo_papel=novo_papel_nome,
                 alterado_por=request.user
             )
             
+            # Se o usuário alterado for o próprio usuário logado, força o refresh da sessão
+            if usuario == request.user:
+                update_session_auth_hash(request, usuario)
+            
             return JsonResponse({
                 'status': 'success',
-                'message': 'Papel do usuário atualizado com sucesso!',
-                'novo_papel': novo_grupo.name if novo_papel_id != 'nenhum' else 'Nenhum'
+                'message': f'Papel alterado com sucesso para {novo_papel_nome}',
+                'novo_papel': novo_papel_nome
             })
             
+    except get_user_model().DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Usuário não encontrado'}, status=404)
+    except Group.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Papel não encontrado'}, status=404)
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        return JsonResponse({'status': 'error', 'message': f'Erro ao alterar papel: {str(e)}'}, status=500)
 
 @staff_member_required
 @login_required
@@ -355,11 +379,8 @@ from django.utils import timezone
 import json
 
 @require_http_methods(["POST"])
-@csrf_exempt  # Only for testing, use proper CSRF in production
 @staff_member_required
 @login_required
-@require_http_methods(["POST"])
-@csrf_exempt  # For testing only - remove in production and use proper CSRF
 @transaction.atomic
 def atualizar_usuario(request, user_id):
     """Atualiza as informações do usuário e perfil via AJAX."""
@@ -367,7 +388,7 @@ def atualizar_usuario(request, user_id):
         # Get the user being updated
         user = get_user_model().objects.select_related('perfil').get(id=user_id)
         
-        # Check if the current user has permission to update this user
+        # Check permissions
         if not (request.user.is_superuser or is_gerente(request.user) or request.user == user):
             return JsonResponse({
                 'status': 'error',
@@ -377,79 +398,64 @@ def atualizar_usuario(request, user_id):
         # Get POST data
         data = request.POST.dict()
         
+        # Track changed fields
+        changed_fields = []
+        
         # Update basic user info
         if 'nome_completo' in data and data['nome_completo']:
             names = data['nome_completo'].split(' ', 1)
-            user.first_name = names[0]
-            user.last_name = names[1] if len(names) > 1 else ''
+            if user.first_name != names[0] or user.last_name != (names[1] if len(names) > 1 else ''):
+                user.first_name = names[0]
+                user.last_name = names[1] if len(names) > 1 else ''
+                changed_fields.append('nome_completo')
         
-        if 'email' in data:
+        if 'email' in data and user.email != data['email']:
             user.email = data['email']
+            changed_fields.append('email')
         
+        password_changed = False
         if 'nova_senha' in data and data['nova_senha']:
             user.set_password(data['nova_senha'])
+            password_changed = True
+            changed_fields.append('senha')
         
-        user.save()
+        if changed_fields:
+            user.save()
         
         # Update profile info if exists
         if hasattr(user, 'perfil'):
             perfil = user.perfil
+            perfil_changed = False
             
-            if 'genero' in data:
-                perfil.genero = data['genero']
+            profile_fields = {
+                'genero': 'genero',
+                'data_nascimento': 'data_nascimento',
+                'telefone': 'telefone'
+            }
             
-            if 'data_nascimento' in data and data['data_nascimento']:
-                perfil.data_nascimento = data['data_nascimento']
+            for field, data_field in profile_fields.items():
+                if data_field in data and getattr(perfil, field, None) != data[data_field]:
+                    setattr(perfil, field, data[data_field])
+                    perfil_changed = True
+                    changed_fields.append(field)
             
-            if 'telefone' in data:
-                perfil.telefone = data['telefone']
+            # Handle boolean field
+            telefone_whatsapp = data.get('telefone_whatsapp') == 'on'
+            if perfil.telefone_whatsapp != telefone_whatsapp:
+                perfil.telefone_whatsapp = telefone_whatsapp
+                perfil_changed = True
+                changed_fields.append('telefone_whatsapp')
             
-            perfil.telefone_whatsapp = 'telefone_whatsapp' in data
-            
-            # Update address fields if they exist in the model
-            address_fields = [
-                'cep', 'logradouro', 'numero', 'complemento',
-                'bairro', 'cidade', 'estado'
-            ]
-            
-            for field in address_fields:
-                if field in data:
-                    setattr(perfil, field, data[field])
-            
-            perfil.save()
-        
-        # Log the change
-        LogEntryManager.log_user_update(
-            user=user,
-            request_user=request.user,
-            changed_fields=[k for k in data.keys() if k != 'csrfmiddlewaretoken']
-        )
+            if perfil_changed:
+                perfil.save()
         
         # Prepare response data
         response_data = {
             'status': 'success',
             'message': 'Dados atualizados com sucesso!',
-            'nome_completo': user.get_full_name(),
-            'email': user.email,
+            'redirect': reverse('admin_personalizado:detalhes_usuario', args=[user.id]),
+            'password_changed': password_changed
         }
-        
-        # Add profile data to response if profile exists
-        if hasattr(user, 'perfil'):
-            perfil = user.perfil
-            profile_data = {
-                'genero': perfil.genero,
-                'data_nascimento': perfil.data_nascimento.isoformat() if perfil.data_nascimento else None,
-                'telefone': perfil.telefone,
-                'telefone_whatsapp': perfil.telefone_whatsapp,
-                'cep': getattr(perfil, 'cep', ''),
-                'logradouro': getattr(perfil, 'logradouro', ''),
-                'numero': getattr(perfil, 'numero', ''),
-                'complemento': getattr(perfil, 'complemento', ''),
-                'bairro': getattr(perfil, 'bairro', ''),
-                'cidade': getattr(perfil, 'cidade', ''),
-                'estado': getattr(perfil, 'estado', '')
-            }
-            response_data.update(profile_data)
         
         return JsonResponse(response_data)
         
@@ -464,4 +470,3 @@ def atualizar_usuario(request, user_id):
             'status': 'error',
             'message': f'Erro ao atualizar usuário: {str(e)}'
         }, status=500)
-

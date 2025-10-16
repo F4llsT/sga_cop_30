@@ -68,7 +68,8 @@
 
         <div class="user-details-grid">
             <!-- Informações Básicas -->
-            <div class="detail-card">
+
+                        <div class="detail-card">
                 <div class="detail-card-header">
                     <h3><i class="fas fa-info-circle"></i> Informações Básicas</h3>
                 </div>
@@ -116,7 +117,7 @@
                 </div>
             </div>
 
-            <!-- Gerenciamento de Papel -->
+
             <div class="detail-card">
                 <div class="detail-card-header">
                     <h3><i class="fas fa-user-shield"></i> Gerenciamento de Papel</h3>
@@ -128,34 +129,50 @@
                             <label for="papel">Papel Atual:</label>
                             <div class="current-role">
                                 {% if usuario.is_superuser %}
-                                    <span class="badge badge-admin">Administrador</span>
+                                    <span class="badge bg-danger">Superusuário</span>
+                                    <p class="text-muted mt-2">Acesso total a todas as áreas e funcionalidades do sistema.</p>
                                 {% elif usuario.groups.exists %}
-                                    <span class="badge badge-manager">{{ usuario.groups.first.name }}</span>
+                                    {% with grupo=usuario.groups.first %}
+                                        {% if grupo.name == 'Usuário-Gerente' %}
+                                            <span class="badge bg-primary">{{ grupo.name }}</span>
+                                            <p class="text-muted mt-2">Acesso ao painel administrativo, visualização de todos os usuários. Não pode editar nem excluir contas.</p>
+                                        {% elif grupo.name == 'Usuário-Eventos' %}
+                                            <span class="badge bg-success">{{ grupo.name }}</span>
+                                            <p class="text-muted mt-2">Pode criar e gerenciar eventos no painel de controle.</p>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ grupo.name }}</span>
+                                            <p class="text-muted mt-2">Acesso apenas à área pública do sistema.</p>
+                                        {% endif %}
+                                    {% endwith %}
                                 {% else %}
-                                    <span class="badge badge-user">Usuário</span>
+                                    <span class="badge bg-secondary">Usuário Comum</span>
+                                    <p class="text-muted mt-2">Acesso apenas à área pública do sistema.</p>
                                 {% endif %}
                             </div>
                         </div>
 
                         {% if request.user.is_superuser or is_gerente %}
-                        <div class="form-group">
-                            <label for="novo_papel">Alterar Papel:</label>
-                            <select name="novo_papel" id="novo_papel" class="form-control">
+                        <div class="form-group mt-4">
+                            <label for="novo_papel" class="form-label">Alterar Papel:</label>
+                            <select name="novo_papel" id="novo_papel" class="form-select">
                                 <option value="">Selecione um papel</option>
                                 {% for grupo in papeis_disponiveis %}
                                     <option value="{{ grupo.id }}">{{ grupo.name }}</option>
                                 {% endfor %}
-                                <option value="nenhum">Remover todos os papéis</option>
+                                {% if not usuario.is_superuser %}
+                                    <option value="nenhum">Remover todos os papéis</option>
+                                {% endif %}
                             </select>
+                            <div class="form-text">Selecione um novo papel para o usuário</div>
                         </div>
-                        <button type="button" id="btnAlterarPapel" class="btn btn-primary">
+                        <button type="button" id="btnAlterarPapel" class="btn btn-primary mt-2" 
+                                {% if usuario.is_superuser %}disabled{% endif %}>
                             <i class="fas fa-save"></i> Salvar Alterações
                         </button>
                         {% endif %}
                     </form>
                 </div>
             </div>
-
             <!-- Informações Pessoais -->
             <div class="detail-card">
                 <div class="detail-card-header">
@@ -260,108 +277,187 @@
         </div>
     </div>
 </div>
-{% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- jQuery Mask -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
-$(document).ready(function() {
-    // Máscaras para os campos
-    $('input[name="telefone"]').mask('(00) 00000-0000');
+// Verifica se o jQuery está carregado
+if (typeof jQuery == 'undefined') {
+    console.error('Erro: jQuery não foi carregado corretamente!');
+}
+
+// Verifica se o Bootstrap está disponível
+if (typeof bootstrap == 'undefined') {
+    console.error('Erro: Bootstrap não foi carregado corretamente!');
+}
+
+// Variável para armazenar os dados originais
+let originalData = {};
+
+// Função para mostrar notificações
+function showToast(type, title, message) {
+    const toast = `
+        <div class="toast align-items-center text-white bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong><br>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `;
     
-    // Alternar entre modo de visualização e edição
-    $('#btnEditarPerfil').click(function() {
+    // Cria o container de toasts se não existir
+    let $container = $('.toast-container');
+    if ($container.length === 0) {
+        $container = $('<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100"></div>');
+        $('body').append($container);
+    }
+    
+    // Adiciona o toast e mostra
+    const $toast = $(toast);
+    $container.append($toast);
+    const bsToast = new bootstrap.Toast($toast[0]);
+    bsToast.show();
+    
+    // Remove o toast quando for fechado
+    $toast.on('hidden.bs.toast', function() {
+        $toast.remove();
+    });
+}
+
+// Inicialização quando o documento estiver pronto
+$(document).ready(function() {
+    console.log('Documento pronto - Iniciando configuração...');
+    
+    // Inicializa as máscaras
+    $('.telefone-input').mask('(00) 00000-0000');
+    $('.cep-input').mask('00000-000');
+    
+    console.log('Máscaras iniciais configuradas');
+    
+    // Configura o evento de clique no botão Editar Perfil
+    $(document).on('click', '#btnEditarPerfil', function(e) {
+        e.preventDefault();
+        console.log('Botão Editar Perfil clicado');
+        
+        // Armazena os dados atuais para possível cancelamento
+        originalData = {};
+        $('input, select').each(function() {
+            const $this = $(this);
+            const name = $this.attr('name');
+            if (name) {
+                if ($this.is(':checkbox')) {
+                    originalData[name] = $this.prop('checked');
+                } else {
+                    originalData[name] = $this.val();
+                }
+            }
+        });
+        
+        console.log('Dados originais armazenados:', originalData);
+        
+        // Mostra os campos de edição e esconde a visualização
         $('.view-mode').addClass('d-none');
         $('.edit-mode').removeClass('d-none');
         $('#btnEditarPerfil').addClass('d-none');
         $('#btnSalvarPerfil, #btnCancelarEdicao').removeClass('d-none');
     });
     
-    $('#btnCancelarEdicao').click(function() {
-        $('.edit-mode').addClass('d-none');
+    // Configura o evento de clique no botão Cancelar
+    $(document).on('click', '#btnCancelarEdicao', function(e) {
+        e.preventDefault();
+        console.log('Botão Cancelar clicado');
+        
+        // Restaura os valores originais
+        if (originalData) {
+            for (const [name, value] of Object.entries(originalData)) {
+                const $field = $(`[name="${name}"]`);
+                if ($field.length) {
+                    if ($field.is(':checkbox')) {
+                        $field.prop('checked', value);
+                    } else {
+                        $field.val(value);
+                    }
+                }
+            }
+        }
+        
+        // Volta para o modo de visualização
         $('.view-mode').removeClass('d-none');
-        $('#btnSalvarPerfil, #btnCancelarEdicao').addClass('d-none');
+        $('.edit-mode').addClass('d-none');
         $('#btnEditarPerfil').removeClass('d-none');
+        $('#btnSalvarPerfil, #btnCancelarEdicao').addClass('d-none');
     });
     
-    // Salvar alterações
-    $('#btnSalvarPerfil').click(function() {
+    // Configura o evento de clique no botão Salvar
+    $(document).on('click', '#btnSalvarPerfil', function(e) {
+        e.preventDefault();
+        console.log('Botão Salvar clicado');
+        
         const $btn = $(this);
-        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...');
+        const $form = $('#basicInfoForm, #personalInfoForm');
         
-        // Coletar dados dos formulários
-        const basicData = {};
-        $('#basicInfoForm').serializeArray().forEach(item => {
-            if (item.value) basicData[item.name] = item.value;
-        });
+        if (!$form.length) {
+            console.error('Erro: Formulário não encontrado');
+            showToast('danger', 'Erro', 'Formulário não encontrado');
+            return;
+        }
         
-        const personalData = {};
-        $('#personalInfoForm').serializeArray().forEach(item => {
-            personalData[item.name] = item.value;
-        });
+        // Desabilita o botão e mostra indicador de carregamento
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Salvando...');
         
-        // Enviar dados via AJAX
+        // Envia o formulário via AJAX
         $.ajax({
-            url: '{% url 'admin_personalizado:atualizar_usuario' usuario.id %}',
+            url: $form.attr('action'),
             type: 'POST',
-            data: {
-                ...basicData,
-                ...personalData,
-                telefone_whatsapp: $('#whatsappCheck').is(':checked') ? 'on' : '',
-                csrfmiddlewaretoken: '{{ csrf_token }}'
-            },
+            data: $form.serialize(),
             success: function(response) {
+                console.log('Resposta do servidor:', response);
                 if (response.status === 'success') {
-                    // Atualizar a visualização com os novos dados
-                    if (response.nome_completo) {
-                        $('.user-info h1').text(response.nome_completo);
-                        $('.detail-value:contains("{{ usuario.get_full_name|default:"Não informado" }}")').text(response.nome_completo);
-                    }
-                    
-                    if (response.email) {
-                        $('.detail-value:contains("{{ usuario.email }}")').text(response.email);
-                    }
-                    
-                    if (response.genero) {
-                        const generoText = {
-                            'M': 'Masculino',
-                            'F': 'Feminino',
-                            'O': 'Outro'
-                        }[response.genero] || 'Não informado';
-                        $('#generoDisplay').text(generoText);
-                    }
-                    
-                    if (response.data_nascimento) {
-                        const dataFormatada = new Date(response.data_nascimento).toLocaleDateString('pt-BR');
-                        $('#dataNascimentoDisplay').text(dataFormatada);
-                    }
-                    
-                    if (response.telefone) {
-                        let telefoneHtml = response.telefone;
-                        if (response.telefone_whatsapp) {
-                            telefoneHtml += ' <span class="badge bg-success ms-2">WhatsApp</span>';
+                    // Atualiza os campos na visualização
+                    $('.view-mode .detail-value').each(function() {
+                        const $this = $(this);
+                        const field = $this.data('field');
+                        if (field) {
+                            const $input = $(`[name="${field}"]`);
+                            if ($input.length) {
+                                $this.text($input.val() || 'Não informado');
+                            }
                         }
-                        $('#telefoneDisplay').html(telefoneHtml);
-                    }
+                    });
                     
-                    // Voltar para o modo de visualização
-                    $('.edit-mode').addClass('d-none');
+                    showToast('success', 'Sucesso!', 'Perfil atualizado com sucesso!');
+                    
+                    // Volta para o modo de visualização
                     $('.view-mode').removeClass('d-none');
-                    $('#btnSalvarPerfil, #btnCancelarEdicao').addClass('d-none');
+                    $('.edit-mode').addClass('d-none');
                     $('#btnEditarPerfil').removeClass('d-none');
-                    
-                    // Mostrar mensagem de sucesso
-                    showToast('success', 'Sucesso', 'Dados atualizados com sucesso!');
+                    $('#btnSalvarPerfil, #btnCancelarEdicao').addClass('d-none');
                 } else {
-                    showToast('error', 'Erro', response.message || 'Ocorreu um erro ao atualizar os dados.');
+                    throw new Error(response.message || 'Ocorreu um erro ao salvar as alterações.');
                 }
             },
-            error: function(xhr) {
-                const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
-                    ? xhr.responseJSON.message 
-                    : 'Ocorreu um erro ao processar sua solicitação.';
-                showToast('error', 'Erro', errorMsg);
+            error: function(xhr, status, error) {
+                console.error('Erro ao salvar:', status, error);
+                let errorMsg = 'Ocorreu um erro ao processar sua solicitação.';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response && response.message) {
+                        errorMsg = response.message;
+                    }
+                } catch (e) {
+                    console.error('Erro ao processar resposta de erro:', e);
+                }
+                showToast('danger', 'Erro!', errorMsg);
             },
             complete: function() {
                 $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Salvar Alterações');
@@ -369,172 +465,25 @@ $(document).ready(function() {
         });
     });
     
-    function showToast(type, title, message) {
-        // Implementação da função de notificação existente
-        const toastContainer = document.createElement('div');
-        toastContainer.className = `toast align-items-center text-white bg-${type} border-0`;
-        toastContainer.setAttribute('role', 'alert');
-        toastContainer.setAttribute('aria-live', 'assertive');
-        toastContainer.setAttribute('aria-atomic', 'true');
-        
-        toastContainer.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    <strong>${title}</strong><br>${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
-            </div>
-        `;
-        
-        document.body.appendChild(toastContainer);
-        const toast = new bootstrap.Toast(toastContainer);
-        toast.show();
-        
-        // Remove o toast após ser escondido
-        toastContainer.addEventListener('hidden.bs.toast', function() {
-            document.body.removeChild(toastContainer);
-        });
-    }
+    console.log('Configuração concluída com sucesso');
 });
 </script>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Configuração do modal de confirmação
-    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
-    const novoPapelSelect = document.getElementById('novo_papel');
-    const btnAlterarPapel = document.getElementById('btnAlterarPapel');
-    const formRole = document.getElementById('roleForm');
+<style>
+/* Estilos para os toasts */
+.toast {
+    min-width: 250px;
+    margin-bottom: 1rem;
+}
 
-    if (btnAlterarPapel) {
-        btnAlterarPapel.addEventListener('click', function() {
-            const selectedOption = novoPapelSelect.options[novoPapelSelect.selectedIndex];
-            if (selectedOption.value) {
-                document.getElementById('currentRoleText').textContent = 
-                    '{{ usuario.groups.first.name|default:"Nenhum" }}';
-                document.getElementById('newRoleText').textContent = selectedOption.text;
-                confirmModal.show();
-            }
-        });
-    }
+.toast-header {
+    display: flex;
+    justify-content: space-between;
+}
 
-    // Confirmação da alteração
-    const confirmButton = document.getElementById('confirmChange');
-    if (confirmButton) {
-        confirmButton.addEventListener('click', function() {
-            // Desativa o botão para evitar múltiplos cliques
-            confirmButton.disabled = true;
-            confirmButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...';
-
-            // Envia o formulário via AJAX
-            fetch(formRole.action, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: new URLSearchParams(new FormData(formRole))
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    // Atualiza a interface
-                    const currentRoleElement = document.querySelector('.current-role');
-                    if (currentRoleElement) {
-                        currentRoleElement.innerHTML = `
-                            <span class="badge ${data.novo_papel === 'Nenhum' ? 'badge-user' : 'badge-manager'}">
-                                ${data.novo_papel}
-                            </span>
-                        `;
-                    }
-                    
-                    // Adiciona ao histórico
-                    const timeline = document.querySelector('.timeline');
-                    if (timeline) {
-                        const now = new Date();
-                        const formattedDate = now.toLocaleString('pt-BR');
-                        
-                        const newHistoryItem = `
-                            <div class="timeline-item">
-                                <div class="timeline-point"></div>
-                                <div class="timeline-content">
-                                    <div class="timeline-header">
-                                        <span class="timeline-date">${formattedDate}</span>
-                                        <span class="timeline-user">
-                                            <i class="fas fa-user"></i> 
-                                            {{ request.user.get_full_name|default:request.user.username }}
-                                        </span>
-                                    </div>
-                                    <div class="timeline-body">
-                                        <p>
-                                            <span class="change-label">De:</span> 
-                                            <span class="change-old">${document.getElementById('currentRoleText').textContent}</span>
-                                            <i class="fas fa-arrow-right"></i>
-                                            <span class="change-label">Para:</span> 
-                                            <span class="change-new">${document.getElementById('newRoleText').textContent}</span>
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                        
-                        if (timeline.children.length === 0) {
-                            timeline.innerHTML = newHistoryItem;
-                        } else {
-                            timeline.insertAdjacentHTML('afterbegin', newHistoryItem);
-                        }
-                    }
-                    
-                    // Mostra mensagem de sucesso
-                    showToast('success', 'Sucesso', 'Papel do usuário atualizado com sucesso!');
-                } else {
-                    showToast('error', 'Erro', data.message || 'Ocorreu um erro ao atualizar o papel do usuário.');
-                }
-            })
-            .catch(error => {
-                console.error('Erro:', error);
-                showToast('error', 'Erro', 'Ocorreu um erro ao processar sua solicitação.');
-            })
-            .finally(() => {
-                confirmModal.hide();
-                confirmButton.disabled = false;
-                confirmButton.innerHTML = 'Confirmar';
-            });
-        });
-    }
-
-    // Função para exibir notificações
-    function showToast(type, title, message) {
-        // Implementação da função de notificação
-        // Você pode usar uma biblioteca como Toastify.js ou implementar a sua própria
-        console.log(`${type.toUpperCase()}: ${title} - ${message}`);
-        // Exemplo com Bootstrap Toast
-        const toastContainer = document.createElement('div');
-        toastContainer.className = `toast align-items-center text-white bg-${type} border-0`;
-        toastContainer.setAttribute('role', 'alert');
-        toastContainer.setAttribute('aria-live', 'assertive');
-        toastContainer.setAttribute('aria-atomic', 'true');
-        
-        toastContainer.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    <strong>${title}</strong><br>${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
-            </div>
-        `;
-        
-        document.body.appendChild(toastContainer);
-        const toast = new bootstrap.Toast(toastContainer);
-        toast.show();
-        
-        // Remove o toast após ser escondido
-        toastContainer.addEventListener('hidden.bs.toast', function() {
-            document.body.removeChild(toastContainer);
-        });
-    }
-});
-</script>
-
-
+.toast-body {
+    padding: 0.75rem;
+}
+</style>
+{% endblock %}
 {% endblock %}
