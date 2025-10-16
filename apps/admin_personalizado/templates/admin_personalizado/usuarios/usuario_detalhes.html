@@ -20,15 +20,17 @@
             </a>
             <h2>Gerenciar Usuário</h2>
             <div>
-                <button type="button" class="btn btn-primary" id="btnEditarPerfil">
-                    <i class="fas fa-edit"></i> Editar Perfil
-                </button>
-                <button type="button" class="btn btn-success d-none" id="btnSalvarPerfil">
-                    <i class="fas fa-save"></i> Salvar Alterações
-                </button>
-                <button type="button" class="btn btn-outline-secondary d-none" id="btnCancelarEdicao">
-                    <i class="fas fa-times"></i> Cancelar
-                </button>
+                {% if request.user.is_superuser or request.user == usuario %}
+                    <button type="button" class="btn btn-primary" id="btnEditarPerfil">
+                        <i class="fas fa-edit"></i> Editar Perfil
+                    </button>
+                    <button type="button" class="btn btn-success d-none" id="btnSalvarPerfil">
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary d-none" id="btnCancelarEdicao">
+                        <i class="fas fa-times"></i> Cancelar
+                    </button>
+                {% endif %}
             </div>
         </div>
     </header>
@@ -46,7 +48,7 @@
                 {% endif %}
             </div>
             <div class="user-info">
-                <h1>{{ usuario.get_full_name|default:usuario.email }}</h1>
+                <h1>{{ usuario.nome|default:usuario.email }}</h1>
                 <div class="user-meta">
                     <span class="user-role">
                         <i class="fas fa-user-tag"></i>
@@ -78,11 +80,11 @@
                         {% csrf_token %}
                         <div class="detail-row view-mode">
                             <span class="detail-label">Nome Completo:</span>
-                            <span class="detail-value">{{ usuario.get_full_name|default:"Não informado" }}</span>
+                            <span class="detail-value">{{ usuario.nome|default:"Não informado" }}</span>
                         </div>
                         <div class="detail-row edit-mode d-none">
                             <label class="form-label">Nome Completo</label>
-                            <input type="text" name="nome_completo" class="form-control" value="{{ usuario.get_full_name }}">
+                            <input type="text" name="nome" class="form-control" value="{{ usuario.nome }}">
                         </div>
                         
                         <div class="detail-row view-mode">
@@ -143,24 +145,21 @@
                                     {% endwith %}
                                 {% endif %}
 
-                    {% if not usuario.is_superuser or request.user.is_superuser %}
-                    <div class="form-group mt-4">
-                        <label for="novo_papel" class="form-label">Alterar Papel:</label>
-                        <select name="novo_papel" id="novo_papel" class="form-select">
-                            <option value="">Selecione um papel</option>
-                            <option value="USUARIO" {% if usuario.role == 'USUARIO' %}selected{% endif %}>Usuário Comum</option>
-                            <option value="EVENTOS" {% if usuario.role == 'EVENTOS' %}selected{% endif %}>Usuário de Eventos</option>
-                            {% if request.user.is_superuser %}
+                    {% if request.user.is_superuser %}
+                        <div class="form-group mt-4">
+                            <label for="novo_papel" class="form-label">Alterar Papel:</label>
+                            <select name="novo_papel" id="novo_papel" class="form-select">
+                                <option value="">Selecione um papel</option>
+                                <option value="USUARIO" {% if usuario.role == 'USUARIO' %}selected{% endif %}>Usuário Comum</option>
+                                <option value="EVENTOS" {% if usuario.role == 'EVENTOS' %}selected{% endif %}>Usuário de Eventos</option>
                                 <option value="GERENTE" {% if usuario.role == 'GERENTE' %}selected{% endif %}>Usuário Gerente</option>
                                 <option value="SUPERUSER" {% if usuario.role == 'SUPERUSER' %}selected{% endif %}>Superusuário</option>
-                            {% endif %}
-                        </select>
-                        <div class="form-text">Selecione um novo papel para o usuário</div>
-                    </div>
-                    <button type="button" id="btnAlterarPapel" class="btn btn-primary mt-2" 
-                            {% if usuario.is_superuser and not request.user.is_superuser %}disabled{% endif %}>
-                        <i class="fas fa-save"></i> Salvar Alterações
-                    </button>
+                            </select>
+                            <div class="form-text">Apenas superusuários podem alterar papéis de usuário</div>
+                        </div>
+                        <button type="button" id="btnAlterarPapel" class="btn btn-primary mt-2">
+                            <i class="fas fa-save"></i> Salvar Alterações
+                        </button>
                     {% endif %}
                 </div>
             </div>

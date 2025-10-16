@@ -122,27 +122,38 @@
                             {% endif %}
                         </td>
                         <td class="text-center">
-                            <div class="actions-container">
-                                <button type="button" 
-                                        class="btn-action btn-outline-primary" 
-                                        onclick="editarUsuario({{ usuario.id }})"
-                                        title="Editar"
-                                        data-bs-toggle="tooltip">
-                                    <i class="fas fa-edit"></i>
-                                    <span class="visually-hidden">Editar</span>
-                                </button>
-                                
-                                {% if not usuario.is_superuser or usuario == request.user %}
-                                <button type="button" 
-                                        class="btn-action {% if usuario.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
-                                        onclick="toggleStatus({{ usuario.id }}, {{ usuario.is_active|lower }})"
-                                        title="{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}"
-                                        data-bs-toggle="tooltip">
-                                    <i class="fas fa-{% if usuario.is_active %}user-times{% else %}user-check{% endif %}"></i>
-                                    <span class="visually-hidden">{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}</span>
-                                </button>
+                            {% if not request.user.role == 'GERENTE' or usuario == request.user %}
+                                {% if usuario != request.user %}
+                                <div class="actions-container">
+                                    {% if not request.user.role == 'GERENTE' %}
+                                    <button type="button" 
+                                            class="btn-action btn-outline-primary" 
+                                            onclick="editarUsuario({{ usuario.id }})"
+                                            title="Editar"
+                                            data-bs-toggle="tooltip">
+                                        <i class="fas fa-edit"></i>
+                                        <span class="visually-hidden">Editar</span>
+                                    </button>
+                                    {% endif %}
+                                    
+                                    {% if not usuario.is_superuser %}
+                                    <button type="button" 
+                                            class="btn-action {% if usuario.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}"
+                                            onclick="toggleStatus({{ usuario.id }}, {{ usuario.is_active|lower }})"
+                                            title="{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}"
+                                            data-bs-toggle="tooltip"
+                                            {% if request.user.role == 'GERENTE' and usuario.role == 'GERENTE' and usuario != request.user %}disabled{% endif %}>
+                                        <i class="fas fa-{% if usuario.is_active %}user-times{% else %}user-check{% endif %}"></i>
+                                        <span class="visually-hidden">{% if usuario.is_active %}Desativar{% else %}Ativar{% endif %}</span>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted">-</span>
                                 {% endif %}
-                            </div>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}

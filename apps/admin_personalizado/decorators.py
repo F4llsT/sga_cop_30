@@ -57,10 +57,16 @@ def eventos_required(view_func=None, redirect_url='admin_personalizado:acesso_ne
             if not request.user.is_authenticated:
                 return redirect('admin_personalizado:login')
                 
+            # Verifica se o usuário é superusuário, gerente ou usuário de eventos
             if not (request.user.role in ['EVENTOS', 'GERENTE'] or request.user.is_superuser):
                 if redirect_url:
                     return redirect(redirect_url)
                 raise PermissionDenied
+                
+            # Garante que o usuário de eventos tenha is_staff=True
+            if request.user.role == 'EVENTOS' and not request.user.is_staff:
+                request.user.is_staff = True
+                request.user.save()
                 
             return view_func(request, *args, **kwargs)
         return _wrapped_view

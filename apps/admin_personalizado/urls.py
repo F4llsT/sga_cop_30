@@ -1,4 +1,5 @@
-from django.urls import path, include  # Adicione o include aqui
+from django.urls import path, include
+from django.views.generic import TemplateView
 from . import views
 from . import views_usuarios
 
@@ -9,6 +10,7 @@ urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('passe-facil/', views.passefacil_admin, name='passefacil_admin'),
+    path('eventos/', views.eventos_admin, name='eventos_admin'),
     
     # URLs de notificações
     path('notificacoes/enviar/', views.enviar_notificacao, name='enviar_notificacao'),
@@ -16,12 +18,9 @@ urlpatterns = [
     path('notificacoes/excluir/<int:pk>/', views.excluir_notificacao, name='excluir_notificacao'),
     path('api/notificacoes/enviar/', views.enviar_notificacao_ajax, name='enviar_notificacao_ajax'),
     
-    # URLs de autenticação - escolha apenas uma das opções abaixo
-    # Opção 1: Se estiver usando Django Allauth
-#     path('accounts/', include('allauth.urls')),  # Para Django Allauth
-    
-    # Opção 2: Se estiver usando a autenticação padrão do Django
+    # URLs de autenticação
     path('accounts/', include('django.contrib.auth.urls')),  # Para autenticação padrão do Django
+    path('acesso-negado/', TemplateView.as_view(template_name='admin_personalizado/erros/acesso_negado.html'), name='acesso_negado'),
     
     # URLs de gerenciamento de usuários
     path('usuarios/', views_usuarios.listar_usuarios, name='listar_usuarios'),

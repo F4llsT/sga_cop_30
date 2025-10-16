@@ -15,6 +15,10 @@ class UsuarioManager(BaseUserManager):
         if 'role' not in extra_fields:
             extra_fields['role'] = Usuario.Role.USUARIO
             
+        # Define is_staff como True para usuários de eventos e gerentes
+        if extra_fields.get('role') in [Usuario.Role.EVENTOS, Usuario.Role.GERENTE, Usuario.Role.SUPERUSER]:
+            extra_fields['is_staff'] = True
+            
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
@@ -23,6 +27,15 @@ class UsuarioManager(BaseUserManager):
         if user.role == Usuario.Role.EVENTOS:
             grupo_eventos, _ = Group.objects.get_or_create(name='Usuário de Eventos')
             user.groups.add(grupo_eventos)
+            # Garante permissões específicas para usuários de eventos
+            from django.contrib.auth.models import Permission
+            from django.contrib.contenttypes.models import ContentType
+            from apps.agenda.models import Event
+            
+            content_type = ContentType.objects.get_for_model(Event)
+            permissions = Permission.objects.filter(content_type=content_type)
+            user.user_permissions.set(permissions)
+            
         elif user.role == Usuario.Role.GERENTE:
             grupo_gerente, _ = Group.objects.get_or_create(name='Usuário Gerente')
             user.groups.add(grupo_gerente)
@@ -101,7 +114,7 @@ class Usuario(AbstractUser):
         
         Regras de permissão:
         - SUPERUSER: Todas as permissões
-        - GERENTE: Pode visualizar usuários e gerenciar eventos, mas não pode modificar usuários
+        - GERENTE: Pode visualizar usuários (exceto superusuários) e gerenciar eventos
         - EVENTOS: Pode acessar o dashboard e gerenciar eventos
         - USUÁRIO: Apenas permissões básicas
         """
@@ -111,8 +124,19 @@ class Usuario(AbstractUser):
             
         # Usuário Gerente
         if self.is_gerente:
-            # Permite visualizar usuários e grupos, mas não modificar
-            if perm in ['usuarios.view_usuario', 'auth.view_group', 'usuarios.view_perfil']:
+            # Permite visualizar usuários que não são superusuários
+            if perm == 'usuarios.view_usuario':
+                # Se for um objeto específico, verifica se não é superusuário
+                if obj is not None:
+                    return not (hasattr(obj, 'is_superuser') and obj.is_superuser)
+                return True
+            # Permite visualizar perfil de usuários que não são superusuários
+            if perm == 'usuarios.view_perfil':
+                if obj is not None:
+                    return not (hasattr(obj, 'is_superuser') and obj.is_superuser)
+                return True
+            # Permite visualizar grupos
+            if perm == 'auth.view_group':
                 return True
             # Permite gerenciar eventos
             if perm.startswith('eventos.'):
@@ -120,10 +144,10 @@ class Usuario(AbstractUser):
             # Permite acessar o dashboard
             if perm == 'dashboard.view_dashboard':
                 return True
-            # Bloqueia edição/exclusão de usuários
-            if perm in ['usuarios.change_usuario', 'usuarios.delete_usuario', 
-                       'usuarios.add_usuario', 'auth.add_group', 
-                       'auth.change_group', 'auth.delete_group']:
+            # Bloqueia todas as outras permissões relacionadas a usuários e grupos
+            if (perm.startswith('usuarios.') or 
+                perm.startswith('auth.') or 
+                perm.startswith('admin.')):
                 return False
         
         # Usuário de Eventos

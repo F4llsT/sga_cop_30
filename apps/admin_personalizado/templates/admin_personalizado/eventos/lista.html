@@ -1,0 +1,378 @@
+{% extends 'admin_personalizado/baseadmin.html' %}
+{% load static %}
+
+{% block title %}Gerenciar Eventos - Painel Admin - COP30{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos para os cards de resumo */
+    .summary-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .summary-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border-left: 4px solid #4CAF50;
+    }
+    
+    .summary-card h3 {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin: 0 0 0.5rem 0;
+        font-weight: 500;
+    }
+    
+    .summary-card .value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0;
+        line-height: 1.2;
+    }
+    
+    /* Filtros */
+    .filters {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .filters h3 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+        font-size: 1.1rem;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: center;
+    }
+    
+    .filter-item {
+        margin-bottom: 0;
+    }
+    
+    .filter-item label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .filter-item select,
+    .filter-item input[type="date"] {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        width: 100%;
+    }
+    
+    .btn-filter {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        align-self: flex-end;
+        margin-top: 1.5rem;
+    }
+    
+    .btn-filter:hover {
+        background-color: #45a049;
+    }
+    
+    /* Tabela de eventos */
+    .events-table {
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .table-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        color: #2c3e50;
+    }
+    
+    .btn-add {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .btn-add:hover {
+        background-color: #45a049;
+        color: white;
+    }
+    
+    /* Cards de eventos próximos e populares */
+    .event-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .event-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .event-card h3 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+        font-size: 1.1rem;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+    }
+    
+    .event-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f8f9fa;
+    }
+    
+    .event-item:last-child {
+        border-bottom: none;
+    }
+    
+    .event-item .title {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.25rem;
+    }
+    
+    .event-item .meta {
+        font-size: 0.85rem;
+        color: #6c757d;
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .event-item .favorites {
+        color: #e74c3c;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="page-header">
+        <h1>Gerenciar Eventos</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'admin_personalizado:dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Eventos</li>
+            </ol>
+        </nav>
+    </div>
+    
+    <!-- Cards de Resumo -->
+    <div class="summary-cards">
+        <div class="summary-card">
+            <h3>Total de Eventos</h3>
+            <p class="value">{{ total_eventos }}</p>
+        </div>
+        <div class="summary-card">
+            <h3>Eventos Ativos</h3>
+            <p class="value">{{ eventos_ativos }}</p>
+        </div>
+        <div class="summary-card">
+            <h3>Próximos 7 Dias</h3>
+            <p class="value">{{ proximos_eventos|length }}</p>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="filters">
+        <h3>Filtrar Eventos</h3>
+        <form method="get" class="filter-form">
+            <div class="filter-group">
+                <div class="filter-item">
+                    <label for="status">Status</label>
+                    <select name="status" id="status" class="form-control">
+                        <option value="todos" {% if filtro_status == 'todos' %}selected{% endif %}>Todos os Eventos</option>
+                        <option value="ativos" {% if filtro_status == 'ativos' %}selected{% endif %}>Ativos Agora</option>
+                        <option value="futuros" {% if filtro_status == 'futuros' %}selected{% endif %}>Futuros</option>
+                        <option value="passados" {% if filtro_status == 'passados' %}selected{% endif %}>Passados</option>
+                    </select>
+                </div>
+                
+                <div class="filter-item">
+                    <label for="data_inicio">Data Inicial</label>
+                    <input type="date" name="data_inicio" id="data_inicio" class="form-control" 
+                           value="{{ filtro_data_inicio|default:'' }}">
+                </div>
+                
+                <div class="filter-item">
+                    <label for="data_fim">Data Final</label>
+                    <input type="date" name="data_fim" id="data_fim" class="form-control" 
+                           value="{{ filtro_data_fim|default:'' }}" min="{{ filtro_data_inicio|default:hoje }}">
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-filter">
+                    <i class="fas fa-filter"></i> Filtrar
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Tabela de Eventos -->
+    <div class="events-table">
+        <div class="table-header">
+            <h2>Todos os Eventos</h2>
+            <a href="#" class="btn-add">
+                <i class="fas fa-plus"></i> Novo Evento
+            </a>
+        </div>
+        
+        <div class="table-responsive">
+            <table class="table data-table">
+                <thead>
+                    <tr>
+                        <th>Título</th>
+                        <th>Data/Hora Início</th>
+                        <th>Data/Hora Fim</th>
+                        <th>Local</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in eventos %}
+                    <tr>
+                        <td>{{ evento.titulo }}</td>
+                        <td>{{ evento.data_inicio|date:"d/m/Y H:i" }}</td>
+                        <td>{{ evento.data_fim|date:"d/m/Y H:i" }}</td>
+                        <td>{{ evento.local|default:"-" }}</td>
+                        <td>
+                            {% if evento.data_inicio > timezone.now %}
+                                <span class="badge bg-info">Agendado</span>
+                            {% elif evento.data_fim < timezone.now %}
+                                <span class="badge bg-secondary">Encerrado</span>
+                            {% else %}
+                                <span class="badge bg-success">Em Andamento</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="#" class="btn btn-sm btn-outline-primary" title="Editar">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="#" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                <i class="fas fa-trash-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center">Nenhum evento encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Seção de Eventos Próximos e Populares -->
+    <div class="event-cards">
+        <!-- Próximos Eventos -->
+        <div class="event-card">
+            <h3>Próximos Eventos</h3>
+            {% if proximos_eventos %}
+                {% for evento in proximos_eventos %}
+                <div class="event-item">
+                    <div class="title">{{ evento.titulo }}</div>
+                    <div class="meta">
+                        <span>{{ evento.data_inicio|date:"d/m H:i" }}</span>
+                        <span>{{ evento.local|default:"" }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">Nenhum evento programado para os próximos dias.</p>
+            {% endif %}
+        </div>
+        
+        <!-- Eventos Populares -->
+        <div class="event-card">
+            <h3>Eventos Populares</h3>
+            {% if eventos_populares %}
+                {% for evento in eventos_populares %}
+                <div class="event-item">
+                    <div class="title">{{ evento.titulo }}</div>
+                    <div class="meta">
+                        <span>{{ evento.data_inicio|date:"d/m/Y" }}</span>
+                        <span class="favorites">{{ evento.num_favoritos }} <i class="fas fa-heart"></i></span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="text-muted">Nenhum evento com favoritos encontrado.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Atualiza a data mínima do campo de data final quando a data inicial é alterada
+    document.getElementById('data_inicio').addEventListener('change', function() {
+        var dataInicio = this.value;
+        var dataFimInput = document.getElementById('data_fim');
+        dataFimInput.min = dataInicio;
+        
+        // Se a data final for anterior à nova data inicial, atualiza-a
+        if (dataFimInput.value && dataFimInput.value < dataInicio) {
+            dataFimInput.value = dataInicio;
+        }
+    });
+    
+    // Inicialização do DataTable com opções personalizadas
+    $(document).ready(function() {
+        $('.data-table').DataTable({
+            responsive: true,
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/pt-BR.json'
+            },
+            order: [[1, 'asc']], // Ordena pela data de início por padrão
+            columnDefs: [
+                { orderable: false, targets: [5] } // Desativa a ordenação na coluna de ações
+            ]
+        });
+    });
+</script>
+{% endblock %}

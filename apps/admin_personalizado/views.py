@@ -4,16 +4,95 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import Count, Q, OuterRef, Subquery, Prefetch
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.views.decorators.http import require_http_methods
 from django.db import transaction
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from apps.passefacil.models import PasseFacil, ValidacaoQRCode
 from apps.agenda.models import UserAgenda, Event
 from apps.notificacoes.models import Notificacao
 from .models import NotificacaoPersonalizada
 from .decorators import gerente_required, superuser_required, eventos_required, staff_required
+
+@staff_required
+@eventos_required
+def eventos_admin(request):
+    """
+    Painel administrativo de eventos.
+    
+    Permissões:
+    - Acesso restrito a usuários de eventos, gerentes e superusuários
+    """
+    hoje = timezone.now().date()
+    
+    # Filtros
+    filtro_status = request.GET.get('status', 'todos')
+    filtro_data_inicio = request.GET.get('data_inicio')
+    filtro_data_fim = request.GET.get('data_fim')
+    
+    # Query base
+    eventos = Event.objects.all().order_by('data_inicio')
+    
+    # Aplicar filtros
+    if filtro_status != 'todos':
+        if filtro_status == 'passados':
+            eventos = eventos.filter(data_fim__lt=timezone.now())
+        elif filtro_status == 'ativos':
+            eventos = eventos.filter(
+                data_inicio__lte=timezone.now(),
+                data_fim__gte=timezone.now()
+            )
+        elif filtro_status == 'futuros':
+            eventos = eventos.filter(data_inicio__gt=timezone.now())
+    
+    # Filtros de data
+    if filtro_data_inicio:
+        try:
+            data_inicio = datetime.strptime(filtro_data_inicio, '%Y-%m-%d').date()
+            eventos = eventos.filter(data_inicio__date__gte=data_inicio)
+        except ValueError:
+            pass
+    
+    if filtro_data_fim:
+        try:
+            data_fim = datetime.strptime(filtro_data_fim, '%Y-%m-%d').date()
+            eventos = eventos.filter(data_fim__date__lte=data_fim)
+        except ValueError:
+            pass
+    
+    # Contadores para os cards
+    total_eventos = eventos.count()
+    eventos_ativos = eventos.filter(
+        data_inicio__lte=timezone.now(),
+        data_fim__gte=timezone.now()
+    ).count()
+    
+    # Próximos eventos (próximos 7 dias)
+    proxima_semana = timezone.now() + timedelta(days=7)
+    proximos_eventos = eventos.filter(
+        data_inicio__gte=timezone.now(),
+        data_inicio__lte=proxima_semana
+    ).order_by('data_inicio')[:5]
+    
+    # Eventos mais populares (com mais favoritos)
+    eventos_populares = eventos.annotate(
+        num_favoritos=Count('useragenda')
+    ).order_by('-num_favoritos')[:5]
+    
+    context = {
+        'eventos': eventos,
+        'total_eventos': total_eventos,
+        'eventos_ativos': eventos_ativos,
+        'proximos_eventos': proximos_eventos,
+        'eventos_populares': eventos_populares,
+        'filtro_status': filtro_status,
+        'filtro_data_inicio': filtro_data_inicio or '',
+        'filtro_data_fim': filtro_data_fim or '',
+        'hoje': hoje.strftime('%Y-%m-%d'),
+    }
+    
+    return render(request, 'admin_personalizado/eventos/lista.html', context)
 
 @staff_required
 def dashboard(request):
