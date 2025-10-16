@@ -1,8 +1,9 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model
+from apps.usuarios.models import Usuario
 from django.db.models import Q
 from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_POST, require_http_methods
@@ -17,6 +18,16 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from django.db import models
 from django.conf import settings
+
+def is_superuser(user):
+    """Verifica se o usuário é superusuário."""
+    return user.is_superuser
+
+def is_gerente(user):
+    """Verifica se o usuário pertence ao grupo Gerente."""
+    return user.groups.filter(name='Gerente').exists() or user.is_superuser
+
+from .decorators import superuser_required, gerente_required, eventos_required, staff_required
 
 # Modelo para registrar alterações de papel
 class PapelHistorico(models.Model):
@@ -40,131 +51,192 @@ class PapelHistorico(models.Model):
         verbose_name = 'Histórico de Papel'
         verbose_name_plural = 'Históricos de Papéis'
 
-def is_superuser(user):
-    """Verifica se o usuário é superusuário."""
-    return user.is_superuser
-
-def is_gerente(user):
-    """Verifica se o usuário é gerente."""
-    return user.groups.filter(name='Gerente').exists() or user.is_superuser
 # No arquivo views_usuarios.py
-@staff_member_required
 @login_required
-@user_passes_test(lambda u: is_superuser(u) or is_gerente(u))
 def detalhes_usuario(request, user_id):
-    """Exibe os detalhes completos de um usuário."""
+    """
+    Exibe os detalhes completos de um usuário.
+    
+    Permissões:
+    - Superusuário: Pode ver e editar todos os usuários
+    - Gerente: Pode ver todos os usuários, mas não pode editar superusuários
+    - Usuário de Eventos: Pode ver e editar apenas o próprio perfil
+    - Usuário Comum: Pode ver e editar apenas o próprio perfil
+    """
     usuario = get_object_or_404(get_user_model(), id=user_id)
     
     # Verifica se o usuário tem permissão para ver os detalhes
-    if not (request.user.is_superuser or is_gerente(request.user) or request.user == usuario):
+    if not (request.user.is_superuser or 
+            request.user.is_gerente or 
+            request.user == usuario):
         return HttpResponseForbidden("Você não tem permissão para acessar esta página.")
     
-    # Obtém os grupos disponíveis, exceto o grupo de superusuários
-    papeis_disponiveis = Group.objects.exclude(name='Superusuário')
+    # Obtém os papéis disponíveis com base no nível de permissão do usuário
+    papeis_disponiveis = [
+        {'id': 'USUARIO', 'name': 'Usuário Comum'},
+        {'id': 'EVENTOS', 'name': 'Usuário de Eventos'},
+    ]
     
-    # Se o usuário for superusuário, adiciona uma entrada especial
-    if usuario.is_superuser:
-        papeis_disponiveis = list(papeis_disponiveis)  # Converte para lista para poder adicionar
-        papeis_disponiveis.append({'id': 'superuser', 'name': 'Superusuário'})
+    # Apenas superusuários podem atribuir papel de Gerente ou Superusuário
+    if request.user.is_superuser:
+        papeis_disponiveis.extend([
+            {'id': 'GERENTE', 'name': 'Usuário Gerente'},
+            {'id': 'SUPERUSER', 'name': 'Superusuário'}
+        ])
+    # Gerentes podem ver, mas não podem modificar superusuários
+    elif request.user.is_gerente and (usuario.is_superuser or usuario.role == 'SUPERUSER'):
+        return HttpResponseForbidden("Você não tem permissão para visualizar este usuário.")
+    
+    # Obtém o histórico de alterações de papel
+    historico_papeis = LogEntryManager.get_user_role_history(usuario)
     
     context = {
         'usuario': usuario,
         'papeis_disponiveis': papeis_disponiveis,
+        'historico_papeis': historico_papeis,
         'agora': timezone.now(),
     }
     return render(request, 'admin_personalizado/usuarios/usuario_detalhes.html', context)
+
 @require_http_methods(["POST"])
-@staff_member_required
+@gerente_required
 @login_required
-@user_passes_test(lambda u: u.is_superuser or is_gerente(u))
 def alterar_papel_usuario(request, user_id):
-    """Altera o papel de um usuário."""
-    if not request.user.is_authenticated:
-        return JsonResponse({'status': 'error', 'message': 'Usuário não autenticado'}, status=401)
+    """
+    Altera o papel de um usuário.
     
+    Permissões:
+    - Apenas superusuários podem atribuir papel de superusuário
+    - Gerentes podem atribuir apenas papéis de Usuário Comum e Usuário de Eventos
+    """
     try:
         data = json.loads(request.body)
         novo_papel_id = data.get('novo_papel')
         
         if not novo_papel_id:
-            return JsonResponse({'status': 'error', 'message': 'ID do papel não fornecido'}, status=400)
-        
-        usuario = get_user_model().objects.get(id=user_id)
-        
-        # Verifica se o usuário atual tem permissão para fazer a alteração
-        if not (request.user.is_superuser or (is_gerente(request.user) and not usuario.is_superuser)):
-            return JsonResponse({
-                'status': 'error', 
-                'message': 'Você não tem permissão para alterar este usuário'
-            }, status=403)
-        
-        # Obtém o nome do papel anterior
-        papel_anterior = usuario.groups.first().name if usuario.groups.exists() else 'Nenhum'
-        
-        with transaction.atomic():
-            # Remove todos os grupos atuais
-            usuario.groups.clear()
-            
-            # Adiciona o novo grupo se não for 'nenhum'
-            if novo_papel_id != 'nenhum':
-                novo_grupo = Group.objects.get(id=novo_papel_id)
-                usuario.groups.add(novo_grupo)
-                novo_papel_nome = novo_grupo.name
-            else:
-                novo_papel_nome = 'Nenhum'
-            
-            # Registra a alteração no histórico
-            PapelHistorico.objects.create(
-                usuario=usuario,
-                papel_anterior=papel_anterior,
-                novo_papel=novo_papel_nome,
-                alterado_por=request.user
+            return JsonResponse(
+                {'success': False, 'message': 'Nenhum papel especificado'}, 
+                status=400
             )
             
-            # Se o usuário alterado for o próprio usuário logado, força o refresh da sessão
-            if usuario == request.user:
-                update_session_auth_hash(request, usuario)
-            
+        usuario = get_object_or_404(get_user_model(), id=user_id)
+        
+        # Impede que o usuário altere seu próprio papel
+        if usuario == request.user:
             return JsonResponse({
-                'status': 'success',
-                'message': f'Papel alterado com sucesso para {novo_papel_nome}',
-                'novo_papel': novo_papel_nome
-            })
+                'success': False, 
+                'message': 'Você não pode alterar seu próprio papel.'
+            }, status=403)
             
-    except get_user_model().DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Usuário não encontrado'}, status=404)
-    except Group.DoesNotExist:
-        return JsonResponse({'status': 'error', 'message': 'Papel não encontrado'}, status=404)
+        # Verifica se o usuário tem permissão para atribuir o novo papel
+        if novo_papel_id == 'SUPERUSER' and not request.user.is_superuser:
+            return JsonResponse({
+                'success': False, 
+                'message': 'Apenas superusuários podem atribuir este papel.'
+            }, status=403)
+            
+        # Verifica se é gerente tentando atribuir papel de gerente ou superior
+        if request.user.role == 'GERENTE' and novo_papel_id in ['GERENTE', 'SUPERUSER']:
+            return JsonResponse({
+                'success': False,
+                'message': 'Você não tem permissão para atribuir este papel.'
+            }, status=403)
+        
+        # Atualiza o papel do usuário
+        with transaction.atomic():
+            papel_anterior = usuario.role
+            usuario.role = novo_papel_id
+            
+            # Configura flags de superusuário e staff conforme necessário
+            if novo_papel_id == 'SUPERUSER':
+                usuario.is_superuser = True
+                usuario.is_staff = True
+            else:
+                usuario.is_superuser = False
+                usuario.is_staff = (novo_papel_id == 'GERENTE')
+            
+            usuario.save()
+            
+            # Atualiza os grupos do usuário
+            usuario.groups.clear()
+            
+            if novo_papel_id == 'GERENTE':
+                grupo, _ = Group.objects.get_or_create(name='Usuário Gerente')
+                usuario.groups.add(grupo)
+            elif novo_papel_id == 'EVENTOS':
+                grupo, _ = Group.objects.get_or_create(name='Usuário de Eventos')
+                usuario.groups.add(grupo)
+            
+            # Registra a mudança de papel
+            if papel_anterior != novo_papel_id:
+                PapelHistorico.objects.create(
+                    usuario=usuario,
+                    papel_anterior=papel_anterior,
+                    novo_papel=novo_papel_id,
+                    alterado_por=request.user
+                )
+        
+        return JsonResponse({
+            'success': True, 
+            'message': 'Papel do usuário atualizado com sucesso!',
+            'novo_papel': usuario.get_role_display(),
+            'is_superuser': usuario.is_superuser,
+            'is_staff': usuario.is_staff,
+            'is_active': usuario.is_active
+        })
+            
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': f'Erro ao alterar papel: {str(e)}'}, status=500)
+        return JsonResponse(
+            {'success': False, 'message': f'Erro ao alterar papel: {str(e)}'}, 
+            status=500
+        )
 
-@staff_member_required
 @login_required
-@user_passes_test(lambda u: is_superuser(u) or is_gerente(u))
 def listar_usuarios(request):
-    User = get_user_model()  # Adicione esta linha
-    usuarios = User.objects.all().order_by('-date_joined')
-    total_usuarios = User.objects.count()
-    ativos_count = User.objects.filter(is_active=True).count()
-    inativos_count = User.objects.filter(is_active=False).count()
-    admins_count = User.objects.filter(is_superuser=True).count()
-  
+    """
+    Lista todos os usuários do sistema com base nas permissões do usuário.
+    
+    Permissões:
+    - Superusuário: Vê todos os usuários
+    - Gerente: Vê todos os usuários, exceto superusuários
+    - Outros: Veem apenas o próprio perfil
+    """
+    # Filtra usuários com base nas permissões
+    if request.user.is_superuser:
+        usuarios = get_user_model().objects.all()
+    elif request.user.role == 'GERENTE':
+        # Gerentes veem todos os usuários, exceto superusuários
+        usuarios = get_user_model().objects.filter(
+            Q(role__in=['USUARIO', 'EVENTOS', 'GERENTE']) | 
+            Q(pk=request.user.pk)  # Inclui o próprio gerente
+        ).distinct()
+    else:
+        # Outros usuários veem apenas o próprio perfil
+        return redirect('admin_personalizado:detalhes_usuario', user_id=request.user.id)
+    
     # Paginação
-    paginator = Paginator(usuarios, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
+    page = request.GET.get('page', 1)
+    paginator = Paginator(usuarios, 10)  # 10 usuários por página
+    
+    try:
+        usuarios_paginados = paginator.page(page)
+    except PageNotAnInteger:
+        usuarios_paginados = paginator.page(1)
+    except EmptyPage:
+        usuarios_paginados = paginator.page(paginator.num_pages)
     
     context = {
-        'object_list': page_obj,
-        'page_obj': page_obj,
-        'is_paginated': page_obj.has_other_pages(),
-        'total_usuarios': total_usuarios,
-        'ativos_count': ativos_count,
-        'inativos_count': inativos_count,
-        'admins_count': admins_count,
+        'object_list': usuarios_paginados,
+        'agora': timezone.now(),
+        # Adicionando as variáveis usadas nos cards de estatística
+        'total_usuarios': usuarios.count(),
+        'ativos_count': usuarios.filter(is_active=True).count(),
+        'inativos_count': usuarios.filter(is_active=False).count(),
+        'admins_count': usuarios.filter(is_superuser=True).count(),
     }
-    return render(request, 'admin_personalizado/usuarios/usuario_list.html', context)
     
+    return render(request, 'admin_personalizado/usuarios/usuario_list.html', context)
+
 class LogEntryManager:
     @staticmethod
     def log_user_role_change(user, request_user, old_role, new_role):
@@ -208,37 +280,8 @@ class LogEntryManager:
         
         return history
 
-@staff_member_required
-@login_required
-@user_passes_test(lambda u: is_superuser(u) or is_gerente(u))
-def detalhes_usuario(request, user_id):
-    """Exibe os detalhes completos de um usuário."""
-    User = get_user_model()
-    user = get_object_or_404(User, id=user_id)
-    
-    # Verifica se o usuário atual tem permissão para ver este usuário
-    if not (request.user.is_superuser or (is_gerente(request.user) and not user.is_superuser)):
-        return HttpResponseForbidden("Você não tem permissão para acessar esta página.")
-    
-    # Obtém o papel atual do usuário
-    user_role = 'Administrador' if user.is_superuser else \
-               'Gerente' if user.groups.filter(name='Gerente').exists() else \
-               'Usuário'
-    
-    # Obtém o histórico de alterações de papel
-    role_history = LogEntryManager.get_user_role_history(user)
-    
-    context = {
-        'usuario': user,
-        'user_role': user_role,
-        'role_history': role_history,
-        'can_edit': request.user.is_superuser or (is_gerente(request.user) and not user.is_superuser)
-    }
-    
-    return render(request, 'admin_personalizado/usuarios/usuario_detalhes.html', context)
-
 @require_http_methods(["POST"])
-@staff_member_required
+@gerente_required
 @login_required
 @user_passes_test(is_superuser)
 def alterar_papel_usuario(request, user_id):
@@ -322,17 +365,30 @@ def alterar_papel_usuario(request, user_id):
         )
 
 @require_POST
-@staff_member_required
 @login_required
-@user_passes_test(lambda u: is_superuser(u) or is_gerente(u))
+@gerente_required
 def atualizar_papel_usuario(request, user_id):
-    """Atualiza o papel de um usuário via AJAX."""
+    """
+    Atualiza o papel de um usuário via AJAX.
+    
+    Permissões:
+    - Apenas superusuários podem atribuir papel de superusuário
+    - Gerentes podem atribuir papéis de Usuário Comum e Usuário de Eventos
+    """
     if not request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': False, 'message': 'Requisição inválida'}, status=400)
     
     try:
-        user = get_user_model().objects.get(pk=user_id)
-        papel = request.POST.get('papel')
+        user = get_object_or_404(get_user_model(), pk=user_id)
+        novo_papel = request.POST.get('novo_papel')
+        
+        # Verifica se o papel é válido
+        papeis_validos = dict(Usuario.Role.choices).keys()
+        if novo_papel not in papeis_validos:
+            return JsonResponse({
+                'success': False, 
+                'message': 'Papel inválido.'
+            }, status=400)
         
         # Verifica se o usuário não está tentando modificar a si mesmo
         if user == request.user:
@@ -340,29 +396,61 @@ def atualizar_papel_usuario(request, user_id):
                 'success': False, 
                 'message': 'Você não pode alterar seu próprio papel.'
             }, status=400)
+            
+        # Verifica se o usuário tem permissão para atribuir este papel
+        if novo_papel == 'SUPERUSER' and not request.user.is_superuser:
+            return JsonResponse({
+                'success': False, 
+                'message': 'Apenas superusuários podem definir este papel.'
+            }, status=403)
+            
+        # Verifica se é gerente tentando atribuir papel de gerente ou superior
+        if request.user.role == 'GERENTE' and novo_papel in ['GERENTE', 'SUPERUSER']:
+            return JsonResponse({
+                'success': False,
+                'message': 'Você não tem permissão para atribuir este papel.'
+            }, status=403)
         
         with transaction.atomic():
-            # Remove todos os grupos atuais
-            user.groups.clear()
+            # Salva o papel antigo para o log
+            papel_anterior = user.role
             
-            # Aplica o novo papel
-            if papel == 'superuser':
+            # Atualiza o papel do usuário
+            user.role = novo_papel
+            
+            # Configura flags de superusuário e staff conforme necessário
+            if novo_papel == 'SUPERUSER':
                 user.is_superuser = True
                 user.is_staff = True
-                user.save()
             else:
                 user.is_superuser = False
-                user.is_staff = (papel == 'gerente')  # Apenas gerentes têm acesso ao admin
-                user.save()
-                
-                if papel in ['gerente', 'eventos']:
-                    grupo, _ = Group.objects.get_or_create(name=papel.capitalize())
-                    user.groups.add(grupo)
+                user.is_staff = (novo_papel == 'GERENTE')
+            
+            user.save()
+            
+            # Atualiza os grupos do usuário
+            user.groups.clear()
+            
+            if novo_papel == 'GERENTE':
+                grupo, _ = Group.objects.get_or_create(name='Usuário Gerente')
+                user.groups.add(grupo)
+            elif novo_papel == 'EVENTOS':
+                grupo, _ = Group.objects.get_or_create(name='Usuário de Eventos')
+                user.groups.add(grupo)
+            
+            # Registra a mudança de papel
+            if papel_anterior != novo_papel:
+                PapelHistorico.objects.create(
+                    usuario=user,
+                    papel_anterior=papel_anterior,
+                    novo_papel=novo_papel,
+                    alterado_por=request.user
+                )
             
             return JsonResponse({
                 'success': True,
-                'message': f'Papel do usuário atualizado para {papel} com sucesso!',
-                'novo_papel': papel
+                'message': f'Papel do usuário atualizado para {user.get_role_display()} com sucesso!',
+                'novo_papel': user.get_role_display()
             })
             
     except get_user_model().DoesNotExist:
@@ -379,20 +467,33 @@ from django.utils import timezone
 import json
 
 @require_http_methods(["POST"])
-@staff_member_required
 @login_required
 @transaction.atomic
 def atualizar_usuario(request, user_id):
-    """Atualiza as informações do usuário e perfil via AJAX."""
+    """
+    Atualiza as informações do usuário e perfil via AJAX.
+    
+    Permissões:
+    - Superusuário: Pode atualizar qualquer usuário
+    - Gerente: Pode atualizar qualquer usuário, exceto superusuários
+    - Usuário: Pode atualizar apenas o próprio perfil
+    """
     try:
-        # Get the user being updated
-        user = get_user_model().objects.select_related('perfil').get(id=user_id)
+        # Obtém o usuário que está sendo atualizado
+        user = get_object_or_404(get_user_model().objects.select_related('perfil'), id=user_id)
         
-        # Check permissions
-        if not (request.user.is_superuser or is_gerente(request.user) or request.user == user):
+        # Verifica permissões
+        if request.user.role == 'USUARIO' and request.user != user:
             return JsonResponse({
-                'status': 'error',
-                'message': 'Você não tem permissão para atualizar este usuário.'
+                'success': False,
+                'message': 'Você só pode atualizar seu próprio perfil.'
+            }, status=403)
+            
+        # Verifica se é gerente tentando atualizar um superusuário
+        if request.user.role == 'GERENTE' and user.is_superuser and request.user != user:
+            return JsonResponse({
+                'success': False,
+                'message': 'Você não tem permissão para atualizar um superusuário.'
             }, status=403)
         
         # Get POST data

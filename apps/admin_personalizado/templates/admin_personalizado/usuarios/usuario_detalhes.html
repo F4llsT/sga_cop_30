@@ -138,39 +138,30 @@
                                             <p class="text-muted mt-2">Acesso ao painel administrativo, visualização de todos os usuários. Não pode editar nem excluir contas.</p>
                                         {% elif grupo.name == 'Usuário-Eventos' %}
                                             <span class="badge bg-success">{{ grupo.name }}</span>
-                                            <p class="text-muted mt-2">Pode criar e gerenciar eventos no painel de controle.</p>
-                                        {% else %}
-                                            <span class="badge bg-secondary">{{ grupo.name }}</span>
-                                            <p class="text-muted mt-2">Acesso apenas à área pública do sistema.</p>
+                                            <p class="text-muted mt-2">Acesso ao gerenciamento de eventos.</p>
                                         {% endif %}
                                     {% endwith %}
-                                {% else %}
-                                    <span class="badge bg-secondary">Usuário Comum</span>
-                                    <p class="text-muted mt-2">Acesso apenas à área pública do sistema.</p>
                                 {% endif %}
-                            </div>
-                        </div>
 
-                        {% if request.user.is_superuser or is_gerente %}
-                        <div class="form-group mt-4">
-                            <label for="novo_papel" class="form-label">Alterar Papel:</label>
-                            <select name="novo_papel" id="novo_papel" class="form-select">
-                                <option value="">Selecione um papel</option>
-                                {% for grupo in papeis_disponiveis %}
-                                    <option value="{{ grupo.id }}">{{ grupo.name }}</option>
-                                {% endfor %}
-                                {% if not usuario.is_superuser %}
-                                    <option value="nenhum">Remover todos os papéis</option>
-                                {% endif %}
-                            </select>
-                            <div class="form-text">Selecione um novo papel para o usuário</div>
-                        </div>
-                        <button type="button" id="btnAlterarPapel" class="btn btn-primary mt-2" 
-                                {% if usuario.is_superuser %}disabled{% endif %}>
-                            <i class="fas fa-save"></i> Salvar Alterações
-                        </button>
-                        {% endif %}
-                    </form>
+                    {% if not usuario.is_superuser or request.user.is_superuser %}
+                    <div class="form-group mt-4">
+                        <label for="novo_papel" class="form-label">Alterar Papel:</label>
+                        <select name="novo_papel" id="novo_papel" class="form-select">
+                            <option value="">Selecione um papel</option>
+                            <option value="USUARIO" {% if usuario.role == 'USUARIO' %}selected{% endif %}>Usuário Comum</option>
+                            <option value="EVENTOS" {% if usuario.role == 'EVENTOS' %}selected{% endif %}>Usuário de Eventos</option>
+                            {% if request.user.is_superuser %}
+                                <option value="GERENTE" {% if usuario.role == 'GERENTE' %}selected{% endif %}>Usuário Gerente</option>
+                                <option value="SUPERUSER" {% if usuario.role == 'SUPERUSER' %}selected{% endif %}>Superusuário</option>
+                            {% endif %}
+                        </select>
+                        <div class="form-text">Selecione um novo papel para o usuário</div>
+                    </div>
+                    <button type="button" id="btnAlterarPapel" class="btn btn-primary mt-2" 
+                            {% if usuario.is_superuser and not request.user.is_superuser %}disabled{% endif %}>
+                        <i class="fas fa-save"></i> Salvar Alterações
+                    </button>
+                    {% endif %}
                 </div>
             </div>
             <!-- Informações Pessoais -->
@@ -448,6 +439,59 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.error('Erro ao salvar:', status, error);
+                let errorMsg = 'Ocorreu um erro ao processar sua solicitação.';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response && response.message) {
+                        errorMsg = response.message;
+                    }
+                } catch (e) {
+                    console.error('Erro ao processar resposta de erro:', e);
+                }
+                showToast('danger', 'Erro!', errorMsg);
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Salvar Alterações');
+            }
+        });
+    });
+    
+    // Configura o evento de clique no botão Alterar Papel
+    $('#btnAlterarPapel').on('click', function() {
+        const $btn = $(this);
+        const $select = $('#novo_papel');
+        const novoPapel = $select.val();
+        const usuarioId = '{{ usuario.id }}';
+        
+        if (!novoPapel) {
+            showToast('warning', 'Atenção', 'Selecione um papel para continuar');
+            return;
+        }
+        
+        // Desabilita o botão e mostra indicador de carregamento
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Salvando...');
+        
+        // Envia a requisição para alterar o papel
+        $.ajax({
+            url: '{% url "admin_personalizado:atualizar_papel_usuario" 0 %}'.replace('0', usuarioId),
+            type: 'POST',
+            data: {
+                'novo_papel': novoPapel,
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.success) {
+                    showToast('success', 'Sucesso!', 'Papel alterado com sucesso!');
+                    // Recarrega a página para atualizar as informações
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    throw new Error(response.message || 'Ocorreu um erro ao alterar o papel.');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Erro ao alterar papel:', status, error);
                 let errorMsg = 'Ocorreu um erro ao processar sua solicitação.';
                 try {
                     const response = JSON.parse(xhr.responseText);

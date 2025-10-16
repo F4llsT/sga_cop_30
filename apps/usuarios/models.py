@@ -96,24 +96,52 @@ class Usuario(AbstractUser):
         return self.role == self.Role.SUPERUSER or self.is_superuser
     
     def has_perm(self, perm, obj=None):
-        """Verifica se o usuário tem a permissão especificada."""
+        """
+        Verifica se o usuário tem a permissão especificada.
+        
+        Regras de permissão:
+        - SUPERUSER: Todas as permissões
+        - GERENTE: Pode visualizar usuários e gerenciar eventos, mas não pode modificar usuários
+        - EVENTOS: Pode acessar o dashboard e gerenciar eventos
+        - USUÁRIO: Apenas permissões básicas
+        """
         # Superusuários têm todas as permissões
         if self.is_superusuario:
             return True
             
-        # Gerentes têm permissões específicas
+        # Usuário Gerente
         if self.is_gerente:
-            # Permite visualização, mas não modificação de usuários
-            if perm in ['usuarios.view_usuario', 'auth.view_group']:
+            # Permite visualizar usuários e grupos, mas não modificar
+            if perm in ['usuarios.view_usuario', 'auth.view_group', 'usuarios.view_perfil']:
                 return True
             # Permite gerenciar eventos
             if perm.startswith('eventos.'):
                 return True
+            # Permite acessar o dashboard
+            if perm == 'dashboard.view_dashboard':
+                return True
+            # Bloqueia edição/exclusão de usuários
+            if perm in ['usuarios.change_usuario', 'usuarios.delete_usuario', 
+                       'usuarios.add_usuario', 'auth.add_group', 
+                       'auth.change_group', 'auth.delete_group']:
+                return False
         
-        # Usuários de eventos podem gerenciar eventos
-        if self.is_usuario_eventos and perm.startswith('eventos.'):
-            return True
+        # Usuário de Eventos
+        if self.is_usuario_eventos:
+            # Permite acessar o dashboard
+            if perm == 'dashboard.view_dashboard':
+                return True
+            # Permite gerenciar eventos (criar, editar, visualizar, excluir)
+            if perm.startswith('eventos.'):
+                return True
+            # Permite visualizar seu próprio perfil
+            if perm == 'usuarios.view_perfil' and obj and obj == self:
+                return True
+            # Bloqueia acesso a usuários e grupos
+            if perm.startswith('usuarios.') or perm.startswith('auth.'):
+                return False
             
+        # Usuário Comum - apenas permissões básicas
         return super().has_perm(perm, obj)
     
     def save(self, *args, **kwargs):

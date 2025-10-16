@@ -1,6 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -14,10 +13,16 @@ from apps.passefacil.models import PasseFacil, ValidacaoQRCode
 from apps.agenda.models import UserAgenda, Event
 from apps.notificacoes.models import Notificacao
 from .models import NotificacaoPersonalizada
+from .decorators import gerente_required, superuser_required, eventos_required, staff_required
 
-@staff_member_required
-@login_required
+@staff_required
 def dashboard(request):
+    """
+    Dashboard administrativo do sistema.
+    
+    Permissões:
+    - Acesso restrito a usuários staff (gerentes e superusuários)
+    """
     User = get_user_model()
 
     # Métricas básicas
@@ -81,10 +86,14 @@ def dashboard(request):
 
     return render(request, 'admin_personalizado/dashboard/dashboard.html', context)
 
-@staff_member_required
-@login_required
+@gerente_required
 def passefacil_admin(request):
-    """View para o painel administrativo do Passe Fácil"""
+    """
+    Painel administrativo do Passe Fácil.
+    
+    Permissões:
+    - Acesso restrito a gerentes e superusuários
+    """
     # Últimas 10 validações
     validacoes_recentes = ValidacaoQRCode.objects.select_related(
         'passe_facil__user'
@@ -201,7 +210,7 @@ def passefacil_admin(request):
     
     return render(request, 'admin_personalizado/passefacil/passefacilADM.html', context)
 
-@staff_member_required
+@gerente_required
 @require_http_methods(["GET", "POST"])
 def enviar_notificacao(request):
     """
@@ -211,7 +220,7 @@ def enviar_notificacao(request):
     POST: Processa o formulário e cria uma nova notificação.
     
     Permissões requeridas:
-    - Usuário deve ser staff (gerenciado pelo decorador staff_member_required)
+    - Acesso restrito a gerentes e superusuários
     """
     ultimas_notificacoes = NotificacaoPersonalizada.objects.order_by('-data_criacao')[:10]
     
@@ -274,13 +283,15 @@ def enviar_notificacao(request):
         context
     )
 
-@staff_member_required
-@login_required
+@gerente_required
 @require_http_methods(['POST'])
 def enviar_notificacao_ajax(request):
     """
     View para envio de notificação via AJAX
     Retorna JSON com o resultado da operação
+    
+    Permissões requeridas:
+    - Acesso restrito a gerentes e superusuários
     """
     if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'status': 'error', 'message': 'Requisição inválida'}, status=400)
@@ -329,7 +340,15 @@ def enviar_notificacao_ajax(request):
             {'status': 'error', 'message': f'Erro ao enviar notificações: {str(e)}'}, 
             status=500
         )
+
+@gerente_required
 def editar_notificacao(request, pk):
+    """
+    Edita uma notificação existente.
+    
+    Permissões requeridas:
+    - Acesso restrito a gerentes e superusuários
+    """
     notificacao = get_object_or_404(NotificacaoPersonalizada, pk=pk)
     
     if request.method == 'POST':
@@ -351,12 +370,16 @@ def editar_notificacao(request, pk):
     }
     return render(request, 'admin_personalizado/notificacao/editar_notificacao.html', context)
 
-@staff_member_required
-@login_required
+@gerente_required
 @require_http_methods(['POST'])
 def excluir_notificacao(request, pk):
+    """
+    Exclui uma notificação existente.
+    
+    Permissões requeridas:
+    - Acesso restrito a gerentes e superusuários
+    """
     notificacao = get_object_or_404(NotificacaoPersonalizada, pk=pk)
     notificacao.delete()
     messages.success(request, 'Notificação excluída com sucesso!')
     return redirect('admin_personalizado:enviar_notificacao')
-    

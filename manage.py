@@ -3,6 +3,9 @@
 import os
 import sys
 
+# Adiciona o diretório apps ao PYTHONPATH
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.join(BASE_DIR, 'apps'))
 
 def main():
     """Run administrative tasks."""
