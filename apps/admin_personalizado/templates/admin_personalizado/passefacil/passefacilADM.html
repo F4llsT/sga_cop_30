@@ -80,7 +80,13 @@
                 <td>
                   <div class="user-info">
                     <div class="user-avatar">
-                      {{ passe.user.first_name|first|upper }}{{ passe.user.last_name|first|upper }}
+                      {% if passe.user.nome and passe.user.nome.strip %}
+                          {{ passe.user.nome|first|upper }}
+                      {% elif passe.user.email and passe.user.email.strip %}
+                          {{ passe.user.email|first|upper }}
+                      {% else %}
+                          U
+                      {% endif %}
                     </div>
                     <div class="user-details">
                       <span class="user-name">{{ passe.user.nome|default_if_none:''|default:passe.user.get_full_name|default:passe.user.username }}</span>

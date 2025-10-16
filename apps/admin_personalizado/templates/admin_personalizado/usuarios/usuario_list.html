@@ -181,12 +181,13 @@
 {% block extra_js %}
 {{ block.super }}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+ document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
     const tableBody = document.querySelector('#usersTable tbody');
     const rows = tableBody.getElementsByTagName('tr');
     const resultsCount = document.getElementById('totalResults');
 
+    // Função para filtrar usuários
     function filterUsers() {
         const searchTerm = searchInput.value.toLowerCase();
         let visibleCount = 0;
@@ -214,6 +215,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Inicializa a contagem de resultados
     resultsCount.textContent = document.querySelectorAll('#usersTable tbody tr:not([style*="display: none"])').length;
 });
+
+// Função para redirecionar para a página de edição do usuário
+function editarUsuario(userId) {
+    // Usa a URL do template e substitui o 0 pelo ID do usuário
+    window.location.href = "{% url 'admin_personalizado:detalhes_usuario' 0 %}".replace('0', userId);
+}
 </script>
 {% endblock %}
 {% endblock %}

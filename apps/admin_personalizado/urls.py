@@ -2,7 +2,6 @@
 from django.urls import path
 from . import views
 from . import views_usuarios
-
 app_name = 'admin_personalizado'
 
 urlpatterns = [
@@ -18,7 +17,12 @@ urlpatterns = [
     path('api/notificacoes/enviar/', views.enviar_notificacao_ajax, name='enviar_notificacao_ajax'),
     
     # URLs de gerenciamento de usuários
-    path('usuarios/', views_usuarios.listar_usuarios, name='usuarios'),
+    path('usuarios/', views_usuarios.listar_usuarios, name='listar_usuarios'),
+    path('usuarios/<int:user_id>/', views_usuarios.detalhes_usuario, name='detalhes_usuario'),
+    path('usuarios/<int:user_id>/atualizar/', views_usuarios.atualizar_usuario, name='atualizar_usuario'),
+    path('usuarios/<int:user_id>/alterar-papel/', 
+         views_usuarios.alterar_papel_usuario, 
+         name='alterar_papel'),
     path('api/usuarios/<int:user_id>/atualizar-papel/', 
          views_usuarios.atualizar_papel_usuario, 
          name='atualizar_papel_usuario'),

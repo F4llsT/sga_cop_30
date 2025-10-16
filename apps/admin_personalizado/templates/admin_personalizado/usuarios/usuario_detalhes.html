@@ -1,0 +1,540 @@
+<!-- usuario_detalhes.html -->
+{% extends 'admin_personalizado/baseadmin.html' %}
+{% load static %}
+
+{% block title %}Detalhes do Usuário - {{ usuario.get_full_name|default:usuario.username }}{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin_personalizado/css/passefacilADM.css' %}">
+<link rel="stylesheet" href="{% static 'admin_personalizado/css/usuario_detalhes.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="passe-facil-container">
+    <!-- Cabeçalho -->
+    <header class="main-header">
+        <div class="header-actions">
+            <a href="{% url 'admin_personalizado:listar_usuarios' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Voltar
+            </a>
+            <h2>Gerenciar Usuário</h2>
+            <div>
+                <button type="button" class="btn btn-primary" id="btnEditarPerfil">
+                    <i class="fas fa-edit"></i> Editar Perfil
+                </button>
+                <button type="button" class="btn btn-success d-none" id="btnSalvarPerfil">
+                    <i class="fas fa-save"></i> Salvar Alterações
+                </button>
+                <button type="button" class="btn btn-outline-secondary d-none" id="btnCancelarEdicao">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Seção de Informações do Usuário -->
+    <div class="user-detail-container">
+        <div class="user-profile-header">
+            <div class="user-avatar-large">
+                {% if usuario.nome and usuario.nome.strip %}
+                    {{ usuario.nome|first|upper }}
+                {% elif usuario.email and usuario.email.strip %}
+                    {{ usuario.email|first|upper }}
+                {% else %}
+                    U
+                {% endif %}
+            </div>
+            <div class="user-info">
+                <h1>{{ usuario.get_full_name|default:usuario.email }}</h1>
+                <div class="user-meta">
+                    <span class="user-role">
+                        <i class="fas fa-user-tag"></i>
+                        {% if usuario.is_superuser %}
+                            Administrador
+                        {% elif usuario.groups.exists %}
+                            {{ usuario.groups.first.name }}
+                        {% else %}
+                            Usuário
+                        {% endif %}
+                    </span>
+                    <span class="user-status {% if usuario.is_active %}status-active{% else %}status-inactive{% endif %}">
+                        <i class="fas fa-circle"></i>
+                        {% if usuario.is_active %}Ativo{% else %}Inativo{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="user-details-grid">
+            <!-- Informações Básicas -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <h3><i class="fas fa-info-circle"></i> Informações Básicas</h3>
+                </div>
+                <div class="detail-card-body">
+                    <form id="basicInfoForm" method="post" action="{% url 'admin_personalizado:atualizar_usuario' usuario.id %}">
+                        {% csrf_token %}
+                        <div class="detail-row view-mode">
+                            <span class="detail-label">Nome Completo:</span>
+                            <span class="detail-value">{{ usuario.get_full_name|default:"Não informado" }}</span>
+                        </div>
+                        <div class="detail-row edit-mode d-none">
+                            <label class="form-label">Nome Completo</label>
+                            <input type="text" name="nome_completo" class="form-control" value="{{ usuario.get_full_name }}">
+                        </div>
+                        
+                        <div class="detail-row view-mode">
+                            <span class="detail-label">E-mail:</span>
+                            <span class="detail-value">{{ usuario.email }}</span>
+                        </div>
+                        <div class="detail-row edit-mode d-none">
+                            <label class="form-label">E-mail</label>
+                            <input type="email" name="email" class="form-control" value="{{ usuario.email }}">
+                        </div>
+                        
+                        <div class="detail-row">
+                            <span class="detail-label">Data de Cadastro:</span>
+                            <span class="detail-value">{{ usuario.date_joined|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Último Acesso:</span>
+                            <span class="detail-value">
+                                {% if usuario.last_login %}
+                                    {{ usuario.last_login|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    Nunca acessou
+                                {% endif %}
+                            </span>
+                        </div>
+                        
+                        <div class="detail-row edit-mode d-none">
+                            <label class="form-label">Senha (deixe em branco para não alterar)</label>
+                            <input type="password" name="nova_senha" class="form-control" placeholder="Nova senha">
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Gerenciamento de Papel -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <h3><i class="fas fa-user-shield"></i> Gerenciamento de Papel</h3>
+                </div>
+                <div class="detail-card-body">
+                    <form id="roleForm" method="post" action="{% url 'admin_personalizado:alterar_papel' usuario.id %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="papel">Papel Atual:</label>
+                            <div class="current-role">
+                                {% if usuario.is_superuser %}
+                                    <span class="badge badge-admin">Administrador</span>
+                                {% elif usuario.groups.exists %}
+                                    <span class="badge badge-manager">{{ usuario.groups.first.name }}</span>
+                                {% else %}
+                                    <span class="badge badge-user">Usuário</span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        {% if request.user.is_superuser or is_gerente %}
+                        <div class="form-group">
+                            <label for="novo_papel">Alterar Papel:</label>
+                            <select name="novo_papel" id="novo_papel" class="form-control">
+                                <option value="">Selecione um papel</option>
+                                {% for grupo in papeis_disponiveis %}
+                                    <option value="{{ grupo.id }}">{{ grupo.name }}</option>
+                                {% endfor %}
+                                <option value="nenhum">Remover todos os papéis</option>
+                            </select>
+                        </div>
+                        <button type="button" id="btnAlterarPapel" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Salvar Alterações
+                        </button>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+
+            <!-- Informações Pessoais -->
+            <div class="detail-card">
+                <div class="detail-card-header">
+                    <h3><i class="fas fa-user-circle"></i> Informações Pessoais</h3>
+                </div>
+                <div class="detail-card-body">
+                    <form id="personalInfoForm" method="post" action="{% url 'admin_personalizado:atualizar_usuario' usuario.id %}">
+                        {% csrf_token %}
+                        <div class="detail-row view-mode">
+                            <span class="detail-label">Gênero:</span>
+                            <span class="detail-value" id="generoDisplay">
+                                {% if usuario.perfil.genero == 'M' %}
+                                    Masculino
+                                {% elif usuario.perfil.genero == 'F' %}
+                                    Feminino
+                                {% elif usuario.perfil.genero == 'O' %}
+                                    Outro
+                                {% else %}
+                                    Não informado
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-row edit-mode d-none">
+                            <label class="form-label">Gênero</label>
+                            <select name="genero" class="form-select">
+                                <option value="" {% if not usuario.perfil.genero %}selected{% endif %}>Selecione...</option>
+                                <option value="M" {% if usuario.perfil.genero == 'M' %}selected{% endif %}>Masculino</option>
+                                <option value="F" {% if usuario.perfil.genero == 'F' %}selected{% endif %}>Feminino</option>
+                                <option value="O" {% if usuario.perfil.genero == 'O' %}selected{% endif %}>Outro</option>
+                            </select>
+                        </div>
+
+                        <div class="detail-row view-mode">
+                            <span class="detail-label">Data de Nascimento:</span>
+                            <span class="detail-value" id="dataNascimentoDisplay">
+                                {% if usuario.perfil.data_nascimento %}
+                                    {{ usuario.perfil.data_nascimento|date:"d/m/Y" }}
+                                {% else %}
+                                    Não informado
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-row edit-mode d-none">
+                            <label class="form-label">Data de Nascimento</label>
+                            <input type="date" name="data_nascimento" class="form-control" 
+                                   value="{{ usuario.perfil.data_nascimento|date:'Y-m-d' }}">
+                        </div>
+
+                        <div class="detail-row view-mode">
+                            <span class="detail-label">Telefone:</span>
+                            <span class="detail-value" id="telefoneDisplay">
+                                {% if usuario.perfil.telefone %}
+                                    {{ usuario.perfil.telefone }}
+                                    {% if usuario.perfil.telefone_whatsapp %}
+                                        <span class="badge bg-success ms-2">WhatsApp</span>
+                                    {% endif %}
+                                {% else %}
+                                    Não informado
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="detail-row edit-mode d-none">
+                            <div class="row">
+                                <div class="col-8">
+                                    <label class="form-label">Telefone</label>
+                                    <input type="text" name="telefone" class="form-control" 
+                                           value="{{ usuario.perfil.telefone }}" 
+                                           placeholder="(00) 00000-0000">
+                                </div>
+                                <div class="col-4 d-flex align-items-end">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" name="telefone_whatsapp" 
+                                               id="whatsappCheck" {% if usuario.perfil.telefone_whatsapp %}checked{% endif %}>
+                                        <label class="form-check-label" for="whatsappCheck">WhatsApp</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Alteração</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>⚠️ Deseja realmente alterar o papel deste usuário?</p>
+                    <p class="mb-0"><strong>De:</strong> <span id="currentRoleText"></span></p>
+                    <p><strong>Para:</strong> <span id="newRoleText"></span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="confirmChange" class="btn btn-primary">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Máscaras para os campos
+    $('input[name="telefone"]').mask('(00) 00000-0000');
+    
+    // Alternar entre modo de visualização e edição
+    $('#btnEditarPerfil').click(function() {
+        $('.view-mode').addClass('d-none');
+        $('.edit-mode').removeClass('d-none');
+        $('#btnEditarPerfil').addClass('d-none');
+        $('#btnSalvarPerfil, #btnCancelarEdicao').removeClass('d-none');
+    });
+    
+    $('#btnCancelarEdicao').click(function() {
+        $('.edit-mode').addClass('d-none');
+        $('.view-mode').removeClass('d-none');
+        $('#btnSalvarPerfil, #btnCancelarEdicao').addClass('d-none');
+        $('#btnEditarPerfil').removeClass('d-none');
+    });
+    
+    // Salvar alterações
+    $('#btnSalvarPerfil').click(function() {
+        const $btn = $(this);
+        $btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Salvando...');
+        
+        // Coletar dados dos formulários
+        const basicData = {};
+        $('#basicInfoForm').serializeArray().forEach(item => {
+            if (item.value) basicData[item.name] = item.value;
+        });
+        
+        const personalData = {};
+        $('#personalInfoForm').serializeArray().forEach(item => {
+            personalData[item.name] = item.value;
+        });
+        
+        // Enviar dados via AJAX
+        $.ajax({
+            url: '{% url 'admin_personalizado:atualizar_usuario' usuario.id %}',
+            type: 'POST',
+            data: {
+                ...basicData,
+                ...personalData,
+                telefone_whatsapp: $('#whatsappCheck').is(':checked') ? 'on' : '',
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.status === 'success') {
+                    // Atualizar a visualização com os novos dados
+                    if (response.nome_completo) {
+                        $('.user-info h1').text(response.nome_completo);
+                        $('.detail-value:contains("{{ usuario.get_full_name|default:"Não informado" }}")').text(response.nome_completo);
+                    }
+                    
+                    if (response.email) {
+                        $('.detail-value:contains("{{ usuario.email }}")').text(response.email);
+                    }
+                    
+                    if (response.genero) {
+                        const generoText = {
+                            'M': 'Masculino',
+                            'F': 'Feminino',
+                            'O': 'Outro'
+                        }[response.genero] || 'Não informado';
+                        $('#generoDisplay').text(generoText);
+                    }
+                    
+                    if (response.data_nascimento) {
+                        const dataFormatada = new Date(response.data_nascimento).toLocaleDateString('pt-BR');
+                        $('#dataNascimentoDisplay').text(dataFormatada);
+                    }
+                    
+                    if (response.telefone) {
+                        let telefoneHtml = response.telefone;
+                        if (response.telefone_whatsapp) {
+                            telefoneHtml += ' <span class="badge bg-success ms-2">WhatsApp</span>';
+                        }
+                        $('#telefoneDisplay').html(telefoneHtml);
+                    }
+                    
+                    // Voltar para o modo de visualização
+                    $('.edit-mode').addClass('d-none');
+                    $('.view-mode').removeClass('d-none');
+                    $('#btnSalvarPerfil, #btnCancelarEdicao').addClass('d-none');
+                    $('#btnEditarPerfil').removeClass('d-none');
+                    
+                    // Mostrar mensagem de sucesso
+                    showToast('success', 'Sucesso', 'Dados atualizados com sucesso!');
+                } else {
+                    showToast('error', 'Erro', response.message || 'Ocorreu um erro ao atualizar os dados.');
+                }
+            },
+            error: function(xhr) {
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.message 
+                    ? xhr.responseJSON.message 
+                    : 'Ocorreu um erro ao processar sua solicitação.';
+                showToast('error', 'Erro', errorMsg);
+            },
+            complete: function() {
+                $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Salvar Alterações');
+            }
+        });
+    });
+    
+    function showToast(type, title, message) {
+        // Implementação da função de notificação existente
+        const toastContainer = document.createElement('div');
+        toastContainer.className = `toast align-items-center text-white bg-${type} border-0`;
+        toastContainer.setAttribute('role', 'alert');
+        toastContainer.setAttribute('aria-live', 'assertive');
+        toastContainer.setAttribute('aria-atomic', 'true');
+        
+        toastContainer.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong><br>${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toastContainer);
+        const toast = new bootstrap.Toast(toastContainer);
+        toast.show();
+        
+        // Remove o toast após ser escondido
+        toastContainer.addEventListener('hidden.bs.toast', function() {
+            document.body.removeChild(toastContainer);
+        });
+    }
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuração do modal de confirmação
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const novoPapelSelect = document.getElementById('novo_papel');
+    const btnAlterarPapel = document.getElementById('btnAlterarPapel');
+    const formRole = document.getElementById('roleForm');
+
+    if (btnAlterarPapel) {
+        btnAlterarPapel.addEventListener('click', function() {
+            const selectedOption = novoPapelSelect.options[novoPapelSelect.selectedIndex];
+            if (selectedOption.value) {
+                document.getElementById('currentRoleText').textContent = 
+                    '{{ usuario.groups.first.name|default:"Nenhum" }}';
+                document.getElementById('newRoleText').textContent = selectedOption.text;
+                confirmModal.show();
+            }
+        });
+    }
+
+    // Confirmação da alteração
+    const confirmButton = document.getElementById('confirmChange');
+    if (confirmButton) {
+        confirmButton.addEventListener('click', function() {
+            // Desativa o botão para evitar múltiplos cliques
+            confirmButton.disabled = true;
+            confirmButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...';
+
+            // Envia o formulário via AJAX
+            fetch(formRole.action, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: new URLSearchParams(new FormData(formRole))
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Atualiza a interface
+                    const currentRoleElement = document.querySelector('.current-role');
+                    if (currentRoleElement) {
+                        currentRoleElement.innerHTML = `
+                            <span class="badge ${data.novo_papel === 'Nenhum' ? 'badge-user' : 'badge-manager'}">
+                                ${data.novo_papel}
+                            </span>
+                        `;
+                    }
+                    
+                    // Adiciona ao histórico
+                    const timeline = document.querySelector('.timeline');
+                    if (timeline) {
+                        const now = new Date();
+                        const formattedDate = now.toLocaleString('pt-BR');
+                        
+                        const newHistoryItem = `
+                            <div class="timeline-item">
+                                <div class="timeline-point"></div>
+                                <div class="timeline-content">
+                                    <div class="timeline-header">
+                                        <span class="timeline-date">${formattedDate}</span>
+                                        <span class="timeline-user">
+                                            <i class="fas fa-user"></i> 
+                                            {{ request.user.get_full_name|default:request.user.username }}
+                                        </span>
+                                    </div>
+                                    <div class="timeline-body">
+                                        <p>
+                                            <span class="change-label">De:</span> 
+                                            <span class="change-old">${document.getElementById('currentRoleText').textContent}</span>
+                                            <i class="fas fa-arrow-right"></i>
+                                            <span class="change-label">Para:</span> 
+                                            <span class="change-new">${document.getElementById('newRoleText').textContent}</span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        if (timeline.children.length === 0) {
+                            timeline.innerHTML = newHistoryItem;
+                        } else {
+                            timeline.insertAdjacentHTML('afterbegin', newHistoryItem);
+                        }
+                    }
+                    
+                    // Mostra mensagem de sucesso
+                    showToast('success', 'Sucesso', 'Papel do usuário atualizado com sucesso!');
+                } else {
+                    showToast('error', 'Erro', data.message || 'Ocorreu um erro ao atualizar o papel do usuário.');
+                }
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                showToast('error', 'Erro', 'Ocorreu um erro ao processar sua solicitação.');
+            })
+            .finally(() => {
+                confirmModal.hide();
+                confirmButton.disabled = false;
+                confirmButton.innerHTML = 'Confirmar';
+            });
+        });
+    }
+
+    // Função para exibir notificações
+    function showToast(type, title, message) {
+        // Implementação da função de notificação
+        // Você pode usar uma biblioteca como Toastify.js ou implementar a sua própria
+        console.log(`${type.toUpperCase()}: ${title} - ${message}`);
+        // Exemplo com Bootstrap Toast
+        const toastContainer = document.createElement('div');
+        toastContainer.className = `toast align-items-center text-white bg-${type} border-0`;
+        toastContainer.setAttribute('role', 'alert');
+        toastContainer.setAttribute('aria-live', 'assertive');
+        toastContainer.setAttribute('aria-atomic', 'true');
+        
+        toastContainer.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <strong>${title}</strong><br>${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(toastContainer);
+        const toast = new bootstrap.Toast(toastContainer);
+        toast.show();
+        
+        // Remove o toast após ser escondido
+        toastContainer.addEventListener('hidden.bs.toast', function() {
+            document.body.removeChild(toastContainer);
+        });
+    }
+});
+</script>
+
+
+{% endblock %}

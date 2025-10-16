@@ -354,7 +354,7 @@
   /* Removido círculo: avatar quadrado levemente arredondado */
   width: 2.5rem;
   height: 2.5rem;
-  border-radius: var(--border-radius-sm);
+  border-radius: 50%;
   background-color: var(--primary-color);
   color: white;
   display: flex;
