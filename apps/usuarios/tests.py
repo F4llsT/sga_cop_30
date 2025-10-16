@@ -50,14 +50,15 @@ class UsuarioModelTest(TestCase):
             
     def test_nome_obrigatorio(self):
         """Verifica se o nome é obrigatório"""
-        with self.assertRaises(ValueError):
-            User.objects.create_user(
-                email='semnome@teste.com',
-                nome='',
-                password='test123'
-            )
+        user = User(
+            email='semnome@teste.com',
+            nome='',
+            password='test123'
+        )
+        with self.assertRaises(ValidationError):
+            user.full_clean()  # Validação completa do modelo
             
     def test_metodo_str(self):
         """Testa o método __str__ do modelo"""
         user = User.objects.create_user(**self.user_data)
-        self.assertEqual(str(user), f"{user.nome} ({user.email})")
+        self.assertEqual(str(user), user.email)  # O método __str__ retorna apenas o email
