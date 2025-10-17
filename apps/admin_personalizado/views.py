@@ -12,7 +12,7 @@ from datetime import timedelta, datetime, date
 import json
 
 from apps.passefacil.models import PasseFacil, ValidacaoQRCode
-from apps.agenda.models import Event
+from apps.agenda.models import UserAgenda, Event
 from apps.notificacoes.models import Notificacao
 from .models import NotificacaoPersonalizada
 from .decorators import gerente_required, superuser_required, eventos_required, staff_required
@@ -787,75 +787,19 @@ def api_evento_detalhe(request, evento_id):
     """
     Retorna, atualiza ou remove um evento específico.
     """
-    try:
-        evento = Event.objects.get(id=evento_id)
-        
-        if request.method == 'GET':
-            return JsonResponse({
-                'id': evento.id,
-                'titulo': evento.titulo,
-                'descricao': evento.descricao or '',
-                'local': evento.local or '',
-                'palestrante': evento.palestrante or '',  # Campo adicionado
-                'start_time': evento.start_time.isoformat() if evento.start_time else None,
-                'end_time': evento.end_time.isoformat() if evento.end_time else None,
-                'tema': evento.tags or 'sustentabilidade',
-                'importante': evento.importante if hasattr(evento, 'importante') else False,
-                'created_at': evento.created_at.isoformat() if evento.created_at else None
-            })
-            
-        elif request.method == 'PUT':
-            try:
-                data = json.loads(request.body)
-                
-                # Atualiza os campos fornecidos
-                fields = ['titulo', 'descricao', 'local', 'palestrante', 'start_time', 'end_time', 'tema', 'importante']
-                for field in fields:
-                    if field in data:
-                        if field == 'tema':
-                            setattr(evento, 'tags', data[field])
-                        else:
-                            setattr(evento, field, data[field])
-                
-                # Validação do modelo
-                evento.full_clean()
-                evento.save()
-                
-                return JsonResponse({
-                    'id': evento.id,
-                    'message': 'Evento atualizado com sucesso!'
-                })
-                
-            except json.JSONDecodeError:
-                return JsonResponse(
-                    {'error': 'Dados JSON inválidos'}, 
-                    status=400
-                )
-            except ValidationError as e:
-                return JsonResponse(
-                    {'error': 'Dados inválidos', 'details': str(e.messages)},
-                    status=400
-                )
-            except Exception as e:
-                return JsonResponse(
-                    {'error': str(e), 'detail': 'Erro ao atualizar evento'},
-                    status=500
-                )
-                
-        elif request.method == 'DELETE':
-            evento.delete()
-            return JsonResponse(
-                {'message': 'Evento removido com sucesso!'},
-                status=204
-            )
-            
-    except Event.DoesNotExist:
-        return JsonResponse(
-            {'error': 'Evento não encontrado'}, 
-            status=404
-        )
-    except Exception as e:
-        return JsonResponse(
-            {'error': str(e), 'detail': 'Erro ao processar a requisição'},
-            status=500
-        )
+    evento = get_object_or_404(Event, id=evento_id)
+    
+    return JsonResponse({
+        'success': True,
+        'evento': {
+            'id': evento.id,
+            'titulo': evento.titulo,
+            'descricao': evento.descricao,
+            'local': evento.local,
+            'data': evento.data_inicio.strftime('%Y-%m-%d'),
+            'inicio': evento.data_inicio.strftime('%H:%M'),
+            'fim': evento.data_fim.strftime('%H:%M'),
+            'tema': evento.tags or '',
+            'importante': 'importante' in (evento.tags or '').lower()
+        }
+    })

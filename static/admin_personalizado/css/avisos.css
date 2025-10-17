@@ -1,0 +1,327 @@
+:root {
+    --primary-blue: #0A74DA;
+    --dark-blue: #004A99;
+    --admin-bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --border-color: #e2e8f0;
+    --color-info: #3b82f6;
+    --color-alerta: #f59e0b;
+    --color-critico: #ef4444;
+    --radius-md: 8px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+.avisos-container {
+    padding: 0;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.main-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 2rem; 
+}
+
+.main-header h2 { 
+    font-size: 1.8rem; 
+    font-weight: 700; 
+    color: var(--text-primary);
+}
+
+.user-area { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.5rem; 
+    font-weight: 600; 
+    color: var(--text-primary);
+}
+
+section { 
+    margin-bottom: 2.5rem; 
+}
+
+section h3 { 
+    font-size: 1.5rem; 
+    font-weight: 600; 
+    margin-bottom: 1.5rem; 
+    color: var(--text-primary);
+}
+
+.card { 
+    background-color: var(--card-bg); 
+    padding: 2rem; 
+    border-radius: var(--radius-md); 
+    box-shadow: var(--shadow); 
+}
+
+#form-aviso { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 1rem; 
+}
+
+.form-group { 
+    display: flex; 
+    flex-direction: column; 
+}
+
+.form-group label { 
+    font-weight: 500; 
+    margin-bottom: 0.5rem; 
+    color: var(--text-primary); 
+}
+
+.form-group input, 
+.form-group textarea, 
+.form-group select {
+    width: 100%; 
+    padding: 0.8rem; 
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md); 
+    font-family: 'Poppins', sans-serif; 
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus, 
+.form-group textarea:focus, 
+.form-group select:focus {
+    outline: none; 
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 3px rgba(10, 116, 218, 0.1);
+}
+
+.form-group-row { 
+    display: flex; 
+    gap: 1rem; 
+}
+
+.form-group-row .form-group { 
+    flex: 1; 
+}
+
+#aviso-importancia { 
+    border-left: 5px solid var(--color-info); 
+    padding-left: 0.5rem; 
+}
+
+#aviso-importancia.info { 
+    border-left-color: var(--color-info); 
+}
+
+#aviso-importancia.alerta { 
+    border-left-color: var(--color-alerta); 
+}
+
+#aviso-importancia.critico { 
+    border-left-color: var(--color-critico); 
+}
+
+.btn-publicar {
+    background-color: var(--primary-blue); 
+    color: #fff; 
+    border: none; 
+    padding: 0.9rem;
+    border-radius: var(--radius-md); 
+    font-size: 1rem; 
+    font-weight: 600; 
+    cursor: pointer;
+    transition: background-color 0.2s ease; 
+    align-self: flex-end; 
+    width: 200px;
+}
+
+.btn-publicar:hover { 
+    background-color: var(--dark-blue); 
+}
+
+.btn-publicar:disabled {
+    background-color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
+.notices-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 1rem; 
+}
+
+.empty-state { 
+    color: var(--text-secondary); 
+    font-style: italic;
+}
+
+.notice-card {
+    background-color: var(--card-bg); 
+    padding: 1.5rem; 
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow); 
+    border-left: 5px solid; 
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+}
+
+.notice-card.info { 
+    border-color: var(--color-info); 
+}
+
+.notice-card.alerta { 
+    border-color: var(--color-alerta); 
+}
+
+.notice-card.critico { 
+    border-color: var(--color-critico); 
+}
+
+.notice-content h4 { 
+    font-size: 1.2rem; 
+    font-weight: 600; 
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+}
+
+.notice-content p {
+    color: var(--text-secondary);
+    margin: 0.25rem 0;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.notice-info { 
+    font-size: 0.8rem; 
+    color: #999; 
+    display: block;
+    margin-top: 0.5rem;
+}
+
+.notice-actions { 
+    display: flex; 
+    gap: 0.8rem; 
+}
+
+.notice-actions button {
+    background: none; 
+    border: none; 
+    cursor: pointer; 
+    font-size: 1.2rem;
+    color: var(--text-secondary); 
+    transition: color 0.2s ease;
+    padding: 0.5rem;
+}
+
+.notice-actions button:hover { 
+    color: var(--text-primary); 
+}
+
+.notice-actions .pin-btn.pinned { 
+    color: var(--primary-blue); 
+}
+
+.history-list { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 0.5rem; 
+}
+
+.history-item {
+    background-color: #fdfdfd; 
+    padding: 1rem 1.5rem; 
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color); 
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    opacity: 0.8;
+}
+
+/* ======================================================================= */
+/* === CORREÇÃO PARA TORNAR INPUTS DE DATA/HORA TOTALMENTE CLICÁVEIS === */
+/* ======================================================================= */
+input[type="date"],
+input[type="time"] {
+    position: relative;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    color: transparent;
+    background: transparent;
+}
+
+/* ======================================================================= */
+/* === ESTILOS PARA AS OPÇÕES DE CHECKBOX === */
+/* ======================================================================= */
+
+.form-options-row {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    margin-top: 1rem;
+    padding: 0.5rem 0;
+}
+
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.checkbox-group label {
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    margin: 0;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .avisos-container { 
+        padding: 1rem; 
+    }
+    
+    .form-group-row { 
+        flex-direction: column; 
+    }
+    
+    .btn-publicar {
+        width: 100%;
+    }
+    
+    .notice-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+    
+    .notice-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    
+    .history-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}
