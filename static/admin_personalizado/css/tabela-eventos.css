@@ -1,0 +1,176 @@
+/* Estilos para a tabela de eventos */
+.eventos-admin .table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.eventos-admin #tabela-eventos {
+    width: 100%;
+    min-width: 800px; /* Largura mínima para garantir que todas as colunas sejam exibidas */
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: var(--radius-md);
+    table-layout: auto;
+}
+
+.eventos-admin #tabela-eventos thead th {
+    background-color: var(--primary-blue);
+    color: white;
+    font-weight: 600;
+    padding: 1rem;
+    text-align: left;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+.eventos-admin #tabela-eventos tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.eventos-admin #tabela-eventos tbody tr:hover {
+    background-color: rgba(10, 116, 218, 0.05);
+}
+
+.eventos-admin #tabela-eventos td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.eventos-admin #tabela-eventos tr:last-child td {
+    border-bottom: none;
+}
+
+/* Estilo para coluna de ações */
+.eventos-admin .acoes-cell {
+    white-space: nowrap;
+    text-align: center;
+}
+
+/* Botões de ação */
+.eventos-admin .btn-acoes {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 4px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    margin: 0 2px;
+}
+
+.eventos-admin .btn-acoes:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.eventos-admin .btn-acoes.editar {
+    color: var(--color-edit);
+}
+
+.eventos-admin .btn-acoes.excluir {
+    color: var(--color-delete);
+}
+
+/* Status de evento importante */
+.eventos-admin .evento-importante {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+/* Ajustes para telas pequenas */
+@media (max-width: 768px) {
+    .eventos-admin .table-responsive {
+        border-radius: 0;
+        margin-left: -1rem;
+        margin-right: -1rem;
+        width: calc(100% + 2rem);
+    }
+    
+    .eventos-admin #tabela-eventos {
+        border-radius: 0;
+    }
+}
+
+/* Estilo para a mensagem de nenhum dado */
+.eventos-admin #sem-dados {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.eventos-admin #sem-dados i {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--border-color);
+}
+
+/* Loading spinner */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.eventos-admin .spinner-border {
+    width: 2rem;
+    height: 2rem;
+    border: 0.25em solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.75s linear infinite;
+    display: inline-block;
+}
+
+/* Paginação */
+.eventos-admin .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.eventos-admin .page-item {
+    list-style: none;
+}
+
+.eventos-admin .page-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.eventos-admin .page-item.active .page-link {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+    color: white;
+}
+
+.eventos-admin .page-link:hover:not(.active) {
+    background-color: rgba(0, 0, 0, 0.05);
+}
