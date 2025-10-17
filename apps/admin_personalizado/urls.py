@@ -36,6 +36,8 @@ urlpatterns = [
     # URLs para CRUD de Eventos
     path('eventos/novo/', views.criar_evento, name='evento_criar'),
     path('eventos/<int:evento_id>/editar/', views.editar_evento, name='evento_editar'),
-    path('api/eventos/', views.api_eventos, name='evento_listar'),
-    path('api/eventos/<int:evento_id>/', views.api_evento_detalhe, name='evento_detalhe'),
+    
+    # URLs da API de Eventos (mantive apenas uma versão de cada)
+    path('api/eventos/', views.api_eventos, name='api_eventos'),     
+    path('api/eventos/<int:evento_id>/', views.api_evento_detalhe, name='api_evento_detalhe'),
 ]

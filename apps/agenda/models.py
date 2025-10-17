@@ -1,11 +1,14 @@
 from django.db import models
+from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
-from django.conf import settings
+
+# Obter o modelo de usuário ativo
+User = get_user_model()
 
 class EventManager(models.Manager):
     def get_queryset(self):
-        # Filtra eventos que ainda não aconteceram ou aconteceram nas últimas 10 horas
+        """Filtra apenas eventos ativos (últimas 10 horas ou sem horário definido)"""
         ten_hours_ago = timezone.now() - timedelta(hours=10)
         return super().get_queryset().filter(
             models.Q(start_time__isnull=True) |  # Inclui eventos sem horário definido
@@ -13,17 +16,23 @@ class EventManager(models.Manager):
         )
 
 class Event(models.Model):
-    titulo = models.CharField(max_length=200)
-    descricao = models.TextField('Descrição', blank=True, null=True, help_text='Descrição detalhada do evento')
-    horario = models.CharField(max_length=50)
-    local = models.CharField(max_length=100)
-    latitude = models.FloatField(null=True, blank=True)
-    longitude = models.FloatField(null=True, blank=True)
-    palestrantes = models.CharField(max_length=200, blank=True)
-    tags = models.CharField(max_length=200, blank=True)  # separado por vírgulas
-    start_time = models.DateTimeField('Data e Hora do Evento', null=True, blank=True)
-    end_time = models.DateTimeField('Data e Hora de Término', null=True, blank=True)
-    created_at = models.DateTimeField('Criado em', auto_now_add=True)
+    titulo = models.CharField(max_length=200, verbose_name='Título')
+    descricao = models.TextField(blank=True, null=True, verbose_name='Descrição')
+    local = models.CharField(max_length=200, verbose_name='Local')
+    palestrante = models.CharField(max_length=200, blank=True, null=True, verbose_name='Palestrante')
+    start_time = models.DateTimeField(verbose_name='Data e Hora de Início')
+    end_time = models.DateTimeField(verbose_name='Data e Hora de Término')
+    tags = models.CharField(max_length=100, default='sustentabilidade', verbose_name='Tema')
+    importante = models.BooleanField(default=False, verbose_name='Evento Importante')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
+    created_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        verbose_name='Criado por',
+        related_name='eventos_criados'
+    )
     
     # Gerenciadores
     objects = EventManager()
@@ -43,17 +52,3 @@ class Event(models.Model):
         if not self.start_time:
             return False
         return self.start_time < (timezone.now() - timedelta(hours=10))
-
-
-class UserAgenda(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    event = models.ForeignKey('Event', on_delete=models.CASCADE)
-    added_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        unique_together = ('user', 'event')
-        verbose_name = 'Agenda do Usuário'
-        verbose_name_plural = 'Agendas dos Usuários'
-    
-    def __str__(self):
-        return f"{self.user} - {self.event.titulo}"

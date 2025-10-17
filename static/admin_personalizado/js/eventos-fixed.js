@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicialização
     initMapa();
-
+    carregarPalestrantes();
     carregarEventos();
     configurarEventos();
 
@@ -155,87 +155,91 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Carrega a lista de palestrantes
      */
-
+    function carregarPalestrantes() {
+        // URL correta para a API de palestrantes
+        const url = '/api/palestrantes/';
+        
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Limpa o select
+            inputPalestrantes.innerHTML = '<option value="">Selecione um palestrante</option>';
+            
+            // Adiciona os palestrantes ao select
+            data.forEach(palestrante => {
+                const option = document.createElement('option');
+                option.value = palestrante.id;
+                option.textContent = palestrante.nome;
+                inputPalestrantes.appendChild(option);
+            });
+            
+            // Inicializa o Select2
+            $(inputPalestrantes).select2({
+                theme: 'bootstrap4',
+                placeholder: 'Selecione um ou mais palestrantes',
+                allowClear: true
+            });
+        })
+        .catch(error => {
+            console.error('Erro ao carregar palestrantes:', error);
+            mostrarAlerta('Não foi possível carregar a lista de palestrantes', 'error');
+        });
+    }
 
     /**
      * Carrega a lista de eventos
      */
-    // Na função carregarEventos()
     function carregarEventos() {
-        const tabelaEventos = document.getElementById('tabela-eventos');
-        const loadingRow = document.getElementById('loading-row');
-        const mensagemSemDados = document.getElementById('sem-dados');
+        // URL correta para a API de eventos
+        const url = '/api/eventos/';
         
-        // Mostra o indicador de carregamento
-        loadingRow.classList.remove('d-none');
-        
-        // Faz a requisição para a API
-        fetch('/meu-admin/api/eventos/')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Erro HTTP: ${response.status} - ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(eventos => {
-                // Limpa a tabela (exceto o cabeçalho e a linha de carregamento)
-                const tbody = tabelaEventos.querySelector('tbody');
-                tbody.innerHTML = '';
-                
-                if (eventos.length === 0) {
-                    mensagemSemDados.classList.remove('d-none');
-                    return;
-                }
-                
-                mensagemSemDados.classList.add('d-none');
-                
-                // Adiciona cada evento à tabela
-                eventos.forEach(evento => {
-                    const tr = document.createElement('tr');
-                    
-                    // Formata a data/hora
-                    const dataInicio = evento.start_time ? new Date(evento.start_time) : null;
-                    const dataFim = evento.end_time ? new Date(evento.end_time) : null;
-                    const dataFormatada = dataInicio ? 
-                        `${dataInicio.toLocaleDateString()} ${dataInicio.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : 
-                        'Não definido';
-                    
-                    // Cria as células da linha
-                    tr.innerHTML = `
-                        <td>${evento.titulo || 'Sem título'}</td>
-                        <td>${evento.local || '—'}</td>
-                        <td>${evento.palestrante || '—'}</td>
-                        <td>${dataFormatada}</td>
-                        <td>${evento.importante ? 'Sim' : 'Não'}</td>
-                        <td class="text-center">
-                            <div class="btn-group btn-group-sm" role="group">
-                                <a href="/meu-admin/eventos/${evento.id}/editar/" class="btn btn-outline-primary">
-                                    <i class="fas fa-edit"></i> Editar
-                                </a>
-                                <button type="button" class="btn btn-outline-danger" onclick="confirmarExclusao(${evento.id})">
-                                    <i class="fas fa-trash"></i> Excluir
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                    
-                    tbody.appendChild(tr);
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') || ''
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            renderizarEventos(data);
+            
+            // Inicializa o DataTable
+            if ($.fn.DataTable) {
+                $('#tabela-eventos').DataTable({
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json'
+                    },
+                    responsive: true,
+                    order: [[1, 'asc']] // Ordena pela data
                 });
-            })
-            .catch(error => {
-                console.error('Erro ao carregar eventos:', error);
-                // Mostra mensagem de erro
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'alert alert-danger';
-                errorDiv.textContent = `Erro ao carregar eventos: ${error.message}`;
-                tabelaEventos.parentNode.insertBefore(errorDiv, tabelaEventos);
-            })
-            .finally(() => {
-                // Esconde o indicador de carregamento
-                loadingRow.classList.add('d-none');
-            });
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao carregar eventos:', error);
+            mostrarAlerta('Não foi possível carregar a lista de eventos', 'error');
+        });
     }
-        /**
+
+    /**
      * Renderiza a lista de eventos
      */
     function renderizarEventos(eventos) {
@@ -248,7 +252,6 @@ document.addEventListener('DOMContentLoaded', () => {
      */
     function configurarEventos() {
         // Configura o evento de submit do formulário
-        // Na função configurarEventos(), modifique a parte do submit:
         formEvento.addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -264,15 +267,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 eventoData[key] = value;
             }
             
-            // Adiciona campos adicionais que não estão no formulário
-            eventoData.importante = inputImportante.checked;
+            // Converte para JSON
+            const jsonData = JSON.stringify(eventoData);
             
             // URL da API
             const url = eventoEditando ? `/api/eventos/${eventoEditando}/` : '/api/eventos/';
             const method = eventoEditando ? 'PUT' : 'POST';
-            
-            console.log('Enviando dados para:', url, 'Método:', method);
-            console.log('Dados:', eventoData);
             
             fetch(url, {
                 method: method,
@@ -281,37 +281,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-CSRFToken': getCookie('csrftoken') || '',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify(eventoData),
+                body: jsonData,
                 credentials: 'same-origin'
             })
-            .then(async response => {
-                const text = await response.text();
-                console.log('Resposta da API (texto):', text);
-                
-                let data;
-                try {
-                    data = text ? JSON.parse(text) : {};
-                } catch (e) {
-                    console.error('Erro ao fazer parse do JSON:', e);
-                    throw new Error('Resposta inválida do servidor');
-                }
-                
+            .then(response => {
                 if (!response.ok) {
-                    console.error('Erro na resposta:', data);
-                    throw new Error(data.detail || `Erro ${response.status}: ${response.statusText}`);
+                    return response.json().then(err => { throw err; });
                 }
-                
-                return data;
+                return response.json();
             })
             .then(data => {
-                console.log('Evento salvo com sucesso:', data);
                 mostrarAlerta('Evento salvo com sucesso!', 'success');
                 limparFormulario();
                 carregarEventos();
             })
             .catch(error => {
                 console.error('Erro ao salvar evento:', error);
-                mostrarAlerta(`Erro ao salvar evento: ${error.message}`, 'error');
+                const mensagem = error.detail || 'Não foi possível salvar o evento';
+                mostrarAlerta(mensagem, 'error');
             });
         });
         
@@ -496,61 +483,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
-    // Função para confirmar exclusão
-function confirmarExclusao(eventoId) {
-    if (confirm('Tem certeza que deseja excluir este evento?')) {
-        fetch(`/meu-admin/api/eventos/${eventoId}/`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Erro ao excluir evento');
-            }
-            return response.json();
-        })
-        .then(() => {
-            // Recarrega a lista de eventos
-            carregarEventos();
-            // Mostra mensagem de sucesso
-            alert('Evento excluído com sucesso!');
-        })
-        .catch(error => {
-            console.error('Erro ao excluir evento:', error);
-            alert('Erro ao excluir evento: ' + error.message);
-        });
-    }
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
+    /**
+     * Obtém o valor de um cookie
+     */
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
             }
         }
-    }
-    return cookieValue;
-}  // This closing brace was missing
-
-// Carrega os eventos quando o documento estiver pronto
-document.addEventListener('DOMContentLoaded', function() {
-    carregarEventos();
-    
-    // Configura o evento de submit do formulário de busca
-    const formBusca = document.getElementById('form-busca');
-    if (formBusca) {
-        formBusca.addEventListener('submit', function(e) {
-            e.preventDefault();
-            carregarEventos();
-        });
+        return cookieValue;
     }
 });

@@ -1,10 +1,10 @@
 {% extends "admin_personalizado/baseadmin.html" %}
 {% load static %}
+{% csrf_token %}
 
 {% block title %}Gerenciamento de Eventos{% endblock %}
 
 {% block content %}
-
 
 <div class="eventos-admin">
     <div class="admin-wrapper">
@@ -38,24 +38,24 @@
                         <div class="form-row">
 
                             <div class="form-group">
-                                <label for="evento-data" class="form-label">Data de Início</label>
-                                <input type="date" id="evento-data" class="form-control" required>
+                                <label for="evento-data-inicio" class="form-label">Data de Início</label>
+                                <input type="date" id="evento-data-inicio" class="form-control" required>
                             </div>
 
                             <div class="form-group">
-                                <label for="evento-inicio" class="form-label">Hora de Início</label>
-                                <input type="time" id="evento-inicio" class="form-control" required>
+                                <label for="evento-hora-inicio" class="form-label">Hora de Início</label>
+                                <input type="time" id="evento-hora-inicio" class="form-control" required>
                             </div>
                         </div>
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="evento-data" class="form-label">Data de Término</label>
-                                <input type="date" id="evento-data" class="form-control" required>
+                                <label for="evento-data-fim" class="form-label">Data de Término</label>
+                                <input type="date" id="evento-data-fim" class="form-control" required>
                             </div>
                             
                             <div class="form-group">
-                                <label for="evento-fim" class="form-label">Hora de Término</label>
-                                <input type="time" id="evento-fim" class="form-control" required>
+                                <label for="evento-hora-fim" class="form-label">Hora de Término</label>
+                                <input type="time" id="evento-hora-fim" class="form-control" required>
                             </div>
                         </div>
 
@@ -65,12 +65,14 @@
                                 <input type="text" id="evento-local" class="form-control" required>
                             </div>
 
+                            <!-- Substitua o campo de seleção de palestrantes por um input de texto -->
                             <div class="form-group col-md-6">
-                                <label for="evento-palestrantes" class="form-label">Palestrantes</label>
-                                <select id="evento-palestrantes" class="form-select" multiple>
-                                    <!-- Opções serão carregadas via JavaScript -->
-                                </select>
-                                <small class="form-text text-muted">Segure Ctrl para selecionar múltiplos palestrantes</small>
+                                <label for="palestrante">Palestrante</label>
+                                <input type="text" 
+                                    class="form-control" 
+                                    id="palestrante" 
+                                    name="palestrante" 
+                                    placeholder="Digite o nome do palestrante">
                             </div>
                         </div>
 
@@ -107,7 +109,9 @@
                         </div>
 
                         <div class="form-group mb-4">
-                            <div id="map" style="height: 250px; width: 100%; border-radius: 8px; border: 1px solid #dee2e6;"></div>
+                            <div id="map-container">
+                                <div id="map"></div>
+                            </div>
                             <small class="form-text text-muted">Clique no mapa para definir a localização ou use o botão de localização</small>
                         </div>
 
@@ -183,6 +187,7 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <!-- Custom CSS -->
 <link rel="stylesheet" href="{% static 'admin_personalizado/css/eventos.css' %}">
+<link rel="stylesheet" href="{% static 'admin_personalizado/css/mapa.css' %}">
 {% endblock %}
 
 {% block extra_js %}

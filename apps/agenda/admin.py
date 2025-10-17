@@ -1,30 +1,21 @@
 from django.contrib import admin
-from .models import Event, UserAgenda
-
-# Register your models here.
+from .models import Event
 
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('titulo', 'horario', 'local', 'start_time', 'end_time')
-    list_filter = ('local', 'tags')
-    search_fields = ('titulo', 'palestrantes', 'tags', 'descricao')
-    ordering = ('start_time',)
+    list_display = ('titulo', 'start_time', 'end_time', 'local', 'palestrante', 'importante')
+    list_filter = ('importante', 'tags', 'start_time')
+    search_fields = ('titulo', 'descricao', 'local', 'palestrante')
+    date_hierarchy = 'start_time'
+    ordering = ('-start_time',)
     fieldsets = (
-        (None, {
-            'fields': ('titulo', 'descricao')
+        ('Informações Básicas', {
+            'fields': ('titulo', 'descricao', 'tags', 'importante')
         }),
-        ('Detalhes do Evento', {
-            'fields': ('horario', 'local', 'palestrantes', 'tags', 'start_time', 'end_time')
+        ('Local e Data', {
+            'fields': ('local', 'start_time', 'end_time')
         }),
-        ('Localização', {
-            'fields': ('latitude', 'longitude'),
-            'classes': ('collapse', 'in')
+        ('Palestrante', {
+            'fields': ('palestrante',)
         }),
     )
-
-@admin.register(UserAgenda)
-class UserAgendaAdmin(admin.ModelAdmin):
-    list_display = ('user', 'event', 'added_at')
-    list_filter = ('user', 'added_at')
-    search_fields = ('user__email', 'event__titulo')
-    ordering = ('-added_at',)

@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const inputTitulo = document.getElementById('evento-titulo');
     const inputDescricao = document.getElementById('evento-descricao');
     const inputDataInicio = document.getElementById('evento-data-inicio');
-    const inputHoraInicio = document.getElementById('evento-inicio');
+    const inputHoraInicio = document.getElementById('evento-hora-inicio');
     const inputDataFim = document.getElementById('evento-data-fim');
-    const inputHoraFim = document.getElementById('evento-fim');
+    const inputHoraFim = document.getElementById('evento-hora-fim');
     const inputLocal = document.getElementById('evento-local');
     const inputPalestrantes = document.getElementById('evento-palestrantes');
     const inputTags = document.getElementById('evento-tags');
