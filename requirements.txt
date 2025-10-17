@@ -12,10 +12,11 @@ colorama==0.4.6
 cron_descriptor==2.0.6
 Django==5.2.6
 django-bootstrap5==25.2
-django-celery-beat==2.5.0
+django-celery-beat>=2.7.0
 django-celery-results==2.5.1
 django-timezone-field==7.1
 djangorestframework==3.16.1
+djangorestframework-simplejwt==5.3.1
 idna==3.10
 kombu==5.5.4
 middleware==1.2.3

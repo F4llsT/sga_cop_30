@@ -13,7 +13,7 @@ import json
 
 from apps.passefacil.models import PasseFacil, ValidacaoQRCode
 from apps.agenda.models import UserAgenda, Event
-from apps.notificacoes.models import Notificacao
+from apps.notificacoes.models import Notificacao, Aviso
 from .models import NotificacaoPersonalizada
 from .decorators import gerente_required, superuser_required, eventos_required, staff_required
 
@@ -660,4 +660,144 @@ def api_evento_detalhe(request, evento_id):
             'tema': evento.tags or '',
             'importante': 'importante' in (evento.tags or '').lower()
         }
+    })
+
+
+@staff_required
+def avisos_admin(request):
+    """
+    Painel administrativo de avisos importantes.
+    
+    Permissões:
+    - Acesso restrito a staff
+    """
+    if request.method == 'POST':
+        # Criar novo aviso
+        try:
+            titulo = request.POST.get('titulo')
+            mensagem = request.POST.get('mensagem')
+            nivel = request.POST.get('nivel', 'info')
+            data_expiracao = request.POST.get('data_expiracao')
+            horario_expiracao = request.POST.get('horario_expiracao')
+            fixo = request.POST.get('fixo') == 'on'
+            ativo = request.POST.get('ativo') == 'on'
+            
+            # Combinar data e horário de expiração
+            expiracao = None
+            if data_expiracao:
+                if horario_expiracao:
+                    expiracao = timezone.make_aware(
+                        datetime.strptime(f"{data_expiracao} {horario_expiracao}", '%Y-%m-%d %H:%M')
+                    )
+                else:
+                    expiracao = timezone.make_aware(
+                        datetime.strptime(f"{data_expiracao} 23:59", '%Y-%m-%d %H:%M')
+                    )
+            
+            aviso = Aviso.objects.create(
+                titulo=titulo,
+                mensagem=mensagem,
+                nivel=nivel,
+                data_expiracao=expiracao,
+                fixo_no_topo=fixo,
+                ativo=ativo,
+                criado_por=request.user
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Aviso publicado com sucesso!',
+                'aviso': {
+                    'id': aviso.id,
+                    'titulo': aviso.titulo,
+                    'mensagem': aviso.mensagem,
+                    'nivel': aviso.nivel,
+                    'data_expiracao': aviso.data_expiracao.strftime('%Y-%m-%d %H:%M') if aviso.data_expiracao else None,
+                    'fixo_no_topo': aviso.fixo_no_topo,
+                    'ativo': aviso.ativo
+                }
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar aviso: {str(e)}'
+            }, status=400)
+    
+    # GET - Listar avisos
+    avisos_ativos = Aviso.objects.filter(ativo=True).exclude(
+        data_expiracao__lt=timezone.now()
+    ).order_by('-fixo_no_topo', '-data_criacao')
+    
+    avisos_historico = Aviso.objects.filter(
+        Q(ativo=False) | Q(data_expiracao__lt=timezone.now())
+    ).order_by('-data_criacao')[:20]
+    
+    context = {
+        'avisos_ativos': avisos_ativos,
+        'avisos_historico': avisos_historico,
+    }
+    
+    return render(request, 'admin_personalizado/avisos/gerenciar_avisos.html', context)
+
+
+@staff_required
+@require_POST
+def excluir_aviso(request, aviso_id):
+    """
+    Move um aviso para o histórico (desativa).
+    """
+    aviso = get_object_or_404(Aviso, id=aviso_id)
+    
+    try:
+        aviso.ativo = False
+        aviso.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Aviso movido para o histórico!'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir aviso: {str(e)}'
+        }, status=400)
+
+
+@staff_required
+def avisos_api(request):
+    """
+    API para obter avisos ativos e histórico.
+    """
+    avisos_ativos = Aviso.objects.filter(ativo=True).exclude(
+        data_expiracao__lt=timezone.now()
+    ).order_by('-fixo_no_topo', '-data_criacao')
+    
+    avisos_historico = Aviso.objects.filter(
+        Q(ativo=False) | Q(data_expiracao__lt=timezone.now())
+    ).order_by('-data_criacao')[:20]
+    
+    ativos_data = []
+    for aviso in avisos_ativos:
+        ativos_data.append({
+            'id': aviso.id,
+            'titulo': aviso.titulo,
+            'mensagem': aviso.mensagem,
+            'nivel': aviso.nivel,
+            'data_expiracao': aviso.data_expiracao.strftime('%Y-%m-%d %H:%M') if aviso.data_expiracao else None,
+            'fixo_no_topo': aviso.fixo_no_topo
+        })
+    
+    historico_data = []
+    for aviso in avisos_historico:
+        historico_data.append({
+            'id': aviso.id,
+            'titulo': aviso.titulo,
+            'mensagem': aviso.mensagem,
+            'data_expiracao': aviso.data_expiracao.strftime('%Y-%m-%d') if aviso.data_expiracao else 'Não expira'
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'avisos_ativos': ativos_data,
+        'avisos_historico': historico_data
     })

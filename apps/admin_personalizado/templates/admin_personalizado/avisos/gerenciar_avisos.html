@@ -1,0 +1,133 @@
+{% extends 'admin_personalizado/baseadmin.html' %}
+{% load static %}
+
+{% block title %}Gerenciar Avisos - Painel Admin{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin_personalizado/css/avisos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="avisos-container">
+    <header class="main-header">
+        <h2>Gerenciar Avisos Importantes</h2>
+        <div class="user-area">
+            <span>{{ request.user.nome|default:request.user.email }}</span>
+            <i class="fa-solid fa-user-shield"></i>
+        </div>
+    </header>
+
+    <section class="publish-section card">
+        <h3>Publicar Novo Aviso</h3>
+        <form id="form-aviso">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="aviso-titulo">Título</label>
+                <input type="text" id="aviso-titulo" name="titulo" placeholder="Ex: Alteração de Local" required>
+            </div>
+            <div class="form-group">
+                <label for="aviso-mensagem">Mensagem</label>
+                <textarea id="aviso-mensagem" name="mensagem" rows="3" placeholder="Descreva o aviso aqui..." required></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="aviso-importancia">Nível de Importância</label>
+                <select id="aviso-importancia" name="nivel">
+                    <option value="info">Informativo</option>
+                    <option value="alerta">Alerta</option>
+                    <option value="critico">Crítico</option>
+                </select>
+            </div>
+
+            <div class="form-group-row">
+                <div class="form-group">
+                    <label for="aviso-expiracao">Data de Expiração</label>
+                    <input type="date" id="aviso-expiracao" name="data_expiracao">
+                </div>
+                <div class="form-group">
+                    <label for="aviso-horario">Horário de Expiração</label>
+                    <input type="time" id="aviso-horario" name="horario_expiracao">
+                </div>
+            </div>
+
+            <div class="form-options-row">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="aviso-fixo" name="fixo">
+                    <label for="aviso-fixo">Fixo no topo</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="aviso-ativo" name="ativo" checked>
+                    <label for="aviso-ativo">Ativo</label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-publicar">Publicar Aviso</button>
+        </form>
+    </section>
+
+    <section class="active-notices-section">
+        <h3>Avisos Ativos</h3>
+        <div id="lista-avisos-ativos" class="notices-list">
+            {% if avisos_ativos %}
+                {% for aviso in avisos_ativos %}
+                <div class="notice-card {{ aviso.nivel }}" data-id="{{ aviso.id }}">
+                    <div class="notice-content">
+                        <h4>{{ aviso.titulo }}</h4>
+                        <p>{{ aviso.mensagem }}</p>
+                        <span class="notice-info">
+                            Expira em: 
+                            {% if aviso.data_expiracao %}
+                                {{ aviso.data_expiracao|date:"d/m/Y H:i" }}
+                            {% else %}
+                                Não expira
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="notice-actions">
+                        <button class="pin-btn {% if aviso.fixo_no_topo %}pinned{% endif %}" 
+                                title="Fixar no topo" 
+                                data-id="{{ aviso.id }}">
+                            <i class="fa-solid fa-thumbtack"></i>
+                        </button>
+                        <button class="delete-btn" title="Remover" data-id="{{ aviso.id }}">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-state">Nenhum aviso ativo no momento.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="history-section">
+        <h3>Histórico de Avisos</h3>
+        <div id="lista-historico" class="history-list">
+            {% if avisos_historico %}
+                {% for aviso in avisos_historico %}
+                <div class="history-item">
+                    <span><strong>{{ aviso.titulo }}</strong> - <em>{{ aviso.mensagem }}</em></span>
+                    <span class="notice-info">
+                        Expirou em: 
+                        {% if aviso.data_expiracao %}
+                            {{ aviso.data_expiracao|date:"d/m/Y" }}
+                        {% else %}
+                            Desativado manualmente
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="empty-state">Nenhum aviso no histórico.</p>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'admin_personalizado/js/avisos.js' %}"></script>
+{% endblock %}
