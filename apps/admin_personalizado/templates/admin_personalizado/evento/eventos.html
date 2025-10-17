@@ -6,102 +6,212 @@
 {% block extra_css %}
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'admin_personalizado/css/eventos.css' %}">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 <div class="eventos-container">
     <div class="admin-wrapper">
         <main class="main-content">
+            {% csrf_token %}
+            
             <header class="main-header">
-                <h2>Gestão de Eventos</h2>
-                <div class="user-area">
-                    <span>{{ request.user.get_full_name|default:request.user.username }}</span>
-                    <i class="fa-solid fa-user-shield"></i>
+                <div class="header-content">
+                    <h2><i class="fas fa-calendar-alt"></i> Gestão de Eventos</h2>
+                    <div class="header-actions">
+                        <button id="btn-atualizar" class="btn btn-outline-primary" title="Atualizar lista">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <div class="user-area">
+                            <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-calendar-day"></i>
+                        <div>
+                            <span class="stat-value" id="total-eventos">0</span>
+                            <span class="stat-label">Total de Eventos</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-calendar-check"></i>
+                        <div>
+                            <span class="stat-value" id="eventos-hoje">0</span>
+                            <span class="stat-label">Eventos Hoje</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-star"></i>
+                        <div>
+                            <span class="stat-value" id="eventos-destaque">0</span>
+                            <span class="stat-label">Em Destaque</span>
+                        </div>
+                    </div>
                 </div>
             </header>
 
-            <section class="form-section card">
-                <h3 id="form-title">Criar Novo Evento</h3>
-                <form id="form-evento">
-                    <input type="hidden" id="evento-id">
-                    <div class="form-group">
-                        <label for="evento-titulo">Título do Evento</label>
-                        <input type="text" id="evento-titulo" placeholder="Ex: Painel sobre a Amazônia" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="evento-descricao">Descrição</label>
-                        <textarea id="evento-descricao" rows="3" placeholder="Detalhes sobre o evento..." required></textarea>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="evento-data">Data</label>
-                            <input type="date" id="evento-data" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="evento-inicio">Hora Início</label>
-                            <input type="time" id="evento-inicio" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="evento-fim">Hora Fim</label>
-                            <input type="time" id="evento-fim" required>
+            <div class="content-wrapper">
+                <section class="form-section card">
+                    <div class="section-header">
+                        <h3 id="form-title"><i class="fas fa-plus-circle"></i> Novo Evento</h3>
+                        <div class="section-actions">
+                            <button type="button" id="btn-limpar" class="btn btn-link" title="Limpar formulário">
+                                <i class="fas fa-eraser"></i> Limpar
+                            </button>
                         </div>
                     </div>
                     
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="evento-local">Local</label>
-                            <input type="text" id="evento-local" placeholder="Ex: Auditório Principal" required>
+                    <form id="form-evento">
+                        <input type="hidden" id="evento-id">
+                        
+                        <div class="form-row">
+                            <div class="form-group required">
+                                <label for="evento-titulo">Título do Evento</label>
+                                <input type="text" id="evento-titulo" placeholder="Ex: Painel sobre a Amazônia" required>
+                                <div class="form-hint">Máximo de 200 caracteres</div>
+                            </div>
                         </div>
-                        <div class="form-group">
-                            <label for="evento-tema">Tema</label>
-                            <select id="evento-tema">
-                                <option value="sustentabilidade">Sustentabilidade</option>
-                                <option value="tecnologia">Tecnologia</option>
-                                <option value="politica">Política</option>
-                                <option value="cultura">Cultura</option>
-                            </select>
+                        
+                        <div class="form-group required">
+                            <label for="evento-descricao">Descrição</label>
+                            <textarea id="evento-descricao" rows="3" placeholder="Detalhes sobre o evento..." required></textarea>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group required">
+                                <label for="evento-data">Data</label>
+                                <input type="date" id="evento-data" required>
+                            </div>
+                            <div class="form-group required">
+                                <label for="evento-inicio">Hora Início</label>
+                                <input type="time" id="evento-inicio" required>
+                            </div>
+                            <div class="form-group required">
+                                <label for="evento-fim">Hora Fim</label>
+                                <input type="time" id="evento-fim" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group required">
+                                <label for="evento-local">Local</label>
+                                <input type="text" id="evento-local" placeholder="Ex: Auditório Principal" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="evento-tags">Tags</label>
+                                <input type="text" id="evento-tags" placeholder="Ex: sustentabilidade, meio-ambiente">
+                                <div class="form-hint">Separe por vírgula</div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="evento-palestrantes">Palestrantes</label>
+                                <input type="text" id="evento-palestrantes" placeholder="Nomes dos palestrantes">
+                                <div class="form-hint">Separe por vírgula</div>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="evento-latitude">Latitude</label>
+                                <input type="number" id="evento-latitude" step="0.000001" placeholder="-23.550520">
+                            </div>
+                            <div class="form-group">
+                                <label for="evento-longitude">Longitude</label>
+                                <input type="number" id="evento-longitude" step="0.000001" placeholder="-46.633308">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <div class="form-options">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="evento-importante">
+                                    <span class="checkmark"></span>
+                                    <span>Marcar como destaque</span>
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-primary" id="btn-salvar">
+                                <i class="fas fa-save"></i> Salvar Evento
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="events-list-section card">
+                    <div class="section-header">
+                        <h3><i class="fas fa-list"></i> Eventos Agendados</h3>
+                        <div class="section-actions">
+                            <div class="search-bar">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="search-input" placeholder="Pesquisar eventos...">
+                            </div>
+                            <div class="filter-group">
+                                <select id="filter-status" class="form-select">
+                                    <option value="todos">Todos os Eventos</option>
+                                    <option value="hoje">Hoje</option>
+                                    <option value="futuros">Próximos</option>
+                                    <option value="passados">Passados</option>
+                                    <option value="destaque">Em Destaque</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="lista-eventos" class="events-list">
+                        <!-- Eventos serão carregados aqui via JavaScript -->
+                        <div class="empty-state">
+                            <i class="fas fa-calendar-alt fa-3x mb-3"></i>
+                            <p>Nenhum evento agendado no momento.</p>
+                            <button id="btn-novo-evento" class="btn btn-primary mt-3">
+                                <i class="fas fa-plus"></i> Criar Primeiro Evento
+                            </button>
                         </div>
                     </div>
 
-                    <div class="form-footer">
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="evento-importante">
-                            <label for="evento-importante">Marcar como evento importante</label>
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Salvar Evento
+                    <div class="pagination">
+                        <button id="btn-anterior" class="btn btn-outline-secondary" disabled>
+                            <i class="fas fa-chevron-left"></i> Anterior
+                        </button>
+                        <span id="pagina-atual">Página 1</span>
+                        <button id="btn-proximo" class="btn btn-outline-secondary" disabled>
+                            Próximo <i class="fas fa-chevron-right"></i>
                         </button>
                     </div>
-                </form>
-            </section>
-
-            <section class="events-list-section card">
-                <div class="section-header">
-                    <h3>Eventos Agendados</h3>
-                    <div class="search-bar">
-                        <i class="fa-solid fa-search"></i>
-                        <input type="text" id="search-input" placeholder="Pesquisar por título ou local...">
-                    </div>
-                </div>
-                
-                <div id="lista-eventos" class="events-list">
-                    <div class="text-muted text-center py-4">
-                        <i class="fas fa-calendar-alt fa-3x mb-3"></i>
-                        <p>Nenhum evento agendado no momento.</p>
-                    </div>
-                </div>
-            </section>
+                </section>
+            </div>
         </main>
     </div>
 </div>
-{% endblock %}
+
+<!-- Modal de Confirmação -->
+<div id="confirm-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4><i class="fas fa-exclamation-triangle"></i> Confirmar Exclusão</h4>
+            <button class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Tem certeza que deseja excluir o evento <strong id="evento-titulo-modal"></strong>?</p>
+            <p class="text-muted">Esta ação não pode ser desfeita.</p>
+        </div>
+        <div class="modal-footer">
+            <button id="btn-cancelar-exclusao" class="btn btn-outline-secondary">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button id="btn-confirmar-exclusao" class="btn btn-danger">
+                <i class="fas fa-trash"></i> Excluir
+            </button>
+        </div>
+    </div>
+</div>
 
 {% block extra_js %}
 {{ block.super }}
 <script src="{% static 'admin_personalizado/js/eventos.js' %}"></script>
+{% endblock %}
 {% endblock %}

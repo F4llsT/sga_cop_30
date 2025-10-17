@@ -480,109 +480,157 @@ def criar_evento(request):
     Cria um novo evento.
     
     Métodos suportados:
-    - GET: Exibe o formulário de criação
-    - POST: Processa o formulário e cria o evento
+    - POST: Cria um novo evento com os dados fornecidos via JSON
     """
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                data = request.POST.dict()
+            
+            # Processar datas
+            start_time = None
+            end_time = None
+            
+            if data.get('start_time'):
+                start_time = timezone.make_aware(
+                    datetime.fromisoformat(data['start_time'])
+                )
+            
+            if data.get('end_time'):
+                end_time = timezone.make_aware(
+                    datetime.fromisoformat(data['end_time'])
+                )
             
             # Criar o evento
             evento = Event.objects.create(
                 titulo=data.get('titulo'),
                 descricao=data.get('descricao'),
                 local=data.get('local'),
-                data_inicio=datetime.strptime(f"{data.get('data')} {data.get('inicio')}", "%Y-%m-%d %H:%M"),
-                data_fim=datetime.strptime(f"{data.get('data')} {data.get('fim')}", "%Y-%m-%d %H:%M"),
-                tags=data.get('tema', '')
+                start_time=start_time,
+                end_time=end_time,
+                tags=data.get('tags', ''),
+                palestrantes=data.get('palestrantes', ''),
+                latitude=data.get('latitude'),
+                longitude=data.get('longitude')
             )
             
             return JsonResponse({
-                'success': True,
-                'message': 'Evento criado com sucesso!',
-                'evento_id': evento.id
-            })
+                'id': evento.id,
+                'titulo': evento.titulo,
+                'descricao': evento.descricao,
+                'local': evento.local,
+                'start_time': evento.start_time.isoformat() if evento.start_time else None,
+                'end_time': evento.end_time.isoformat() if evento.end_time else None,
+                'tags': evento.tags,
+                'palestrantes': evento.palestrantes,
+                'latitude': evento.latitude,
+                'longitude': evento.longitude
+            }, status=201)
             
         except Exception as e:
             return JsonResponse({
-                'success': False,
-                'message': f'Erro ao criar evento: {str(e)}'
+                'error': str(e),
+                'detail': 'Erro ao processar a requisição'
             }, status=400)
     
-    # Se for GET, redireciona para a página de eventos
-    return redirect('admin_personalizado:eventos_admin')
+    return JsonResponse({
+        'error': 'Método não permitido',
+        'allowed_methods': ['POST']
+    }, status=405)
 
 
 @staff_required
 @eventos_required
-@require_http_methods(['GET', 'POST'])
+@require_http_methods(['GET', 'PUT', 'DELETE'])
 def editar_evento(request, evento_id):
     """
-    Edita um evento existente.
+    Gerencia um evento existente.
     
     Métodos suportados:
     - GET: Retorna os dados do evento em formato JSON
-    - POST: Atualiza o evento com os dados fornecidos
+    - PUT: Atualiza o evento com os dados fornecidos
+    - DELETE: Remove o evento
     """
     evento = get_object_or_404(Event, id=evento_id)
     
-    if request.method == 'POST':
+    if request.method == 'GET':
+        return JsonResponse({
+            'id': evento.id,
+            'titulo': evento.titulo,
+            'descricao': evento.descricao,
+            'local': evento.local,
+            'start_time': evento.start_time.isoformat() if evento.start_time else None,
+            'end_time': evento.end_time.isoformat() if evento.end_time else None,
+            'tema': evento.tags or 'sustentabilidade',
+            'importante': evento.importante if hasattr(evento, 'importante') else False
+        })
+    
+    elif request.method == 'PUT':
         try:
-            data = json.loads(request.body)
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                data = request.POST.dict()
             
-            # Atualizar o evento
+            # Atualizar campos básicos
             evento.titulo = data.get('titulo', evento.titulo)
             evento.descricao = data.get('descricao', evento.descricao)
             evento.local = data.get('local', evento.local)
-            evento.data_inicio = datetime.strptime(f"{data.get('data')} {data.get('inicio')}", "%Y-%m-%d %H:%M")
-            evento.data_fim = datetime.strptime(f"{data.get('data')} {data.get('fim')}", "%Y-%m-%d %H:%M")
             evento.tags = data.get('tema', evento.tags)
+            
+            if 'importante' in data:
+                evento.importante = data['importante']
+            
+            # Atualizar datas se fornecidas
+            if data.get('start_time'):
+                evento.start_time = timezone.make_aware(
+                    datetime.fromisoformat(data['start_time'])
+                )
+            
+            if data.get('end_time'):
+                evento.end_time = timezone.make_aware(
+                    datetime.fromisoformat(data['end_time'])
+                )
+            
             evento.save()
             
             return JsonResponse({
-                'success': True,
-                'message': 'Evento atualizado com sucesso!'
+                'id': evento.id,
+                'titulo': evento.titulo,
+                'descricao': evento.descricao,
+                'local': evento.local,
+                'start_time': evento.start_time.isoformat() if evento.start_time else None,
+                'end_time': evento.end_time.isoformat() if evento.end_time else None,
+                'tema': evento.tags or 'sustentabilidade',
+                'importante': evento.importante if hasattr(evento, 'importante') else False
             })
             
         except Exception as e:
             return JsonResponse({
-                'success': False,
-                'message': f'Erro ao atualizar evento: {str(e)}'
+                'error': str(e),
+                'detail': 'Erro ao atualizar o evento'
             }, status=400)
     
-    # Se for GET, retorna os dados do evento
-    return JsonResponse({
-        'id': evento.id,
-        'titulo': evento.titulo,
-        'descricao': evento.descricao,
-        'local': evento.local,
-        'data': evento.data_inicio.strftime('%Y-%m-%d'),
-        'inicio': evento.data_inicio.strftime('%H:%M'),
-        'fim': evento.data_fim.strftime('%H:%M'),
-        'tema': evento.tags or ''
-    })
-
-
-@staff_required
-@eventos_required
-@require_POST
-def excluir_evento(request, evento_id):
-    """
-    Exclui um evento.
-    """
-    evento = get_object_or_404(Event, id=evento_id)
+    elif request.method == 'DELETE':
+        try:
+            evento_id = evento.id
+            evento.delete()
+            return JsonResponse({
+                'success': True,
+                'message': f'Evento {evento_id} excluído com sucesso!'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'error': str(e),
+                'detail': 'Erro ao excluir o evento'
+            }, status=400)
     
-    try:
-        evento.delete()
-        return JsonResponse({
-            'success': True,
-            'message': 'Evento excluído com sucesso!'
-        })
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'message': f'Erro ao excluir evento: {str(e)}'
-        }, status=400)
+    return JsonResponse({
+        'error': 'Método não permitido',
+        'allowed_methods': ['GET', 'PUT', 'DELETE']
+    }, status=405)
 
 
 @staff_required
@@ -590,74 +638,91 @@ def excluir_evento(request, evento_id):
 def api_eventos(request):
     """
     API para listar eventos com filtros.
+    
+    Parâmetros de consulta:
+    - search: termo para busca em título, descrição ou local
+    - start_date: data inicial (inclusive)
+    - end_date: data final (inclusive)
+    - importante: filtrar apenas eventos importantes (true/false)
     """
-    # Filtros
-    filtro = request.GET.get('filtro', 'todos')
-    hoje = date.today()
-    
-    # Query base
-    eventos = Event.objects.all().order_by('data_inicio')
-    
-    # Aplicar filtros
-    if filtro == 'hoje':
-        eventos = eventos.filter(
-            data_inicio__date=hoje
-        )
-    elif filtro == 'semana':
-        fim_semana = hoje + timedelta(days=7)
-        eventos = eventos.filter(
-            data_inicio__date__range=[hoje, fim_semana]
-        )
-    elif filtro == 'mes':
-        fim_mes = hoje.replace(day=1) + timedelta(days=32)
-        fim_mes = fim_mes.replace(day=1) - timedelta(days=1)
-        eventos = eventos.filter(
-            data_inicio__date__range=[hoje, fim_mes]
-        )
-    elif filtro == 'futuro':
-        eventos = eventos.filter(data_inicio__gt=timezone.now())
-    elif filtro == 'passado':
-        eventos = eventos.filter(data_fim__lt=timezone.now())
-    
-    # Serializar os eventos
-    eventos_data = []
-    for evento in eventos:
-        eventos_data.append({
+    try:
+        eventos = Event.objects.all().order_by('start_time')
+        
+        # Aplicar filtros
+        search = request.GET.get('search')
+        if search:
+            eventos = eventos.filter(
+                Q(titulo__icontains=search) |
+                Q(descricao__icontains=search) |
+                Q(local__icontains=search)
+            )
+        
+        start_date = request.GET.get('start_date')
+        if start_date:
+            try:
+                start_date = timezone.make_aware(datetime.strptime(start_date, '%Y-%m-%d'))
+                eventos = eventos.filter(start_time__gte=start_date)
+            except ValueError:
+                pass
+        
+        end_date = request.GET.get('end_date')
+        if end_date:
+            try:
+                end_date = timezone.make_aware(datetime.strptime(end_date, '%Y-%m-%d')) + timedelta(days=1)
+                eventos = eventos.filter(start_time__lte=end_date)
+            except ValueError:
+                pass
+        
+        importante = request.GET.get('importante')
+        if importante and importante.lower() == 'true':
+            eventos = eventos.filter(importante=True)
+        
+        # Converter para dicionário
+        eventos_list = [{
             'id': evento.id,
             'titulo': evento.titulo,
-            'descricao': evento.descricao,
-            'local': evento.local,
-            'data_inicio': evento.data_inicio.strftime('%Y-%m-%d %H:%M'),
-            'data_fim': evento.data_fim.strftime('%Y-%m-%d %H:%M'),
-            'tema': evento.tags or '',
-            'importante': 'importante' in (evento.tags or '').lower()
-        })
+            'descricao': evento.descricao or '',
+            'local': evento.local or '',
+            'start_time': evento.start_time.isoformat() if evento.start_time else None,
+            'end_time': evento.end_time.isoformat() if evento.end_time else None,
+            'tema': evento.tags or 'sustentabilidade',
+            'importante': evento.importante if hasattr(evento, 'importante') else False,
+            'created_at': evento.created_at.isoformat() if evento.created_at else None
+        } for evento in eventos]
+        
+        return JsonResponse(eventos_list, safe=False)
     
-    return JsonResponse({
-        'success': True,
-        'eventos': eventos_data
-    })
+    except Exception as e:
+        return JsonResponse({
+            'error': str(e),
+            'detail': 'Erro ao buscar eventos'
+        }, status=500)
 
 
-@staff_required
-@eventos_required
 def api_evento_detalhe(request, evento_id):
     """
     Retorna os detalhes de um evento específico.
     """
-    evento = get_object_or_404(Event, id=evento_id)
-    
-    return JsonResponse({
-        'success': True,
-        'evento': {
+    try:
+        evento = Event.objects.get(id=evento_id)
+        return JsonResponse({
             'id': evento.id,
             'titulo': evento.titulo,
-            'descricao': evento.descricao,
-            'local': evento.local,
-            'data': evento.data_inicio.strftime('%Y-%m-%d'),
-            'inicio': evento.data_inicio.strftime('%H:%M'),
-            'fim': evento.data_fim.strftime('%H:%M'),
-            'tema': evento.tags or '',
-            'importante': 'importante' in (evento.tags or '').lower()
-        }
-    })
+            'descricao': evento.descricao or '',
+            'local': evento.local or '',
+            'start_time': evento.start_time.isoformat() if evento.start_time else None,
+            'end_time': evento.end_time.isoformat() if evento.end_time else None,
+            'tema': evento.tags or 'sustentabilidade',
+            'importante': evento.importante if hasattr(evento, 'importante') else False,
+            'created_at': evento.created_at.isoformat() if evento.created_at else None
+        })
+    except Event.DoesNotExist:
+        return JsonResponse(
+            {'error': 'Evento não encontrado'}, 
+            status=404
+        )
+    except Exception as e:
+        return JsonResponse(
+            {'error': str(e), 'detail': 'Erro ao buscar detalhes do evento'},
+            status=500
+        )
