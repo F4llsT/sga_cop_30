@@ -225,23 +225,3 @@ rippleStyle.textContent = `
     }
 `;
 document.head.appendChild(rippleStyle);
-
-
-
-// Para abrir o modal de confirmação
-function confirmarExclusao(eventoId) {
-    // Armazena o ID do evento a ser excluído
-    window.eventoParaExcluir = eventoId;
-    // Abre o modal
-    toggleModal(true);
-}
-
-// No seu código de exclusão
-document.getElementById('btn-confirmar-exclusao').addEventListener('click', function() {
-    if (window.eventoParaExcluir) {
-        // Chame sua função de exclusão aqui
-        excluirEvento(window.eventoParaExcluir);
-        // Fecha o modal
-        toggleModal(false);
-    }
-});
