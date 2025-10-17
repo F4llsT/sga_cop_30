@@ -33,6 +33,20 @@ class Event(models.Model):
         verbose_name='Criado por',
         related_name='eventos_criados'
     )
+    latitude = models.DecimalField(
+        max_digits=10, 
+        decimal_places=8, 
+        null=True, 
+        blank=True,
+        verbose_name='Latitude'
+    )
+    longitude = models.DecimalField(
+        max_digits=11, 
+        decimal_places=8, 
+        null=True, 
+        blank=True,
+        verbose_name='Longitude'
+    )
     
     # Gerenciadores
     objects = EventManager()
@@ -52,3 +66,28 @@ class Event(models.Model):
         if not self.start_time:
             return False
         return self.start_time < (timezone.now() - timedelta(hours=10))
+class UserAgenda(models.Model):
+    """
+    Modelo para relacionar usuários com eventos em suas agendas pessoais.
+    """
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='agenda_pessoal',
+        verbose_name='Usuário'
+    )
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.CASCADE,
+        related_name='agenda_usuarios',
+        verbose_name='Evento'
+    )
+    added_at = models.DateTimeField(auto_now_add=True, verbose_name='Adicionado em')
+
+    class Meta:
+        verbose_name = 'Agenda do Usuário'
+        verbose_name_plural = 'Agendas dos Usuários'
+        unique_together = ('user', 'event')  # Evita duplicações
+
+    def __str__(self):
+        return f"{self.user.username} - {self.event.titulo}"

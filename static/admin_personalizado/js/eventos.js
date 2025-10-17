@@ -220,12 +220,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${evento.local || '—'}</td>
                     <td>${evento.palestrante || '—'}</td>
                     <td>${dataFormatada}</td>
-                    <td>${evento.importante ? 'Sim' : 'Não'}</td>
+                    <td>${evento.importante ? '<span class="badge bg-success">Sim</span>' : '<span class="badge bg-secondary">Não</span>'}</td>
                     <td class="text-center">
-                        <div class="btn-group btn-group-sm" role="group">
-                            <a href="/meu-admin/eventos/${evento.id || ''}/editar/" class="btn btn-outline-primary">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Ações">
+                            <button type="button" class="btn btn-outline-primary" onclick="carregarEventoParaEdicao(${evento.id || '0'})">
                                 <i class="fas fa-edit"></i> Editar
-                            </a>
+                            </button>
                             <button type="button" class="btn btn-outline-danger" onclick="confirmarExclusao(${evento.id || '0'})">
                                 <i class="fas fa-trash"></i> Excluir
                             </button>
@@ -463,31 +463,170 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Função para confirmar a exclusão de um evento
      */
-    window.confirmarExclusao = function(eventoId) {
+    window.confirmarExclusao = async function(eventoId) {
         if (!confirm('Tem certeza que deseja excluir este evento?')) {
             return;
         }
         
-        fetch(`/api/eventos/${eventoId}/`, {
-            method: 'DELETE',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken') || '',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            credentials: 'same-origin'
-        })
-        .then(response => {
+        try {
+            const response = await fetch(`/meu-admin/api/eventos/${eventoId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken') || '',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            });
+            
             if (!response.ok) {
-                throw new Error('Erro ao excluir o evento');
+                const errorData = await response.json();
+                throw new Error(errorData.detail || 'Erro ao excluir o evento');
             }
+            
             mostrarAlerta('Evento excluído com sucesso!', 'success');
             carregarEventos();
-        })
-        .catch(error => {
+            limparFormulario();
+        } catch (error) {
             console.error('Erro ao excluir evento:', error);
-            mostrarAlerta('Erro ao excluir o evento', 'error');
-        });
+            mostrarAlerta(error.message || 'Erro ao excluir o evento', 'error');
+        }
     };
+
+    /**
+     * Carrega os dados de um evento para edição
+     */
+    window.carregarEventoParaEdicao = async function(eventoId) {
+        try {
+            const response = await fetch(`/meu-admin/api/eventos/${eventoId}/`);
+            
+            if (!response.ok) {
+                throw new Error('Erro ao carregar o evento');
+            }
+            
+            const evento = await response.json();
+            
+            // Preenche o formulário com os dados do evento
+            if (eventoIdInput) eventoIdInput.value = evento.id;
+            if (inputTitulo) inputTitulo.value = evento.titulo || '';
+            if (inputDescricao) inputDescricao.value = evento.descricao || '';
+            
+            // Formata as datas
+            if (evento.start_time) {
+                const dataInicio = new Date(evento.start_time);
+                if (inputDataInicio) inputDataInicio.value = dataInicio.toISOString().split('T')[0];
+                if (inputHoraInicio) inputHoraInicio.value = dataInicio.toTimeString().substring(0, 5);
+            }
+            
+            if (evento.end_time) {
+                const dataFim = new Date(evento.end_time);
+                if (inputDataFim) inputDataFim.value = dataFim.toISOString().split('T')[0];
+                if (inputHoraFim) inputHoraFim.value = dataFim.toTimeString().substring(0, 5);
+            }
+            
+            if (inputLocal) inputLocal.value = evento.local || '';
+            if (inputPalestrante) inputPalestrante.value = evento.palestrante || '';
+            if (inputTags) inputTags.value = evento.tags ? evento.tags.join(',') : '';
+            if (inputImportante) inputImportante.checked = evento.importante || false;
+            
+            // Atualiza o mapa se as coordenadas existirem
+            if (evento.latitude && evento.longitude) {
+                if (inputLatitude) inputLatitude.value = evento.latitude;
+                if (inputLongitude) inputLongitude.value = evento.longitude;
+                
+                // Atualiza o marcador no mapa
+                if (mapa && marcador) {
+                    const latLng = L.latLng(evento.latitude, evento.longitude);
+                    marcador.setLatLng(latLng);
+                    mapa.setView(latLng, 15);
+                }
+            }
+            
+            // Rola até o formulário
+            document.querySelector('.form-container').scrollIntoView({ behavior: 'smooth' });
+            
+        } catch (error) {
+            console.error('Erro ao carregar evento:', error);
+            mostrarAlerta(error.message || 'Erro ao carregar o evento', 'error');
+        }
+    };
+
+    /**
+     * Manipula o envio do formulário (criar/atualizar)
+     */
+    formEvento.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const eventoId = eventoIdInput ? eventoIdInput.value : null;
+        const method = eventoId ? 'PUT' : 'POST';
+        const url = eventoId 
+            ? `/meu-admin/api/eventos/${eventoId}/`
+            : '/meu-admin/api/eventos/';
+        
+        // Formata as datas para o formato esperado pela API
+        const dataInicio = inputDataInicio && inputHoraInicio
+            ? `${inputDataInicio.value}T${inputHoraInicio.value}:00`
+            : null;
+            
+        const dataFim = inputDataFim && inputHoraFim
+            ? `${inputDataFim.value}T${inputHoraFim.value}:00`
+            : null;
+        
+        const dadosEvento = {
+            titulo: inputTitulo ? inputTitulo.value : '',
+            descricao: inputDescricao ? inputDescricao.value : '',
+            start_time: dataInicio,
+            end_time: dataFim,
+            local: inputLocal ? inputLocal.value : '',
+            palestrante: inputPalestrante ? inputPalestrante.value : '',
+            tags: inputTags ? inputTags.value.split(',').map(tag => tag.trim()) : [],
+            importante: inputImportante ? inputImportante.checked : false,
+            latitude: inputLatitude ? parseFloat(inputLatitude.value) : null,
+            longitude: inputLongitude ? parseFloat(inputLongitude.value) : null
+        };
+        
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken') || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(dadosEvento)
+            });
+            
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.detail || 'Erro ao salvar o evento');
+            }
+            
+            mostrarAlerta(
+                `Evento ${eventoId ? 'atualizado' : 'criado'} com sucesso!`,
+                'success'
+            );
+            
+            // Recarrega a lista e limpa o formulário
+            carregarEventos();
+            limparFormulario();
+            
+        } catch (error) {
+            console.error('Erro ao salvar evento:', error);
+            mostrarAlerta(error.message || 'Erro ao salvar o evento', 'error');
+        }
+    });
+
+    // Configura o botão de limpar formulário
+    if (btnLimpar) {
+        btnLimpar.addEventListener('click', limparFormulario);
+    }
+    
+    // Configura o botão de atualizar
+    if (btnAtualizar) {
+        btnAtualizar.addEventListener('click', carregarEventos);
+    }
 });
 
 /**

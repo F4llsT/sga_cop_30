@@ -2,7 +2,7 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from .models import Event
+from .models import Event, UserAgenda
 import json
 from django.conf import settings
 from django.http import JsonResponse
