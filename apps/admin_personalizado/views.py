@@ -4,10 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import Count, Q, OuterRef, Subquery, Prefetch
-from django.http import JsonResponse, Http404
-from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse, Http404, HttpResponse
+from django.views.decorators.http import require_http_methods, require_POST
 from django.db import transaction
-from datetime import timedelta, datetime
+from django.core.serializers.json import DjangoJSONEncoder
+from datetime import timedelta, datetime, date
+import json
 
 from apps.passefacil.models import PasseFacil, ValidacaoQRCode
 from apps.agenda.models import UserAgenda, Event
@@ -32,48 +34,54 @@ def eventos_admin(request):
     filtro_data_fim = request.GET.get('data_fim')
     
     # Query base
-    eventos = Event.objects.all().order_by('data_inicio')
+    eventos = Event.objects.all().order_by('start_time')
     
     # Aplicar filtros
     if filtro_status != 'todos':
         if filtro_status == 'passados':
-            eventos = eventos.filter(data_fim__lt=timezone.now())
+            eventos = eventos.filter(end_time__lt=timezone.now())
         elif filtro_status == 'ativos':
             eventos = eventos.filter(
-                data_inicio__lte=timezone.now(),
-                data_fim__gte=timezone.now()
+                start_time__lte=timezone.now(),
+                end_time__gte=timezone.now()
             )
         elif filtro_status == 'futuros':
-            eventos = eventos.filter(data_inicio__gt=timezone.now())
+            eventos = eventos.filter(start_time__gt=timezone.now())
     
     # Filtros de data
     if filtro_data_inicio:
         try:
-            data_inicio = datetime.strptime(filtro_data_inicio, '%Y-%m-%d').date()
-            eventos = eventos.filter(data_inicio__date__gte=data_inicio)
-        except ValueError:
+            data_inicio = filtro_data_inicio
+            if not isinstance(data_inicio, date):
+                from datetime import datetime
+                data_inicio = datetime.strptime(filtro_data_inicio, '%Y-%m-%d').date()
+            eventos = eventos.filter(start_time__date__gte=data_inicio)
+        except (ValueError, TypeError):
             pass
     
     if filtro_data_fim:
         try:
-            data_fim = datetime.strptime(filtro_data_fim, '%Y-%m-%d').date()
-            eventos = eventos.filter(data_fim__date__lte=data_fim)
-        except ValueError:
+            data_fim = filtro_data_fim
+            if not isinstance(data_fim, date):
+                from datetime import datetime
+                data_fim = datetime.strptime(filtro_data_fim, '%Y-%m-%d').date()
+            eventos = eventos.filter(end_time__date__lte=data_fim)
+        except (ValueError, TypeError):
             pass
     
     # Contadores para os cards
     total_eventos = eventos.count()
     eventos_ativos = eventos.filter(
-        data_inicio__lte=timezone.now(),
-        data_fim__gte=timezone.now()
+        start_time__lte=timezone.now(),
+        end_time__gte=timezone.now()
     ).count()
     
     # Próximos eventos (próximos 7 dias)
     proxima_semana = timezone.now() + timedelta(days=7)
     proximos_eventos = eventos.filter(
-        data_inicio__gte=timezone.now(),
-        data_inicio__lte=proxima_semana
-    ).order_by('data_inicio')[:5]
+        start_time__gte=timezone.now(),
+        start_time__lte=proxima_semana
+    ).order_by('start_time')[:5]
     
     # Eventos mais populares (com mais favoritos)
     eventos_populares = eventos.annotate(
@@ -92,7 +100,7 @@ def eventos_admin(request):
         'hoje': hoje.strftime('%Y-%m-%d'),
     }
     
-    return render(request, 'admin_personalizado/eventos/lista.html', context)
+    return render(request, 'admin_personalizado/evento/eventos.html', context)
 
 @staff_required
 def dashboard(request):
@@ -462,3 +470,194 @@ def excluir_notificacao(request, pk):
     notificacao.delete()
     messages.success(request, 'Notificação excluída com sucesso!')
     return redirect('admin_personalizado:enviar_notificacao')
+
+
+@staff_required
+@eventos_required
+@require_http_methods(['GET', 'POST'])
+def criar_evento(request):
+    """
+    Cria um novo evento.
+    
+    Métodos suportados:
+    - GET: Exibe o formulário de criação
+    - POST: Processa o formulário e cria o evento
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Criar o evento
+            evento = Event.objects.create(
+                titulo=data.get('titulo'),
+                descricao=data.get('descricao'),
+                local=data.get('local'),
+                data_inicio=datetime.strptime(f"{data.get('data')} {data.get('inicio')}", "%Y-%m-%d %H:%M"),
+                data_fim=datetime.strptime(f"{data.get('data')} {data.get('fim')}", "%Y-%m-%d %H:%M"),
+                tags=data.get('tema', '')
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Evento criado com sucesso!',
+                'evento_id': evento.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao criar evento: {str(e)}'
+            }, status=400)
+    
+    # Se for GET, redireciona para a página de eventos
+    return redirect('admin_personalizado:eventos_admin')
+
+
+@staff_required
+@eventos_required
+@require_http_methods(['GET', 'POST'])
+def editar_evento(request, evento_id):
+    """
+    Edita um evento existente.
+    
+    Métodos suportados:
+    - GET: Retorna os dados do evento em formato JSON
+    - POST: Atualiza o evento com os dados fornecidos
+    """
+    evento = get_object_or_404(Event, id=evento_id)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            
+            # Atualizar o evento
+            evento.titulo = data.get('titulo', evento.titulo)
+            evento.descricao = data.get('descricao', evento.descricao)
+            evento.local = data.get('local', evento.local)
+            evento.data_inicio = datetime.strptime(f"{data.get('data')} {data.get('inicio')}", "%Y-%m-%d %H:%M")
+            evento.data_fim = datetime.strptime(f"{data.get('data')} {data.get('fim')}", "%Y-%m-%d %H:%M")
+            evento.tags = data.get('tema', evento.tags)
+            evento.save()
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Evento atualizado com sucesso!'
+            })
+            
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'Erro ao atualizar evento: {str(e)}'
+            }, status=400)
+    
+    # Se for GET, retorna os dados do evento
+    return JsonResponse({
+        'id': evento.id,
+        'titulo': evento.titulo,
+        'descricao': evento.descricao,
+        'local': evento.local,
+        'data': evento.data_inicio.strftime('%Y-%m-%d'),
+        'inicio': evento.data_inicio.strftime('%H:%M'),
+        'fim': evento.data_fim.strftime('%H:%M'),
+        'tema': evento.tags or ''
+    })
+
+
+@staff_required
+@eventos_required
+@require_POST
+def excluir_evento(request, evento_id):
+    """
+    Exclui um evento.
+    """
+    evento = get_object_or_404(Event, id=evento_id)
+    
+    try:
+        evento.delete()
+        return JsonResponse({
+            'success': True,
+            'message': 'Evento excluído com sucesso!'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao excluir evento: {str(e)}'
+        }, status=400)
+
+
+@staff_required
+@eventos_required
+def api_eventos(request):
+    """
+    API para listar eventos com filtros.
+    """
+    # Filtros
+    filtro = request.GET.get('filtro', 'todos')
+    hoje = date.today()
+    
+    # Query base
+    eventos = Event.objects.all().order_by('data_inicio')
+    
+    # Aplicar filtros
+    if filtro == 'hoje':
+        eventos = eventos.filter(
+            data_inicio__date=hoje
+        )
+    elif filtro == 'semana':
+        fim_semana = hoje + timedelta(days=7)
+        eventos = eventos.filter(
+            data_inicio__date__range=[hoje, fim_semana]
+        )
+    elif filtro == 'mes':
+        fim_mes = hoje.replace(day=1) + timedelta(days=32)
+        fim_mes = fim_mes.replace(day=1) - timedelta(days=1)
+        eventos = eventos.filter(
+            data_inicio__date__range=[hoje, fim_mes]
+        )
+    elif filtro == 'futuro':
+        eventos = eventos.filter(data_inicio__gt=timezone.now())
+    elif filtro == 'passado':
+        eventos = eventos.filter(data_fim__lt=timezone.now())
+    
+    # Serializar os eventos
+    eventos_data = []
+    for evento in eventos:
+        eventos_data.append({
+            'id': evento.id,
+            'titulo': evento.titulo,
+            'descricao': evento.descricao,
+            'local': evento.local,
+            'data_inicio': evento.data_inicio.strftime('%Y-%m-%d %H:%M'),
+            'data_fim': evento.data_fim.strftime('%Y-%m-%d %H:%M'),
+            'tema': evento.tags or '',
+            'importante': 'importante' in (evento.tags or '').lower()
+        })
+    
+    return JsonResponse({
+        'success': True,
+        'eventos': eventos_data
+    })
+
+
+@staff_required
+@eventos_required
+def api_evento_detalhe(request, evento_id):
+    """
+    Retorna os detalhes de um evento específico.
+    """
+    evento = get_object_or_404(Event, id=evento_id)
+    
+    return JsonResponse({
+        'success': True,
+        'evento': {
+            'id': evento.id,
+            'titulo': evento.titulo,
+            'descricao': evento.descricao,
+            'local': evento.local,
+            'data': evento.data_inicio.strftime('%Y-%m-%d'),
+            'inicio': evento.data_inicio.strftime('%H:%M'),
+            'fim': evento.data_fim.strftime('%H:%M'),
+            'tema': evento.tags or '',
+            'importante': 'importante' in (evento.tags or '').lower()
+        }
+    })

@@ -32,4 +32,11 @@ urlpatterns = [
     path('api/usuarios/<int:user_id>/atualizar-papel/', 
          views_usuarios.atualizar_papel_usuario, 
          name='atualizar_papel_usuario'),
+    
+    # URLs para CRUD de Eventos
+    path('eventos/novo/', views.criar_evento, name='evento_criar'),
+    path('eventos/<int:evento_id>/editar/', views.editar_evento, name='evento_editar'),
+    path('eventos/<int:evento_id>/excluir/', views.excluir_evento, name='evento_excluir'),
+    path('api/eventos/', views.api_eventos, name='evento_listar'),
+    path('api/eventos/<int:evento_id>/', views.api_evento_detalhe, name='evento_detalhe'),
 ]
