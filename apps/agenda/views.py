@@ -16,7 +16,7 @@ def agenda_oficial(request):
     """
     Exibe a lista de todos os eventos oficiais.
     """
-    eventos = Event.objects.all().order_by('start_time', 'horario')
+    eventos = Event.objects.all().order_by('start_time')
     
     # Get the list of event IDs that the user has added to their agenda
     user_events = []
