@@ -152,36 +152,68 @@ document.addEventListener('DOMContentLoaded', () => {
         const loadingRow = document.getElementById('loading-row');
         const mensagemSemDados = document.getElementById('sem-dados');
         
-        if (!tabelaEventos || !loadingRow) return;
+        if (!tabelaEventos || !loadingRow) {
+            console.error('Elementos da tabela não encontrados');
+            return;
+        }
         
         try {
             loadingRow.classList.remove('d-none');
             if (mensagemSemDados) mensagemSemDados.classList.add('d-none');
             
+            console.log('Buscando eventos...');
             const response = await fetch('/meu-admin/api/eventos/');
+            
             if (!response.ok) {
-                throw new Error(`Erro HTTP: ${response.status}`);
+                const errorText = await response.text();
+                throw new Error(`Erro HTTP ${response.status}: ${errorText}`);
             }
             
-            const eventos = await response.json();
-            const tbody = tabelaEventos.querySelector('tbody');
+            const data = await response.json();
+            console.log('Resposta da API:', data);
             
-            if (!tbody) return;
+            // Garante que eventos seja um array
+            let eventos = [];
+            if (Array.isArray(data)) {
+                eventos = data;
+            } else if (data && typeof data === 'object' && data.results) {
+                eventos = Array.isArray(data.results) ? data.results : [data.results];
+            } else if (data && typeof data === 'object') {
+                eventos = [data]; // Se for um único objeto, coloca em um array
+            }
+            
+            console.log('Eventos processados:', eventos);
+            
+            const tbody = tabelaEventos.querySelector('tbody');
+            if (!tbody) {
+                console.error('Elemento tbody não encontrado');
+                return;
+            }
             
             tbody.innerHTML = '';
             
-            if (eventos.length === 0) {
+            if (!eventos || eventos.length === 0) {
+                console.log('Nenhum evento encontrado');
                 if (mensagemSemDados) mensagemSemDados.classList.remove('d-none');
                 return;
             }
             
             // Adiciona cada evento à tabela
             eventos.forEach(evento => {
+                if (!evento) return; // Pula itens nulos ou indefinidos
+                
                 const tr = document.createElement('tr');
-                const dataInicio = evento.start_time ? new Date(evento.start_time) : null;
-                const dataFormatada = dataInicio ? 
-                    `${dataInicio.toLocaleDateString()} ${dataInicio.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}` : 
-                    'Não definido';
+                let dataInicio = null;
+                let dataFormatada = 'Não definido';
+                
+                try {
+                    dataInicio = evento.start_time ? new Date(evento.start_time) : null;
+                    if (dataInicio && !isNaN(dataInicio.getTime())) {
+                        dataFormatada = `${dataInicio.toLocaleDateString()} ${dataInicio.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                    }
+                } catch (e) {
+                    console.error('Erro ao formatar data:', e);
+                }
                 
                 tr.innerHTML = `
                     <td>${evento.titulo || 'Sem título'}</td>
@@ -191,10 +223,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${evento.importante ? 'Sim' : 'Não'}</td>
                     <td class="text-center">
                         <div class="btn-group btn-group-sm" role="group">
-                            <a href="/meu-admin/eventos/${evento.id}/editar/" class="btn btn-outline-primary">
+                            <a href="/meu-admin/eventos/${evento.id || ''}/editar/" class="btn btn-outline-primary">
                                 <i class="fas fa-edit"></i> Editar
                             </a>
-                            <button type="button" class="btn btn-outline-danger" onclick="confirmarExclusao(${evento.id})">
+                            <button type="button" class="btn btn-outline-danger" onclick="confirmarExclusao(${evento.id || '0'})">
                                 <i class="fas fa-trash"></i> Excluir
                             </button>
                         </div>
