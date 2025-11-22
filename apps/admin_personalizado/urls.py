@@ -45,5 +45,9 @@ urlpatterns = [
     path('avisos/<int:aviso_id>/excluir/', views.excluir_aviso, name='excluir_aviso'),
     path('avisos/<int:aviso_id>/fixar/', views.fixar_aviso, name='fixar_aviso'),
     path('api/avisos/', views.avisos_api, name='avisos_api'),
-
+    
+    # Rota para ativar/desativar usuários
+    path('api/usuarios/<int:user_id>/toggle-status/', 
+         views_usuarios.toggle_user_status, 
+         name='toggle_user_status'),
 ]

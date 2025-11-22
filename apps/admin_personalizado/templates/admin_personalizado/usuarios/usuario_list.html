@@ -188,6 +188,7 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
 {{ block.super }}
@@ -227,11 +228,113 @@
     resultsCount.textContent = document.querySelectorAll('#usersTable tbody tr:not([style*="display: none"])').length;
 });
 
+// URL base para toggle status (será construída dinamicamente)
+// O Django gera a URL com o padrão: /meu-admin/api/usuarios/0/toggle-status/
+const toggleStatusBaseUrl = "{% url 'admin_personalizado:toggle_user_status' 0 %}";
+
 // Função para redirecionar para a página de edição do usuário
 function editarUsuario(userId) {
     // Usa a URL do template e substitui o 0 pelo ID do usuário
     window.location.href = "{% url 'admin_personalizado:detalhes_usuario' 0 %}".replace('0', userId);
 }
+
+// Função para obter o valor de um cookie
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Verifica se o cookie começa com o nome desejado
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Função para alternar o status do usuário (ativo/inativo)
+function toggleStatus(userId, isActive) {
+    const action = isActive ? 'desativar' : 'ativar';
+    const modal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const confirmButton = document.getElementById('confirmButton');
+    const modalBody = document.getElementById('confirmModalBody');
+    const modalTitle = document.getElementById('confirmModalTitle');
+    
+    // Configura o modal
+    modalTitle.textContent = `Confirmar ${action} usuário`;
+    modalBody.textContent = `Tem certeza que deseja ${action} este usuário?`;
+    confirmButton.textContent = action.charAt(0).toUpperCase() + action.slice(1);
+    confirmButton.className = isActive ? 'btn btn-warning' : 'btn btn-success';
+    
+    // Remove listeners anteriores para evitar múltiplas chamadas
+    const newConfirmButton = confirmButton.cloneNode(true);
+    confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+    
+    // Configura o botão de confirmação
+    newConfirmButton.addEventListener('click', function() {
+        // Desabilita o botão para evitar múltiplos cliques
+        newConfirmButton.disabled = true;
+        newConfirmButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processando...';
+        
+        // Obtém o token CSRF
+        const csrftoken = getCookie('csrftoken');
+        if (!csrftoken) {
+            console.error('Token CSRF não encontrado');
+            alert('Erro de segurança: Token CSRF não encontrado. Por favor, recarregue a página e tente novamente.');
+            modal.hide();
+            return;
+        }
+        
+        // Envia a requisição AJAX
+        const toggleUrl = toggleStatusBaseUrl.replace('0', userId);
+        fetch(toggleUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+            },
+            credentials: 'same-origin'  // Importante para enviar cookies
+        })
+        .then(response => {
+            // Verifica o status da resposta antes de tentar parsear JSON
+            if (!response.ok) {
+                // Tenta obter a mensagem de erro do JSON se disponível
+                return response.json().then(data => {
+                    throw new Error(data.message || `Erro ${response.status}: ${response.statusText}`);
+                }).catch(() => {
+                    // Se não conseguir parsear JSON, lança erro genérico
+                    throw new Error(`Erro ${response.status}: ${response.statusText}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // Recarrega a página para atualizar os dados
+                window.location.reload();
+            } else {
+                throw new Error(data.message || 'Erro ao atualizar status do usuário');
+            }
+        })
+        .catch(error => {
+            console.error('Erro na requisição:', error);
+            let errorMessage = error.message || 'Ocorreu um erro ao tentar atualizar o status do usuário.';
+            
+            alert(errorMessage);
+            modal.hide();
+            
+            // Reativa o botão para permitir nova tentativa
+            newConfirmButton.disabled = false;
+            newConfirmButton.innerHTML = action.charAt(0).toUpperCase() + action.slice(1);
+        });
+    });
+    
+    // Exibe o modal
+    modal.show();
+}
 </script>
-{% endblock %}
 {% endblock %}

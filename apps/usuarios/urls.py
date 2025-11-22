@@ -1,6 +1,6 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
-from .views import LoginView, RegisterView, logout_view, ProfileView
+from .views import LoginView, RegisterView, logout_view, ProfileView, excluir_conta
 
 app_name = 'usuarios'
 
@@ -36,4 +36,7 @@ urlpatterns = [
              template_name='registration/password_reset_complete.html'
          ),
          name='password_reset_complete'),
+         
+    # Exclusão de conta
+    path('excluir-conta/', excluir_conta, name='excluir_conta'),
 ]

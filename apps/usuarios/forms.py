@@ -115,7 +115,7 @@ class ProfileUpdateForm(forms.ModelForm):
             'telefone_whatsapp': forms.CheckboxInput(attrs={
                 'class': 'form-check-input'
             }),
-            'data_nascimento': forms.DateInput(attrs={
+            'data_nascimento': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'DD/MM/AAAA',
                 'data-mask': '00/00/0000'
@@ -156,23 +156,78 @@ class ProfileUpdateForm(forms.ModelForm):
                 field.widget.attrs['class'] = field.widget.attrs.get('class', '') + ' form-control'
                 
     def clean_cep(self):
-        cep = self.cleaned_data.get('cep', '').replace('-', '').replace(' ', '')
-        if cep and not cep.isdigit():
+        cep = self.cleaned_data.get('cep', '')
+        if not cep:
+            return None  # Retorna None para campos vazios (null=True no modelo)
+        
+        cep = cep.replace('-', '').replace(' ', '').strip()
+        if not cep:
+            return None
+        
+        if not cep.isdigit():
             raise forms.ValidationError('CEP deve conter apenas números.')
         if len(cep) != 8:
             raise forms.ValidationError('CEP deve ter 8 dígitos.')
         return cep
         
     def clean_estado(self):
-        estado = self.cleaned_data.get('estado', '').upper()
+        estado = self.cleaned_data.get('estado', '')
+        if not estado:
+            return None  # Retorna None para campos vazios (null=True no modelo)
+        
+        estado = estado.strip().upper()
+        if not estado:
+            return None
+        
         if len(estado) != 2:
             raise forms.ValidationError('O estado deve ter 2 caracteres (ex: SP, RJ).')
         return estado
         
     def clean_telefone(self):
         telefone = self.cleaned_data.get('telefone', '')
+        if not telefone:
+            return None  # Retorna None para campos vazios (null=True no modelo)
+        
         # Remove caracteres não numéricos
-        telefone = ''.join(filter(str.isdigit, telefone))
-        if telefone and len(telefone) not in [10, 11]:
+        telefone_limpo = ''.join(filter(str.isdigit, str(telefone)))
+        
+        if not telefone_limpo:
+            return None  # Se não há dígitos, retorna None
+        
+        if len(telefone_limpo) not in [10, 11]:
             raise forms.ValidationError('Telefone deve ter 10 ou 11 dígitos (com DDD).')
-        return telefone
+        
+        return telefone_limpo
+    
+    def clean_data_nascimento(self):
+        data_nascimento = self.cleaned_data.get('data_nascimento')
+        
+        # Se já é um objeto date, retorna direto
+        if hasattr(data_nascimento, 'year'):
+            return data_nascimento
+        
+        # Se é None ou string vazia, retorna None
+        if not data_nascimento or (isinstance(data_nascimento, str) and not data_nascimento.strip()):
+            return None
+        
+        # Se é uma string, tenta converter
+        if isinstance(data_nascimento, str):
+            from datetime import datetime
+            data_str = data_nascimento.strip()
+            
+            if not data_str:
+                return None
+            
+            # Tenta diferentes formatos
+            formatos = ['%d/%m/%Y', '%Y-%m-%d', '%d/%m/%y']
+            for formato in formatos:
+                try:
+                    data_obj = datetime.strptime(data_str, formato).date()
+                    return data_obj
+                except (ValueError, AttributeError):
+                    continue
+            
+            # Se nenhum formato funcionou, levanta erro
+            raise forms.ValidationError('Formato de data inválido. Use DD/MM/AAAA.')
+        
+        return data_nascimento

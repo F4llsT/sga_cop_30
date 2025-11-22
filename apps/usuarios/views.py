@@ -8,11 +8,13 @@ from django.views.generic.edit import UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView as BaseLoginView
 from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.csrf import csrf_protect, csrf_exempt
+from django.views.decorators.http import require_http_methods
 from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.cache import never_cache
 from django.utils.translation import gettext_lazy as _
 from django.http import JsonResponse
+from django.contrib.auth import get_user_model
 
 from .models import Usuario, Perfil
 from .forms import UserRegistrationForm, UserLoginForm, UserUpdateForm, ProfileUpdateForm
@@ -22,6 +24,26 @@ def home(request):
     Exibe a página inicial.
     """
     return render(request, 'home.html')
+
+@login_required
+@require_http_methods(["POST"])
+@csrf_exempt
+def excluir_conta(request):
+    """
+    View para excluir a conta do usuário.
+    """
+    try:
+        # Desativa a conta em vez de excluir para manter os dados históricos
+        request.user.is_active = False
+        request.user.save()
+        
+        # Desloga o usuário
+        from django.contrib.auth import logout
+        logout(request)
+        
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 class LoginView(BaseLoginView):
     """
@@ -156,7 +178,7 @@ class ProfileView(LoginRequiredMixin, UpdateView):
     """
     model = Usuario
     form_class = UserUpdateForm
-    template_name = 'usuarios/perfil.html'  # Atualizado para o novo template
+    template_name = 'perfil.html'  # O template está em apps/usuarios/templates/perfil.html
     success_url = reverse_lazy('usuarios:profile')
     
     def get_object(self, queryset=None):
@@ -175,14 +197,15 @@ class ProfileView(LoginRequiredMixin, UpdateView):
         """
         Retorna uma instância do formulário de perfil.
         """
+        # Obtém ou cria o perfil do usuário
+        perfil, created = Perfil.objects.get_or_create(usuario=self.request.user)
+        
         if self.request.method == 'POST':
             return ProfileUpdateForm(
                 self.request.POST,
                 self.request.FILES,
-                instance=self.request.user.perfil
+                instance=perfil
             )
-        # Obtém ou cria o perfil do usuário
-        perfil, created = Perfil.objects.get_or_create(usuario=self.request.user)
         return ProfileUpdateForm(instance=perfil)
     
     def post(self, request, *args, **kwargs):
@@ -203,8 +226,15 @@ class ProfileView(LoginRequiredMixin, UpdateView):
         # Salva o usuário
         self.object = form.save()
         
+        # Garante que o perfil existe
+        if not hasattr(self.object, 'perfil'):
+            Perfil.objects.create(usuario=self.object)
+            profile_form.instance = self.object.perfil
+        
         # Salva o perfil
-        profile_form.save()
+        perfil = profile_form.save(commit=False)
+        perfil.usuario = self.object
+        perfil.save()
         
         # Mensagem de sucesso
         messages.success(
@@ -232,3 +262,57 @@ class ProfileView(LoginRequiredMixin, UpdateView):
                 )
         
         return self.render_to_response(self.get_context_data(form=form, profile_form=profile_form))
+
+
+
+
+
+
+
+
+
+
+
+
+
+        from django.contrib.auth import get_user_model
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.views.decorators.csrf import csrf_exempt
+
+@require_POST
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+@csrf_exempt
+def toggle_user_status(request, user_id):
+    try:
+        User = get_user_model()
+        user = User.objects.get(pk=user_id)
+        
+        # Não permitir que usuários desativem a si mesmos
+        if user == request.user:
+            return JsonResponse({
+                'success': False,
+                'message': 'Você não pode alterar seu próprio status.'
+            }, status=400)
+        
+        # Alterna o status do usuário
+        user.is_active = not user.is_active
+        user.save()
+        
+        return JsonResponse({
+            'success': True,
+            'is_active': user.is_active
+        })
+        
+    except User.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Usuário não encontrado.'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': str(e)
+        }, status=500)

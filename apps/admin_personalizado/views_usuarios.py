@@ -436,13 +436,79 @@ from django.http import JsonResponse
 from django.contrib.auth.models import User
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import get_user_model
 from django.db import transaction
 from django.utils import timezone
 import json
 
 @require_http_methods(["POST"])
 @login_required
-@transaction.atomic
+@user_passes_test(lambda u: u.is_staff)
+def toggle_user_status(request, user_id):
+    """
+    Alterna o status (ativo/inativo) de um usuário.
+    
+    Permissões:
+    - Apenas superusuários ou gerentes podem ativar/desativar usuários
+    - Não é possível desativar a si mesmo
+    - Não é possível desativar superusuários (a menos que seja outro superusuário)
+    """
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse({
+            'success': False,
+            'message': 'Acesso negado. Você não tem permissão para executar esta ação.'
+        }, status=403)
+
+    try:
+        User = get_user_model()
+        user = User.objects.get(pk=user_id)
+        
+        # Não permitir que usuários desativem a si mesmos
+        if user == request.user:
+            return JsonResponse({
+                'success': False,
+                'message': 'Você não pode alterar seu próprio status.'
+            }, status=400)
+        
+        # Apenas superusuários podem desativar outros superusuários
+        if user.is_superuser and not request.user.is_superuser:
+            return JsonResponse({
+                'success': False,
+                'message': 'Apenas superusuários podem alterar o status de outros superusuários.'
+            }, status=403)
+        
+        # Alterna o status do usuário
+        user.is_active = not user.is_active
+        user.save()
+        
+        # Registrar a ação no log
+        LogEntry.objects.log_action(
+            user_id=request.user.id,
+            content_type_id=ContentType.objects.get_for_model(user).id,
+            object_id=user.id,
+            object_repr=str(user),
+            action_flag=CHANGE,
+            change_message=f'Status alterado para {"Ativo" if user.is_active else "Inativo"}.'
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'is_active': user.is_active,
+            'message': f'Usuário {user.get_full_name() or user.username} foi {"ativado" if user.is_active else "desativado"} com sucesso.'
+        })
+        
+    except User.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'Usuário não encontrado.'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao atualizar status do usuário: {str(e)}'
+        }, status=500)
+
 def atualizar_usuario(request, user_id):
     """
     Atualiza as informações do usuário e perfil via AJAX.

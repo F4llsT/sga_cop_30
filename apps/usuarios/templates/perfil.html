@@ -24,42 +24,40 @@
     </div>
     {% endif %}
 
-    <div class="profile-grid">
-        <aside class="profile-sidebar">
-            <div class="profile-picture-card">
-                <div class="picture-wrapper">
-                    {% if user.perfil.foto_perfil %}
-                        <img src="{{ user.perfil.foto_perfil.url }}" alt="Foto de Perfil" id="profile-image">
-                        <div class="default-avatar" id="default-avatar" style="display: none;">
-                            <i class="fa-solid fa-user"></i>
-                        </div>
-                    {% else %}
-                        <img src="" alt="Foto de Perfil" id="profile-image" style="display: none;">
+        <div class="profile-grid">
+            <aside class="profile-sidebar">
+                <div class="profile-picture-card">
+                    <div class="picture-wrapper">
+                        {% if user.perfil.foto_perfil %}
+                            <img src="{{ user.perfil.foto_perfil.url }}" alt="Foto de Perfil do Usuário" id="profile-image">
+                        {% else %}
+                            <img src="" alt="Foto de Perfil do Usuário" id="profile-image" style="display: none;">
+                        {% endif %}
                         <div class="default-avatar" id="default-avatar">
                             <i class="fa-solid fa-user"></i>
                         </div>
-                    {% endif %}
-                    {{ profile_form.foto_perfil }}
+                        <!-- Input customizado para abrir o seletor -->
+                        <input type="file" id="image-upload-input" accept="image/*" class="sr-only">
+                    </div>
+                    <h3>{{ user.nome|default:user.username }}</h3>
+                    <p>{{ user.email }}</p>
+                    <div class="picture-actions-container">
+                        <button class="btn-secondary" id="edit-picture-btn">Editar</button>
+                        <div class="picture-actions-menu" id="picture-actions-menu">
+                            <button class="action-btn" id="change-picture-btn"><i class="fa-solid fa-pen-to-square"></i> Alterar Foto</button>
+                            <button class="action-btn danger" id="remove-picture-btn"><i class="fa-solid fa-trash"></i> Remover Foto</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="picture-actions">
-                    <button type="button" class="btn-edit" id="edit-picture-btn">
-                        <i class="fa-solid fa-camera"></i>
-                    </button>
-                </div>
-                <div class="picture-actions-menu" id="picture-actions-menu">
-                    <button type="button" class="action-btn" id="change-picture-btn">
-                        <i class="fa-solid fa-pen-to-square"></i> Alterar Foto
-                    </button>
-                    <button type="button" class="action-btn danger" id="remove-picture-btn">
-                        <i class="fa-solid fa-trash"></i> Remover Foto
-                    </button>
-                </div>
-            </div>
-        </aside>
+            </aside>
 
         <main class="profile-main">
-            <form method="post" enctype="multipart/form-data" id="profile-form">
+            <form method="post" enctype="multipart/form-data" id="profile-form" novalidate>
                 {% csrf_token %}
+                <!-- Campo do formulário para foto (oculto) -->
+                <div style="display: none;">
+                    {{ profile_form.foto_perfil }}
+                </div>
                 
                 <div class="form-section">
                     <h2>Informações Pessoais</h2>
@@ -79,8 +77,13 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                {{ form.email.label_tag }}
-                                {{ form.email }}
+                                <label for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+                                <input type="email" 
+                                       class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                                       id="{{ form.email.id_for_label }}" 
+                                       name="{{ form.email.name }}" 
+                                       value="{{ form.email.value|default:user.email }}" 
+                                       required>
                                 {% if form.email.errors %}
                                     <div class="invalid-feedback">
                                         {{ form.email.errors|join:", " }}
@@ -105,30 +108,25 @@
                         </div>
                         <div class="col-md-6">
                             <div class="form-group">
-                                {{ profile_form.data_nascimento.label_tag }}
-                                {{ profile_form.data_nascimento }}
-                                {% if profile_form.data_nascimento.help_text %}
-                                    <small class="form-text text-muted">{{ profile_form.data_nascimento.help_text }}</small>
-                                {% endif %}
-                                {% if profile_form.data_nascimento.errors %}
-                                    <div class="invalid-feedback">
-                                        {{ profile_form.data_nascimento.errors|join:", " }}
-                                    </div>
-                                {% endif %}
+                                <label for="{{ profile_form.data_nascimento.id_for_label }}">{{ profile_form.data_nascimento.label }}</label>
+                                <div class="input-group">
+                                    <input type="text" 
+                                           class="form-control {% if profile_form.data_nascimento.errors %}is-invalid{% endif %}" 
+                                           id="{{ profile_form.data_nascimento.id_for_label }}" 
+                                           name="{{ profile_form.data_nascimento.name }}" 
+                                           value="{% if profile_form.data_nascimento.value %}{{ profile_form.data_nascimento.value|date:'d/m/Y' }}{% endif %}" 
+                                           placeholder="DD/MM/AAAA"
+                                           maxlength="10"
+                                           inputmode="numeric">
+
+                                    {% if profile_form.data_nascimento.errors %}
+                                        <div class="invalid-feedback">
+                                            {{ profile_form.data_nascimento.errors|join:", " }}
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">E-mail</label>
-                        <input type="email" id="email" value="{{ user.email|default:'visitante@cop30.com' }}" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="genero">Gênero</label>
-                        <select id="genero">
-                            <option value="nao-opinar" {% if user.perfil.genero == 'nao-opinar' %}selected{% endif %}>Prefiro não opinar</option>
-                            <option value="masculino" {% if user.perfil.genero == 'masculino' %}selected{% endif %}>Masculino</option>
-                            <option value="feminino" {% if user.perfil.genero == 'feminino' %}selected{% endif %}>Feminino</option>
-                        </select>
                     </div>
                 </div>
 
@@ -137,26 +135,22 @@
                     <div class="row">
                         <div class="col-md-8">
                             <div class="form-group">
-                                {{ profile_form.telefone.label_tag }}
-                                {{ profile_form.telefone }}
-                                {% if profile_form.telefone.help_text %}
-                                    <small class="form-text text-muted">{{ profile_form.telefone.help_text }}</small>
-                                {% endif %}
-                                {% if profile_form.telefone.errors %}
-                                    <div class="invalid-feedback">
-                                        {{ profile_form.telefone.errors|join:", " }}
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>&nbsp;</label>
-                                <div class="form-check mt-2 pt-2">
-                                    {{ profile_form.telefone_whatsapp }}
-                                    <label class="form-check-label" for="{{ profile_form.telefone_whatsapp.id_for_label }}">
-                                        {{ profile_form.telefone_whatsapp.label }}
-                                    </label>
+                                <label for="{{ profile_form.telefone.id_for_label }}">{{ profile_form.telefone.label }}</label>
+                                <div class="input-group">
+                                    <input type="tel" 
+                                           class="form-control {% if profile_form.telefone.errors %}is-invalid{% endif %}" 
+                                           id="{{ profile_form.telefone.id_for_label }}" 
+                                           name="{{ profile_form.telefone.name }}" 
+                                           value="{{ profile_form.telefone.value|default:'' }}" 
+                                           placeholder="(00) 00000-0000"
+                                           maxlength="15"
+                                           inputmode="numeric">
+
+                                    {% if profile_form.telefone.errors %}
+                                        <div class="invalid-feedback">
+                                            {{ profile_form.telefone.errors|join:", " }}
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -173,9 +167,7 @@
                                 {{ profile_form.cep.label_tag }}
                                 <div class="input-group">
                                     {{ profile_form.cep }}
-                                    <button class="btn btn-outline-secondary" type="button" id="buscar-cep">
-                                        <i class="fa-solid fa-magnifying-glass"></i>
-                                    </button>
+
                                 </div>
                                 {% if profile_form.cep.errors %}
                                     <div class="invalid-feedback">
@@ -265,7 +257,7 @@
                 </div>
 
                 <div class="main-actions">
-                    <button type="button" class="btn btn-outline-danger" id="delete-account-btn">
+                    <button type="button" class="btn-danger" id="delete-account-btn">
                         <i class="fa-solid fa-trash"></i> Excluir Minha Conta
                     </button>
                     <button type="submit" class="btn btn-primary" id="save-all-btn">
