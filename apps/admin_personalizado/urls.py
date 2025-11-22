@@ -40,9 +40,10 @@ urlpatterns = [
     path('api/eventos/', views.api_eventos, name='evento_listar'),
     path('api/eventos/<int:evento_id>/', views.api_evento_detalhe, name='evento_detalhe'),
 
-        # URLs para Avisos
+    # URLs para Avisos
     path('avisos/', views.avisos_admin, name='avisos_admin'),
     path('avisos/<int:aviso_id>/excluir/', views.excluir_aviso, name='excluir_aviso'),
+    path('avisos/<int:aviso_id>/fixar/', views.fixar_aviso, name='fixar_aviso'),
     path('api/avisos/', views.avisos_api, name='avisos_api'),
 
 ]

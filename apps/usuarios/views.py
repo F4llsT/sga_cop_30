@@ -156,7 +156,7 @@ class ProfileView(LoginRequiredMixin, UpdateView):
     """
     model = Usuario
     form_class = UserUpdateForm
-    template_name = 'profile.html'
+    template_name = 'usuarios/perfil.html'  # Atualizado para o novo template
     success_url = reverse_lazy('usuarios:profile')
     
     def get_object(self, queryset=None):
@@ -175,18 +175,15 @@ class ProfileView(LoginRequiredMixin, UpdateView):
         """
         Retorna uma instância do formulário de perfil.
         """
-        # Obtém ou cria o perfil do usuário
-        perfil, created = Perfil.objects.get_or_create(usuario=self.request.user)
-        
-        # Retorna o formulário de perfil
         if self.request.method == 'POST':
             return ProfileUpdateForm(
                 self.request.POST,
                 self.request.FILES,
-                instance=perfil
+                instance=self.request.user.perfil
             )
-        else:
-            return ProfileUpdateForm(instance=perfil)
+        # Obtém ou cria o perfil do usuário
+        perfil, created = Perfil.objects.get_or_create(usuario=self.request.user)
+        return ProfileUpdateForm(instance=perfil)
     
     def post(self, request, *args, **kwargs):
         """Processa o formulário de atualização do perfil."""

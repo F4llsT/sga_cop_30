@@ -427,3 +427,104 @@
 .leaflet-bottom {
     z-index: 400;
 }
+
+/* Ajustes para a tabela de eventos */
+#tabela-eventos {
+    table-layout: fixed;
+    width: 100%;
+}
+
+/* Configuração para células com texto longo */
+#tabela-eventos td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 0;
+}
+
+/* Larguras específicas para as colunas */
+#tabela-eventos th:nth-child(1), 
+#tabela-eventos td:nth-child(1) { 
+    width: 25%; 
+    max-width: 200px;
+}
+
+#tabela-eventos th:nth-child(2), 
+#tabela-eventos td:nth-child(2) { 
+    width: 20%; 
+    max-width: 150px;
+}
+
+#tabela-eventos th:nth-child(3), 
+#tabela-eventos td:nth-child(3) { 
+    width: 15%; 
+    max-width: 120px;
+}
+
+#tabela-eventos th:nth-child(4), 
+#tabela-eventos td:nth-child(4) { 
+    width: 15%; 
+    max-width: 150px;
+}
+
+#tabela-eventos th:nth-child(5), 
+#tabela-eventos td:nth-child(5) { 
+    width: 10%; 
+    max-width: 80px;
+    text-align: center;
+}
+
+/* Configuração específica para a coluna de ações */
+#tabela-eventos td:last-child, 
+#tabela-eventos th:last-child {
+    width: 150px !important;
+    max-width: 150px !important;
+    white-space: nowrap;
+    text-align: center !important;
+    padding: 8px 4px !important;
+    overflow: visible;
+}
+
+/* Garante que os botões fiquem visíveis */
+#tabela-eventos .btn {
+    margin: 0 2px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+}
+
+/* Ajuste para telas menores */
+@media (max-width: 768px) {
+    #tabela-eventos td, 
+    #tabela-eventos th {
+        max-width: none !important;
+        white-space: normal;
+    }
+    
+    #tabela-eventos .btn {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* Tooltip para texto truncado */
+#tabela-eventos td[title] {
+    position: relative;
+    cursor: help;
+}
+
+#tabela-eventos td[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    z-index: 1000;
+    white-space: normal;
+    width: max-content;
+    max-width: 300px;
+}

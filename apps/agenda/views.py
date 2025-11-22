@@ -2,6 +2,7 @@
 
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .models import Event, UserAgenda
 import json
 from django.conf import settings
@@ -14,18 +15,63 @@ from django.core.serializers.json import DjangoJSONEncoder
 
 def agenda_oficial(request):
     """
-    Exibe a lista de todos os eventos oficiais.
+    Exibe a lista de todos os eventos oficiais com paginação e filtros.
+    Mostra 15 eventos por página.
     """
-    eventos = Event.objects.all().order_by('start_time')
+    # Obtém os parâmetros de busca
+    search_query = request.GET.get('search', '')
+    tag_filter = request.GET.get('tag', '')
     
-    # Get the list of event IDs that the user has added to their agenda
+    # Filtra os eventos
+    eventos_list = Event.objects.all().order_by('start_time')
+    
+    # Aplica filtro de busca no título e descrição
+    if search_query:
+        from django.db.models import Q
+        eventos_list = eventos_list.filter(
+            Q(titulo__icontains=search_query) | 
+            Q(descricao__icontains=search_query) |
+            Q(palestrante__icontains=search_query) |
+            Q(local__icontains=search_query)
+        )
+    
+    # Aplica filtro de tag
+    if tag_filter:
+        eventos_list = eventos_list.filter(tags__icontains=tag_filter)
+    
+    # Configura a paginação com 15 itens por página
+    paginator = Paginator(eventos_list, 15)
+    page = request.GET.get('page')
+    
+    try:
+        eventos = paginator.page(page)
+    except PageNotAnInteger:
+        eventos = paginator.page(1)
+    except EmptyPage:
+        eventos = paginator.page(paginator.num_pages)
+    
+    # Obtém a lista de eventos na agenda do usuário
     user_events = []
     if request.user.is_authenticated:
-        user_events = list(UserAgenda.objects.filter(user=request.user).values_list('event_id', flat=True))
+        user_events = list(UserAgenda.objects.filter(
+            user=request.user, 
+            event__in=eventos.object_list
+        ).values_list('event_id', flat=True))
+    
+    # Obtém todas as tags únicas para o filtro
+    all_tags = Event.objects.exclude(tags__isnull=True).exclude(tags__exact='').values_list('tags', flat=True).distinct()
+    unique_tags = set()
+    for tags in all_tags:
+        if tags:  # Verifica se tags não está vazio
+            # Divide as tags por vírgula e adiciona ao conjunto
+            unique_tags.update(tag.strip() for tag in tags.split(','))
     
     context = {
         'eventos': eventos,
-        'user_events': user_events
+        'user_events': user_events,
+        'search_query': search_query,
+        'tag_filter': tag_filter,
+        'all_tags': sorted(unique_tags)  # Tags únicas ordenadas
     }
     return render(request, 'agenda/agenda_oficial.html', context)
 
@@ -99,15 +145,25 @@ def mapa_eventos(request):
     """
     Exibe o mapa com todos os eventos que possuem coordenadas.
     """
+    # Filtra eventos com coordenadas válidas
     eventos = Event.objects.exclude(latitude__isnull=True).exclude(longitude__isnull=True)
-    eventos_data = [{
-        "titulo": evento.titulo,
-        "data": evento.start_time,
-        "hora": evento.horario,
-        "latitude": evento.latitude,
-        "longitude": evento.longitude,
-        "id": evento.id
-    } for evento in eventos]
+    
+    # Formata os dados dos eventos para o mapa
+    eventos_data = []
+    for evento in eventos:
+        # Formata a data e hora de forma mais legível
+        data_formatada = evento.start_time.strftime('%d/%m/%Y') if evento.start_time else ''
+        hora_formatada = evento.start_time.strftime('%H:%M') if evento.start_time else ''
+        
+        eventos_data.append({
+            "titulo": evento.titulo,
+            "data": data_formatada,
+            "hora": hora_formatada,
+            # Converte Decimal para float para serialização JSON
+            "latitude": float(evento.latitude) if evento.latitude is not None else None,
+            "longitude": float(evento.longitude) if evento.longitude is not None else None,
+            "id": evento.id
+        })
 
     context = {
         'eventos_json': json.dumps(list(eventos_data), cls=DjangoJSONEncoder),
@@ -130,18 +186,19 @@ def detalhes_evento(request, event_id):
         is_favorited = UserAgenda.objects.filter(user=request.user, event=evento).exists()
 
     evento_mapa_data = None
-    if evento.latitude and evento.longitude:
+    if evento.latitude is not None and evento.longitude is not None:
         evento_mapa_data = {
             "titulo": evento.titulo,
-            "latitude": evento.latitude,
-            "longitude": evento.longitude,
+            # Converte Decimal para float para serialização JSON
+            "latitude": float(evento.latitude) if evento.latitude is not None else None,
+            "longitude": float(evento.longitude) if evento.longitude is not None else None,
         }
 
     context = {
         'evento': evento,
         'is_favorited': is_favorited,
         'google_maps_api_key': settings.GOOGLE_MAPS_API_KEY,
-        'evento_mapa_json': json.dumps(evento_mapa_data)
+        'evento_mapa_json': json.dumps(evento_mapa_data, cls=DjangoJSONEncoder) if evento_mapa_data else 'null'
     }
     
     return render(request, 'agenda/detalhes_evento.html', context)

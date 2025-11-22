@@ -1,0 +1,187 @@
+import os
+import sys
+import random
+from datetime import datetime, timedelta
+import django
+
+# Adiciona o diretório raiz do projeto ao Python path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
+
+# Configura o ambiente Django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'sga_cop_30.settings')
+
+try:
+    django.setup()
+except Exception as e:
+    print(f"Erro ao configurar o Django: {e}")
+    print(f"Diretório atual: {os.getcwd()}")
+    print(f"Python path: {sys.path}")
+    raise
+
+from django.contrib.auth import get_user_model
+from apps.agenda.models import Event
+
+# Dados de exemplo para geração de eventos
+titulos = [
+    "COP30: Rumo à Neutralidade de Carbono",
+    "Diálogos sobre a Amazônia na COP30",
+    "Tecnologias para o Desmatamento Zero",
+    "Financiamento Climático na Prática",
+    "Comunidades Tradicionais e Mudanças Climáticas",
+    "Energias Renováveis na Amazônia",
+    "Adaptação às Mudanças Climáticas no Norte do Brasil",
+    "Biodiversidade e Economia Verde",
+    "Justiça Climática e Direitos Humanos",
+    "Soluções Baseadas na Natureza"
+]
+
+descricoes = [
+    "Discussões sobre as estratégias para alcançar a neutralidade de carbono até 2050, tema central da COP30.",
+    "Painel com lideranças indígenas e especialistas sobre o papel da Amazônia no equilíbrio climático global.",
+    "Apresentação de inovações tecnológicas para monitoramento e combate ao desmatamento na região amazônica.",
+    "Workshop sobre mecanismos de financiamento para projetos de mitigação e adaptação às mudanças climáticas.",
+    "Roda de conversa com representantes de comunidades tradicionais sobre impactos e soluções climáticas.",
+    "Debate sobre o potencial das energias renováveis na região amazônica e seus desafios.",
+    "Estratégias de adaptação para os impactos das mudanças climáticas na região Norte do Brasil.",
+    "Como conciliar conservação da biodiversidade com desenvolvimento econômico sustentável.",
+    "Discussão sobre os aspectos de justiça climática e a proteção dos direitos humanos em um mundo em mudança.",
+    "Apresentação de casos de sucesso de soluções baseadas na natureza para desafios climáticos."
+]
+
+locais = [
+    "Auditório Principal",
+    "Sala de Workshop 1",
+    "Área de Exposições",
+    "Sala de Reuniões 3",
+    "Auditório Verde",
+    "Espaço de Eventos Sustentáveis",
+    "Sala de Palestras 2",
+    "Área de Convivência",
+    "Sala de Treinamento",
+    "Auditório Central"
+]
+
+palestrantes = [
+    "Dr. João Silva",
+    "Profa. Maria Oliveira",
+    "Eng. Carlos Santos",
+    "Dra. Ana Pereira",
+    "Dr. Marcos Costa",
+    "Profa. Juliana Almeida",
+    "Eng. Ricardo Nunes",
+    "Dra. Patrícia Lima",
+    "Dr. Fernando Rocha",
+    "Profa. Camila Martins"
+]
+
+tags = [
+    'sustentabilidade', 'meio ambiente', 'reciclagem', 'energia renovável',
+    'agricultura urbana', 'consumo consciente', 'mudanças climáticas',
+    'construção sustentável', 'empreendedorismo', 'tecnologia verde'
+]
+
+def gerar_coordenadas():
+    # Gera coordenadas aleatórias próximas a Belém do Pará
+    # Latitude: -1.4558 ± 0.1, Longitude: -48.4902 ± 0.1
+    latitude = round(-1.4558 + random.uniform(-0.1, 0.1), 6)
+    longitude = round(-48.4902 + random.uniform(-0.1, 0.1), 6)
+    return latitude, longitude
+
+def criar_eventos_teste(quantidade=10):
+    """
+    Cria um número especificado de eventos de teste.
+    
+    Args:
+        quantidade (int): Número de eventos a serem criados
+    """
+    # Obtém o primeiro usuário disponível (ou cria um se não existir)
+    User = get_user_model()
+    try:
+        usuario = User.objects.first()
+        if not usuario:
+            usuario = User.objects.create_user(
+                username='admin',
+                email='admin@example.com',
+                password='admin123',
+                is_staff=True,
+                is_superuser=True
+            )
+            print(f"Usuário admin criado com sucesso!")
+    except Exception as e:
+        print(f"Erro ao obter/criar usuário: {e}")
+        return
+
+    # Gera eventos de teste
+    eventos_criados = 0
+    hoje = datetime.now()
+    
+    for i in range(quantidade):
+        try:
+            # Gera datas aleatórias para o evento (próximos 30 dias)
+            dias_ate_evento = random.randint(1, 30)
+            hora_inicio = random.randint(8, 18)  # Entre 8h e 18h
+            minutos_inicio = random.choice([0, 15, 30, 45])
+            
+            start_time = hoje + timedelta(days=dias_ate_evento)
+            start_time = start_time.replace(
+                hour=hora_inicio, 
+                minute=minutos_inicio, 
+                second=0, 
+                microsecond=0
+            )
+            
+            # Duração do evento (1 a 4 horas)
+            duracao = random.randint(1, 4)
+            end_time = start_time + timedelta(hours=duracao)
+            
+            # Escolhe dados aleatórios para o evento
+            titulo = random.choice(titulos)
+            descricao = random.choice(descricoes)
+            local = random.choice(locais)
+            palestrante = random.choice(palestrantes)
+            tag = random.choice(tags)
+            
+            # Decide se o evento é importante (20% de chance)
+            importante = random.random() < 0.2
+            
+            # Gera coordenadas aleatórias (50% de chance de ter coordenadas)
+            latitude, longitude = (None, None)
+            if random.random() < 0.5:
+                latitude, longitude = gerar_coordenadas()
+            
+            # Cria o evento
+            evento = Event.objects.create(
+                titulo=titulo,
+                descricao=descricao,
+                local=local,
+                palestrante=palestrante,
+                start_time=start_time,
+                end_time=end_time,
+                tags=tag,
+                importante=importante,
+                latitude=latitude,
+                longitude=longitude,
+                created_by=usuario
+            )
+            
+            eventos_criados += 1
+            print(f"Evento criado: {evento.titulo} em {evento.start_time}")
+            
+        except Exception as e:
+            print(f"Erro ao criar evento {i+1}: {e}")
+            continue
+    
+    print(f"\nTotal de eventos criados com sucesso: {eventos_criados}/{quantidade}")
+
+if __name__ == "__main__":
+    import sys
+    
+    # Verifica se foi passado um número como argumento
+    if len(sys.argv) > 1 and sys.argv[1].isdigit():
+        quantidade = int(sys.argv[1])
+    else:
+        quantidade = 10  # Valor padrão
+    
+    print(f"Iniciando a criação de {quantidade} eventos de teste...\n")
+    criar_eventos_teste(quantidade)

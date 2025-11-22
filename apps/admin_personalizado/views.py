@@ -689,6 +689,9 @@ def api_eventos(request):
     """
     API para listar (GET) e criar (POST) eventos.
     """
+    from apps.agenda.serializers import EventSerializer
+    from django.core.exceptions import ValidationError
+    
     if request.method == 'GET':
         try:
             eventos = Event.objects.all().order_by('start_time')
@@ -729,28 +732,18 @@ def api_eventos(request):
             paginator = Paginator(eventos, per_page)
             page_obj = paginator.get_page(page)
             
-            # Converter para dicionário
-            eventos_list = [{
-                'id': evento.id,
-                'titulo': evento.titulo,
-                'descricao': evento.descricao or '',
-                'local': evento.local or '',
-                'palestrante': evento.palestrante or '',  # Adicionado campo palestrante
-                'start_time': evento.start_time.isoformat() if evento.start_time else None,
-                'end_time': evento.end_time.isoformat() if evento.end_time else None,
-                'tema': evento.tags or 'sustentabilidade',
-                'importante': evento.importante if hasattr(evento, 'importante') else False,
-                'created_at': evento.created_at.isoformat() if evento.created_at else None
-            } for evento in page_obj]
+            # Usar o serializador para formatar os dados
+            serializer = EventSerializer(page_obj, many=True)
             
             return JsonResponse({
                 'count': paginator.count,
                 'num_pages': paginator.num_pages,
                 'current_page': page,
-                'results': eventos_list
+                'results': serializer.data
             }, safe=False)
         
         except Exception as e:
+            print("Erro ao buscar eventos:", str(e))
             return JsonResponse({
                 'error': str(e),
                 'detail': 'Erro ao buscar eventos'
@@ -758,52 +751,68 @@ def api_eventos(request):
     
     elif request.method == 'POST':
         try:
-            data = json.loads(request.body)
+            # Log dos dados brutos recebidos
+            print("Dados brutos recebidos:", request.body)
             
-            # Validação dos dados
+            try:
+                data = json.loads(request.body)
+                print("Dados decodificados:", data)
+            except json.JSONDecodeError as je:
+                print("Erro ao decodificar JSON:", str(je))
+                return JsonResponse(
+                    {'error': 'Dados JSON inválidos', 'detail': str(je)}, 
+                    status=400
+                )
+            
+            # Adiciona o usuário atual como criador do evento
+            data['created_by'] = request.user.id
+            
+            # Log dos campos obrigatórios
             required_fields = ['titulo', 'start_time', 'end_time', 'local']
-            for field in required_fields:
-                if field not in data or not data[field]:
-                    return JsonResponse(
-                        {'error': f'O campo {field} é obrigatório'}, 
-                        status=400
-                    )
+            missing_fields = [field for field in required_fields if field not in data or not data[field]]
             
-            # Criação do evento
-            evento = Event(
-                titulo=data['titulo'],
-                descricao=data.get('descricao', ''),
-                local=data['local'],
-                palestrante=data.get('palestrante', ''),  # Campo adicionado
-                start_time=data['start_time'],
-                end_time=data['end_time'],
-                tags=data.get('tema', 'sustentabilidade'),
-                importante=data.get('importante', False),
-                created_by=request.user
-            )
+            if missing_fields:
+                error_msg = f'Campos obrigatórios faltando: {", ".join(missing_fields)}'
+                print("Erro de validação:", error_msg)
+                return JsonResponse({
+                    'error': 'Dados inválidos',
+                    'details': {'required_fields': error_msg}
+                }, status=400)
             
-            # Validação do modelo
-            evento.full_clean()
-            evento.save()
+            # Log dos dados antes da validação
+            print("Dados antes da validação:", data)
             
-            return JsonResponse({
-                'id': evento.id,
-                'message': 'Evento criado com sucesso!'
-            }, status=201)
+            # Usa o serializador para validar e salvar
+            serializer = EventSerializer(data=data)
             
-        except json.JSONDecodeError:
-            return JsonResponse(
-                {'error': 'Dados JSON inválidos'}, 
-                status=400
-            )
-        except ValidationError as e:
-            return JsonResponse(
-                {'error': 'Dados inválidos', 'details': str(e.messages)},
-                status=400
-            )
+            if serializer.is_valid():
+                try:
+                    evento = serializer.save()
+                    print("Evento criado com sucesso:", evento.id)
+                    return JsonResponse({
+                        'id': evento.id,
+                        'message': 'Evento criado com sucesso!',
+                        'data': EventSerializer(evento).data
+                    }, status=201)
+                except Exception as save_error:
+                    print("Erro ao salvar o evento:", str(save_error))
+                    return JsonResponse({
+                        'error': 'Erro ao salvar o evento',
+                        'details': str(save_error)
+                    }, status=500)
+            else:
+                print("Erros de validação:", serializer.errors)
+                return JsonResponse({
+                    'error': 'Dados inválidos',
+                    'details': serializer.errors
+                }, status=400)
+                
         except Exception as e:
+            import traceback
+            print("Erro inesperado:", str(e))
+            print("Traceback:", traceback.format_exc())
             return JsonResponse(
-                {'error': str(e), 'detail': 'Erro ao criar evento'},
+                {'error': 'Erro interno do servidor', 'detail': str(e)},
                 status=500
             )
 
@@ -815,44 +824,62 @@ def api_evento_detalhe(request, evento_id):
     """
     evento = get_object_or_404(Event, id=evento_id)
     
-    return JsonResponse({
-        'success': True,
-        'evento': {
-            'id': evento.id,
-            'titulo': evento.titulo,
-            'descricao': evento.descricao,
-            'local': evento.local,
-            'data': evento.data_inicio.strftime('%Y-%m-%d'),
-            'inicio': evento.data_inicio.strftime('%H:%M'),
-            'fim': evento.data_fim.strftime('%H:%M'),
-            'tema': evento.tags or '',
-            'importante': 'importante' in (evento.tags or '').lower()
-        }
-    })
-
-
-
+    # API de detalhe de evento: GET/PUT/DELETE
+    if request.method == 'GET':
+        return JsonResponse({
+            'success': True,
+            'evento': {
+                'id': evento.id,
+                'titulo': evento.titulo,
+                'descricao': evento.descricao,
+                'local': evento.local,
+                'start_time': evento.start_time.isoformat() if evento.start_time else None,
+                'end_time': evento.end_time.isoformat() if evento.end_time else None,
+                'tags': getattr(evento, 'tags', None),
+                'importante': bool(getattr(evento, 'importante', False)),
+                'latitude': getattr(evento, 'latitude', None),
+                'longitude': getattr(evento, 'longitude', None),
+                'palestrante': getattr(evento, 'palestrante', '')
+            }
+        })
     
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body or '{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'detail': 'JSON inválido'}, status=400)
+        from apps.agenda.serializers import EventSerializer
+        serializer = EventSerializer(evento, data=data, partial=True)
+        if serializer.is_valid():
+            evento = serializer.save()
+            return JsonResponse(serializer.data, safe=False)
+        return JsonResponse({'detail': 'Dados inválidos', 'errors': serializer.errors}, status=400)
+    
+    if request.method == 'DELETE':
+        eid = evento.id
+        evento.delete()
+        return JsonResponse({'success': True, 'message': f'Evento {eid} excluído com sucesso!'})
+    
+    return JsonResponse({'error': 'Método não permitido', 'allowed_methods': ['GET', 'PUT', 'DELETE']}, status=405)
+
+
 @staff_required
 def avisos_admin(request):
     """
     Painel administrativo de avisos importantes.
-    
-    Permissões:
-    - Acesso restrito a staff
+    GET: renderiza a página com avisos ativos e histórico
+    POST: cria um novo aviso (form padrão)
     """
     if request.method == 'POST':
-        # Criar novo aviso
         try:
             titulo = request.POST.get('titulo')
             mensagem = request.POST.get('mensagem')
-            nivel = request.POST.get('nivel', 'info')
+            importancia = request.POST.get('importancia', 'info')
             data_expiracao = request.POST.get('data_expiracao')
             horario_expiracao = request.POST.get('horario_expiracao')
             fixo = request.POST.get('fixo') == 'on'
             ativo = request.POST.get('ativo') == 'on'
-            
-            # Combinar data e horário de expiração
+
             expiracao = None
             if data_expiracao:
                 if horario_expiracao:
@@ -863,74 +890,65 @@ def avisos_admin(request):
                     expiracao = timezone.make_aware(
                         datetime.strptime(f"{data_expiracao} 23:59", '%Y-%m-%d %H:%M')
                     )
-            
+
             aviso = Aviso.objects.create(
                 titulo=titulo,
                 mensagem=mensagem,
-                nivel=nivel,
+                importancia=importancia,
                 data_expiracao=expiracao,
                 fixo_no_topo=fixo,
                 ativo=ativo,
                 criado_por=request.user
             )
-            
-            return JsonResponse({
-                'success': True,
-                'message': 'Aviso publicado com sucesso!',
-                'aviso': {
-                    'id': aviso.id,
-                    'titulo': aviso.titulo,
-                    'mensagem': aviso.mensagem,
-                    'nivel': aviso.nivel,
-                    'data_expiracao': aviso.data_expiracao.strftime('%Y-%m-%d %H:%M') if aviso.data_expiracao else None,
-                    'fixo_no_topo': aviso.fixo_no_topo,
-                    'ativo': aviso.ativo
-                }
-            })
+
+            messages.success(request, 'Aviso publicado com sucesso!')
+            return redirect('admin_personalizado:avisos_admin')
         except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Erro ao criar aviso: {str(e)}'
-            }, status=400)
-    
-    # GET - Listar avisos
+            messages.error(request, f'Erro ao criar aviso: {str(e)}')
+            return redirect('admin_personalizado:avisos_admin')
+
     avisos_ativos = Aviso.objects.filter(ativo=True).exclude(
         data_expiracao__lt=timezone.now()
     ).order_by('-fixo_no_topo', '-data_criacao')
-    
+
     avisos_historico = Aviso.objects.filter(
         Q(ativo=False) | Q(data_expiracao__lt=timezone.now())
     ).order_by('-data_criacao')[:20]
-    
+
     context = {
         'avisos_ativos': avisos_ativos,
         'avisos_historico': avisos_historico,
     }
-    
+
     return render(request, 'admin_personalizado/avisos/gerenciar_avisos.html', context)
 
 
-@staff_required
-@require_POST
+@require_http_methods(["POST"])
 def excluir_aviso(request, aviso_id):
     """
     Move um aviso para o histórico (desativa).
     """
-    aviso = get_object_or_404(Aviso, id=aviso_id)
+    if not request.user.is_authenticated or not request.user.is_staff:
+        return JsonResponse(
+            {'success': False, 'message': 'Acesso não autorizado'}, 
+            status=403
+        )
     
     try:
+        aviso = get_object_or_404(Aviso, id=aviso_id)
         aviso.ativo = False
         aviso.save()
         
         return JsonResponse({
             'success': True,
-            'message': 'Aviso movido para o histórico!'
+            'message': 'Aviso movido para o histórico com sucesso!'
         })
+        
     except Exception as e:
         return JsonResponse({
             'success': False,
-            'message': f'Erro ao excluir aviso: {str(e)}'
-        }, status=400)
+            'message': f'Erro ao mover aviso para o histórico: {str(e)}'
+        }, status=500)
 
 
 @staff_required
@@ -946,67 +964,87 @@ def avisos_api(request):
         )
 
     if request.method == 'GET':
-        # Obter avisos ativos (não expirados)
+        # Get active and historical notices
         avisos_ativos = Aviso.objects.filter(
-            data_expiracao__gte=timezone.now(),
-            ativo=True
+            Q(ativo=True) & 
+            (Q(data_expiracao__isnull=True) | Q(data_expiracao__gte=timezone.now()))
         ).order_by('-data_criacao')
 
-        # Obter histórico de avisos (expirados ou inativos)
         historico_avisos = Aviso.objects.filter(
-            Q(data_expiracao__lt=timezone.now()) | Q(ativo=False)
+            Q(ativo=False) | 
+            (Q(data_expiracao__isnull=False) & Q(data_expiracao__lt=timezone.now()))
         ).order_by('-data_expiracao')
 
-        # Serializar os dados
         def serialize_aviso(aviso):
             return {
                 'id': aviso.id,
                 'titulo': aviso.titulo,
                 'mensagem': aviso.mensagem,
-                'importancia': aviso.get_importancia_display(),
-                'data_criacao': aviso.data_criacao.strftime('%d/%m/%Y %H:%M'),
-                'data_expiracao': aviso.data_expiracao.strftime('%d/%m/%Y %H:%M') if aviso.data_expiracao else None,
+                'nivel': aviso.nivel,
+                'data_criacao': aviso.data_criacao,
+                'data_expiracao': aviso.data_expiracao,
+                'fixo_no_topo': aviso.fixo_no_topo,
                 'ativo': aviso.ativo,
-                'criado_por': aviso.criado_por.get_full_name() or aviso.criado_por.username,
-                'criado_por_id': aviso.criado_por.id
+                'criado_por': aviso.criado_por.get_full_name() or aviso.criado_por.username
             }
 
         return JsonResponse({
             'success': True,
             'avisos_ativos': [serialize_aviso(aviso) for aviso in avisos_ativos],
             'historico_avisos': [serialize_aviso(aviso) for aviso in historico_avisos]
-        })
+        }, encoder=DjangoJSONEncoder)
     
     elif request.method == 'POST':
         try:
-            data = json.loads(request.body)
-            
-            # Validar dados obrigatórios
-            required_fields = ['titulo', 'mensagem', 'importancia', 'data_expiracao']
-            for field in required_fields:
-                if field not in data or not data[field]:
-                    return JsonResponse(
-                        {'success': False, 'message': f'O campo {field} é obrigatório'},
-                        status=400
+            # Handle both JSON and form-data
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                data = request.POST.dict()
+                # Convert empty strings to None for optional fields
+                for key in ['data_expiracao', 'horario_expiracao']:
+                    if key in data and not data[key]:
+                        data[key] = None
+
+            # Combine date and time if both are provided
+            data_expiracao = None
+            if data.get('data_expiracao') and data.get('horario_expiracao'):
+                data_expiracao = timezone.make_aware(
+                    datetime.strptime(
+                        f"{data['data_expiracao']} {data['horario_expiracao']}",
+                        '%Y-%m-%d %H:%M'
                     )
-            
-            # Criar o aviso
-            aviso = Aviso(
+                )
+            elif data.get('data_expiracao'):
+                data_expiracao = timezone.make_aware(
+                    datetime.strptime(data['data_expiracao'], '%Y-%m-%d')
+                )
+
+            # Create the notice
+            aviso = Aviso.objects.create(
                 titulo=data['titulo'],
                 mensagem=data['mensagem'],
-                importancia=data['importancia'],
-                data_expiracao=datetime.strptime(data['data_expiracao'], '%Y-%m-%dT%H:%M'),
-                criado_por=request.user,
-                ativo=True
+                nivel=data.get('nivel', 'info'),
+                data_expiracao=data_expiracao,
+                fixo_no_topo=data.get('fixo_no_topo') == 'on',
+                ativo=data.get('ativo', True) != 'false',  # Handle both string 'false' and boolean false
+                criado_por=request.user
             )
-            aviso.save()
-            
+
             return JsonResponse({
                 'success': True,
                 'message': 'Aviso criado com sucesso!',
-                'aviso_id': aviso.id
-            })
-            
+                'aviso': {
+                    'id': aviso.id,
+                    'titulo': aviso.titulo,
+                    'mensagem': aviso.mensagem,
+                    'nivel': aviso.nivel,
+                    'data_expiracao': aviso.data_expiracao.isoformat() if aviso.data_expiracao else None,
+                    'fixo_no_topo': aviso.fixo_no_topo,
+                    'ativo': aviso.ativo
+                }
+            }, status=201)
+
         except json.JSONDecodeError:
             return JsonResponse(
                 {'success': False, 'message': 'Erro ao processar os dados do formulário'},
@@ -1017,9 +1055,38 @@ def avisos_api(request):
                 {'success': False, 'message': f'Erro ao salvar o aviso: {str(e)}'},
                 status=500
             )
-    
-    else:
+
+    return JsonResponse(
+        {'success': False, 'message': 'Método não permitido'},
+        status=405
+    )
+
+
+@require_http_methods(["POST"])
+def fixar_aviso(request, aviso_id):
+    """
+    Alterna o status de fixação de um aviso.
+    """
+    if not request.user.is_authenticated or not request.user.is_staff:
         return JsonResponse(
-            {'success': False, 'message': 'Método não permitido'},
-            status=405
+            {'success': False, 'message': 'Acesso não autorizado'}, 
+            status=403
         )
+    
+    try:
+        aviso = get_object_or_404(Aviso, id=aviso_id)
+        # Inverte o status de fixação
+        aviso.fixo_no_topo = not aviso.fixo_no_topo
+        aviso.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Status de fixação atualizado com sucesso!',
+            'fixo_no_topo': aviso.fixo_no_topo
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Erro ao atualizar o status de fixação: {str(e)}'
+        }, status=500)

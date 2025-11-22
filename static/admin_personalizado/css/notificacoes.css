@@ -105,16 +105,6 @@ textarea.form-control {
     border-color: #1d4ed8;
 }
 
-.btn-outline-secondary {
-    background-color: transparent;
-    border-color: #cbd5e0;
-    color: #4a5568;
-}
-
-.btn-outline-secondary:hover {
-    background-color: #f7fafc;
-    border-color: #a0aec0;
-}
 
 /* Table Styles */
 .table-container {
@@ -315,21 +305,9 @@ textarea.form-control {
     background: #a0aec0;
 }
 
-/* Add to your notificacoes.css */
-.btn-group-sm > .btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-}
 
-.btn-group-sm > .btn i {
-    font-size: 0.8em;
-}
 
-/* Make sure the action buttons stay on one line */
-.table td:last-child {
-    white-space: nowrap;
-    width: 1%;
-}
+
 
 /* Action buttons container */
 .table-actions {
@@ -338,46 +316,7 @@ textarea.form-control {
     justify-content: flex-end;
 }
 
-/* Base button styles */
-.action-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-}
 
-/* Edit button */
-.btn-edit {
-    color: #3b82f6;
-    border: 1px solid #d1e0ff;
-    background-color: #f0f5ff;
-}
-
-.btn-edit:hover {
-    background-color: #e0ecff;
-    border-color: #3b82f6;
-}
-
-/* Delete button */
-.btn-delete {
-    color: #ef4444;
-    border: 1px solid #fed7d7;
-    background-color: #fef2f2;
-}
-
-.btn-delete:hover {
-    background-color: #fee2e2;
-    border-color: #ef4444;
-}
-
-/* Icon size */
-.action-btn i {
-    font-size: 0.9rem;
-}
 
 /* Ensure buttons stay on one line and are properly aligned */
 .table td:last-child {

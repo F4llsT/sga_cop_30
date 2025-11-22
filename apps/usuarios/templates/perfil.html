@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Meu Perfil - COP30{% endblock %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{% static 'css/perfil.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <header class="page-header">
+        <h1>Meu Perfil</h1>
+        <p>Gerencie suas informações pessoais e endereço.</p>
+    </header>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="profile-grid">
+        <aside class="profile-sidebar">
+            <div class="profile-picture-card">
+                <div class="picture-wrapper">
+                    {% if user.perfil.foto_perfil %}
+                        <img src="{{ user.perfil.foto_perfil.url }}" alt="Foto de Perfil" id="profile-image">
+                        <div class="default-avatar" id="default-avatar" style="display: none;">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                    {% else %}
+                        <img src="" alt="Foto de Perfil" id="profile-image" style="display: none;">
+                        <div class="default-avatar" id="default-avatar">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                    {% endif %}
+                    {{ profile_form.foto_perfil }}
+                </div>
+                <div class="picture-actions">
+                    <button type="button" class="btn-edit" id="edit-picture-btn">
+                        <i class="fa-solid fa-camera"></i>
+                    </button>
+                </div>
+                <div class="picture-actions-menu" id="picture-actions-menu">
+                    <button type="button" class="action-btn" id="change-picture-btn">
+                        <i class="fa-solid fa-pen-to-square"></i> Alterar Foto
+                    </button>
+                    <button type="button" class="action-btn danger" id="remove-picture-btn">
+                        <i class="fa-solid fa-trash"></i> Remover Foto
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="profile-main">
+            <form method="post" enctype="multipart/form-data" id="profile-form">
+                {% csrf_token %}
+                
+                <div class="form-section">
+                    <h2>Informações Pessoais</h2>
+                    
+                    <!-- Nome e Email (do formulário de usuário) -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ form.nome.label_tag }}
+                                {{ form.nome }}
+                                {% if form.nome.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.nome.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ form.email.label_tag }}
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ form.email.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Gênero e Data de Nascimento -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ profile_form.genero.label_tag }}
+                                {{ profile_form.genero }}
+                                {% if profile_form.genero.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ profile_form.genero.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ profile_form.data_nascimento.label_tag }}
+                                {{ profile_form.data_nascimento }}
+                                {% if profile_form.data_nascimento.help_text %}
+                                    <small class="form-text text-muted">{{ profile_form.data_nascimento.help_text }}</small>
+                                {% endif %}
+                                {% if profile_form.data_nascimento.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ profile_form.data_nascimento.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">E-mail</label>
+                        <input type="email" id="email" value="{{ user.email|default:'visitante@cop30.com' }}" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="genero">Gênero</label>
+                        <select id="genero">
+                            <option value="nao-opinar" {% if user.perfil.genero == 'nao-opinar' %}selected{% endif %}>Prefiro não opinar</option>
+                            <option value="masculino" {% if user.perfil.genero == 'masculino' %}selected{% endif %}>Masculino</option>
+                            <option value="feminino" {% if user.perfil.genero == 'feminino' %}selected{% endif %}>Feminino</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>Informações de Contato</h2>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                {{ profile_form.telefone.label_tag }}
+                                {{ profile_form.telefone }}
+                                {% if profile_form.telefone.help_text %}
+                                    <small class="form-text text-muted">{{ profile_form.telefone.help_text }}</small>
+                                {% endif %}
+                                {% if profile_form.telefone.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ profile_form.telefone.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>&nbsp;</label>
+                                <div class="form-check mt-2 pt-2">
+                                    {{ profile_form.telefone_whatsapp }}
+                                    <label class="form-check-label" for="{{ profile_form.telefone_whatsapp.id_for_label }}">
+                                        {{ profile_form.telefone_whatsapp.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2>Endereço</h2>
+                    
+                    <!-- CEP, Logradouro e Número -->
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                {{ profile_form.cep.label_tag }}
+                                <div class="input-group">
+                                    {{ profile_form.cep }}
+                                    <button class="btn btn-outline-secondary" type="button" id="buscar-cep">
+                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                    </button>
+                                </div>
+                                {% if profile_form.cep.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ profile_form.cep.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <div class="form-group">
+                                {{ profile_form.logradouro.label_tag }}
+                                {{ profile_form.logradouro }}
+                                {% if profile_form.logradouro.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ profile_form.logradouro.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-group">
+                                {{ profile_form.numero.label_tag }}
+                                {{ profile_form.numero }}
+                                {% if profile_form.numero.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ profile_form.numero.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Complemento e Bairro -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ profile_form.complemento.label_tag }}
+                                {{ profile_form.complemento }}
+                                {% if profile_form.complemento.help_text %}
+                                    <small class="form-text text-muted">{{ profile_form.complemento.help_text }}</small>
+                                {% endif %}
+                                {% if profile_form.complemento.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ profile_form.complemento.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                {{ profile_form.bairro.label_tag }}
+                                {{ profile_form.bairro }}
+                                {% if profile_form.bairro.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ profile_form.bairro.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cidade e Estado -->
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                {{ profile_form.cidade.label_tag }}
+                                {{ profile_form.cidade }}
+                                {% if profile_form.cidade.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ profile_form.cidade.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                {{ profile_form.estado.label_tag }}
+                                {{ profile_form.estado }}
+                                {% if profile_form.estado.errors %}
+                                    <div class="invalid-feedback">
+                                        {{ profile_form.estado.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="main-actions">
+                    <button type="button" class="btn btn-outline-danger" id="delete-account-btn">
+                        <i class="fa-solid fa-trash"></i> Excluir Minha Conta
+                    </button>
+                    <button type="submit" class="btn btn-primary" id="save-all-btn">
+                        <i class="fa-solid fa-save"></i> Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </main>
+    </div>
+</div>
+
+<!-- Modal de confirmação de exclusão -->
+<div class="modal-overlay" id="delete-modal-overlay">
+    <div class="modal-content">
+        <i class="fa-solid fa-triangle-exclamation modal-icon"></i>
+        <h2>Você tem certeza?</h2>
+        <p>Esta ação é permanente e não pode ser desfeita. Todos os seus dados serão removidos.</p>
+        <div class="modal-actions">
+            <button class="btn-secondary" id="cancel-delete-btn">
+                <i class="fa-solid fa-xmark"></i> Cancelar
+            </button>
+            <button class="btn-danger" id="confirm-delete-btn">
+                <i class="fa-solid fa-trash"></i> Excluir
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/perfil.js' %}"></script>
+{% endblock %}

@@ -93,7 +93,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FUNÇÃO PARA CARREGAR AVISOS VIA API ---
     const carregarAvisos = async () => {
         try {
-            const response = await fetch('/admin_personalizado/api/avisos/');
+            console.log('Carregando avisos de: /meu-admin/api/avisos/');
+            const response = await fetch('/meu-admin/api/avisos/');
+            
+            if (!response.ok) {
+                throw new Error(`Erro HTTP: ${response.status}`);
+            }
             const data = await response.json();
             
             if (data.success) {
@@ -117,12 +122,21 @@ document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = 'Publicando...';
             
             try {
-                const response = await fetch('/admin_personalizado/avisos/', {
+                // Convert FormData to plain object
+                const formDataObj = {};
+                formData.forEach((value, key) => {
+                    formDataObj[key] = value;
+                });
+
+                // Send as JSON - Using the correct URL pattern
+                const response = await fetch('/meu-admin/api/avisos/', {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': csrftoken
+                        'X-CSRFToken': csrftoken,
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: formData
+                    body: JSON.stringify(formDataObj)
                 });
                 
                 const data = await response.json();
@@ -132,8 +146,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     formAviso.reset();
                     selectImportancia.className = '';
                     
-                    // Recarregar avisos
+                    // Carregar avisos iniciais
                     await carregarAvisos();
+                    
+                    // Reset form and UI state
+                    document.getElementById('aviso-titulo').value = '';
+                    document.getElementById('aviso-mensagem').value = '';
+                    document.getElementById('aviso-importancia').value = 'info';
+                    document.getElementById('aviso-expiracao').value = '';
+                    document.getElementById('aviso-horario').value = '';
+                    document.getElementById('aviso-fixo').checked = false;
                     
                     // Mostrar mensagem de sucesso
                     alert('Aviso publicado com sucesso!');
@@ -160,30 +182,89 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = target.closest('.notice-card');
             const id = card.dataset.id;
             
-            if (target.classList.contains('delete-btn')) {
+            if (target.classList.contains('pin-btn')) {
+                try {
+                    const response = await fetch(`/meu-admin/avisos/${id}/fixar/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrftoken,
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({})
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`Erro HTTP! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        // Atualiza o estado visual do botão
+                        target.classList.toggle('pinned');
+                        // Recarrega a lista para garantir que os itens fixos fiquem no topo
+                        await carregarAvisos();
+                    } else {
+                        throw new Error(data.message || 'Erro ao atualizar o estado de fixo');
+                    }
+                } catch (error) {
+                    console.error('Erro ao fixar/desafixar aviso:', error);
+                    // Mostra mensagem de erro
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger';
+                    errorDiv.textContent = `Erro ao atualizar o aviso: ${error.message}`;
+                    document.querySelector('.avisos-container').prepend(errorDiv);
+                    // Remove a mensagem de erro após 5 segundos
+                    setTimeout(() => errorDiv.remove(), 5000);
+                }
+            } else if (target.classList.contains('delete-btn')) {
                 if (!confirm('Tem certeza que deseja mover este aviso para o histórico?')) {
                     return;
                 }
                 
                 try {
-                    const response = await fetch(`/admin_personalizado/avisos/${id}/excluir/`, {
+                    if (!confirm('Tem certeza que deseja mover este aviso para o histórico?')) {
+                        return;
+                    }
+
+                    const response = await fetch(`/meu-admin/avisos/${id}/excluir/`, {
                         method: 'POST',
                         headers: {
-                            'X-CSRFToken': csrftoken
-                        }
+                            'X-CSRFToken': csrftoken,
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({})
                     });
-                    
+
+                    if (!response.ok) {
+                        throw new Error(`Erro HTTP! status: ${response.status}`);
+                    }
+
                     const data = await response.json();
                     
                     if (data.success) {
                         await carregarAvisos();
-                        alert('Aviso movido para o histórico!');
+                        // Show success message using a more elegant notification if available
+                        const successDiv = document.createElement('div');
+                        successDiv.className = 'alert alert-success';
+                        successDiv.textContent = 'Aviso movido para o histórico com sucesso!';
+                        document.querySelector('.avisos-container').prepend(successDiv);
+                        // Remove the message after 3 seconds
+                        setTimeout(() => successDiv.remove(), 3000);
                     } else {
-                        alert('Erro ao excluir aviso: ' + data.message);
+                        throw new Error(data.message || 'Erro desconhecido ao excluir aviso');
                     }
                 } catch (error) {
-                    console.error('Erro:', error);
-                    alert('Erro ao excluir aviso. Tente novamente.');
+                    console.error('Erro ao excluir aviso:', error);
+                    // Show error message in the UI
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'alert alert-danger';
+                    errorDiv.textContent = `Erro ao excluir aviso: ${error.message}`;
+                    document.querySelector('.avisos-container').prepend(errorDiv);
+                    // Remove the error message after 5 seconds
+                    setTimeout(() => errorDiv.remove(), 5000);
                 }
             }
         });

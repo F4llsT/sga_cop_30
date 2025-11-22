@@ -130,16 +130,6 @@
             <div class="section">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h3 class="section-title">Eventos Agendados</h3>
-                    <button id="btn-atualizar" class="btn btn-outline-secondary">
-                        <i class="fas fa-sync-alt"></i> Atualizar
-                    </button>
-                </div>
-
-                <div class="search-container">
-                    <div class="search-bar">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" id="search-input" class="search-input" placeholder="Pesquisar eventos...">
-                    </div>
                 </div>
 
                 <div class="table-responsive">
@@ -224,24 +214,37 @@
 
 {% block extra_js %}
 {{ block.super }}
-<!-- jQuery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- jQuery (já incluído no baseadmin.html) -->
 <!-- Select2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
     crossorigin=""></script>
+<!-- DataTables JS -->
+<script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
 <!-- Custom JS -->
 <script src="{% static 'admin_personalizado/js/eventos.js' %}"></script>
-<!-- Inicialização do Select2 -->
+<!-- Inicialização do Select2 e DataTables -->
 <script>
-    $(document).ready(function() {
+    // Função para inicializar o Select2
+    function inicializarSelect2() {
         $('.select2').select2({
             theme: 'bootstrap4',
             placeholder: 'Selecione...',
             allowClear: true
         });
+    }
+    
+    // Inicializa o Select2 quando o documento estiver pronto
+    $(document).ready(function() {
+        inicializarSelect2();
+        
+        // Carrega os eventos iniciais
+        if (typeof carregarEventos === 'function') {
+            carregarEventos();
+        }
     });
 </script>
 {% endblock %}

@@ -39,14 +39,23 @@
     }
     .pagination-link {
         transition: all 0.2s ease;
+        min-width: 2.5rem;
+        text-align: center;
     }
-    .pagination-link:hover {
-        background-color: #e5e7eb;
+    .pagination-link:hover:not(:disabled) {
+        background-color: #f3f4f6;
+        transform: translateY(-1px);
     }
     .pagination-current {
         background-color: #7494ec;
         color: #fff;
         box-shadow: 0 4px 6px rgba(116, 148, 236, 0.3);
+        min-width: 2.5rem;
+        text-align: center;
+    }
+    .pagination-disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 </style>
 {% endblock extra_styles %}
@@ -57,20 +66,50 @@
     <div class="container-agenda">
         <h1 class="text-3xl md:text-5xl font-bold text-center text-gray-800 mb-6">Agenda de Eventos</h1>
 
-        <div class="flex flex-wrap gap-4 justify-center mb-8 p-4 bg-gray-100 rounded-lg shadow-inner">
-            <form action="{% url 'agenda:agenda_oficial' %}" method="get" class="flex flex-col md:flex-row gap-4 w-full max-w-lg md:items-center">
-        
-                <div class="flex items-center gap-2 w-full md:w-auto">
-                    <label for="theme_filter" class="text-gray-700 font-medium">Tema:</label>
-                    <input type="text" name="theme" id="theme_filter" placeholder="Ex: Tecnologia" value="{{ theme_filter }}" class="w-full px-1 py-2 border rounded-lg focus:outline-none focus:border-indigo-500 transition-colors">
+        <!-- Filtro de Busca Avançada -->
+        <div class="mb-8 p-6 bg-white rounded-xl shadow-md">
+            <form action="{% url 'agenda:agenda_oficial' %}" method="get" class="space-y-4">
+                <!-- Barra de Pesquisa -->
+                <div class="relative">
+                    <input type="text" 
+                           name="search" 
+                           id="search" 
+                           placeholder="Pesquisar por título, descrição, palestrante ou local..." 
+                           value="{{ search_query|default:'' }}"
+                           class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                    </div>
+                    {% if search_query %}
+                    <a href="?{% if tag_filter %}tag={{ tag_filter|urlencode }}&{% endif %}" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                        <svg class="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </a>
+                    {% endif %}
                 </div>
-                
-                <button type="submit" class="w-full md:w-auto px-5 py-2 bg-indigo-500 text-white font-medium rounded-lg shadow-md hover:bg-indigo-600 transition-colors">
-                    Filtrar
-                </button>
-                <a href="{% url 'agenda:agenda_oficial' %}" class="w-full md:w-auto px-5 py-2 bg-gray-300 text-gray-700 font-medium rounded-lg shadow-md hover:bg-gray-400 transition-colors text-center">
-                    Limpar
-                </a>
+
+                <!-- Filtro de Tags -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="flex-1 min-w-[200px]">
+                        <select name="tag" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Todos os temas</option>
+                            {% for tag in all_tags %}
+                                <option value="{{ tag }}" {% if tag_filter == tag %}selected{% endif %}>
+                                    {{ tag|title }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 whitespace-nowrap">
+                        Aplicar Filtros
+                    </button>
+                    <a href="{% url 'agenda:agenda_oficial' %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 whitespace-nowrap">
+                        Limpar Filtros
+                    </a>
+                </div>
             </form>
         </div>
 
@@ -152,28 +191,48 @@
         {% endif %}
 
         <div class="flex justify-center mt-8">
-            <nav class="flex items-center space-x-2">
+            <nav class="flex items-center space-x-1">
+                {% with params=request.GET.urlencode %}
                 {% if eventos.has_previous %}
-                    <a href="?page=1&theme={{ theme_filter }}" class="pagination-link px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">
+                    <a href="?{% if params %}{{ params|urlencode }}&{% endif %}page=1" 
+                       class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 transition-colors">
                         &laquo; Primeira
                     </a>
-                    <a href="?page={{ eventos.previous_page_number }}&theme={{ theme_filter }}" class="pagination-link px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">
-                        Anterior
+                    <a href="?{% if params %}{{ params|urlencode }}&{% endif %}page={{ eventos.previous_page_number }}" 
+                       class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border-t border-b border-gray-300 hover:bg-gray-100 transition-colors">
+                        &lsaquo; Anterior
                     </a>
+                {% else %}
+                    <span class="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-l-lg cursor-not-allowed">
+                        &laquo; Primeira
+                    </span>
+                    <span class="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border-t border-b border-gray-200 cursor-not-allowed">
+                        &lsaquo; Anterior
+                    </span>
                 {% endif %}
 
-                <span class="px-4 py-2 text-sm font-semibold rounded-lg pagination-current">
-                    Página {{ eventos.number }} de {{ eventos.paginator.num_pages }}.
+                <span class="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border-t border-b border-gray-300">
+                    Página {{ eventos.number }} de {{ eventos.paginator.num_pages }}
                 </span>
 
                 {% if eventos.has_next %}
-                    <a href="?page={{ eventos.next_page_number }}&theme={{ theme_filter }}" class="pagination-link px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">
-                        Próxima
+                    <a href="?{% if params %}{{ params|urlencode }}&{% endif %}page={{ eventos.next_page_number }}" 
+                       class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border-t border-b border-gray-300 hover:bg-gray-100 transition-colors">
+                        Próxima &rsaquo;
                     </a>
-                    <a href="?page={{ eventos.paginator.num_pages }}&theme={{ theme_filter }}" class="pagination-link px-3 py-2 text-sm font-medium text-gray-500 rounded-lg hover:bg-gray-200 transition-colors">
+                    <a href="?{% if params %}{{ params|urlencode }}&{% endif %}page={{ eventos.paginator.num_pages }}" 
+                       class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100 transition-colors">
                         Última &raquo;
                     </a>
+                {% else %}
+                    <span class="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border-t border-b border-gray-200 cursor-not-allowed">
+                        Próxima &rsaquo;
+                    </span>
+                    <span class="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-r-lg cursor-not-allowed">
+                        Última &raquo;
+                    </span>
                 {% endif %}
+                {% endwith %}
             </nav>
         </div>
 

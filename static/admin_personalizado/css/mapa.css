@@ -10,14 +10,67 @@
     background: #f8f9fa;
     margin: 1rem 0;
     z-index: 1;
+    transition: height 0.3s ease;
 }
 
 /* Garante que o mapa ocupe todo o espaço do contêiner */
 #map {
-    width: 100%;
-    height: 100%;
-    min-height: 300px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100% !important;
+    height: 100% !important;
     background: #e9ecef;
+    -webkit-backface-visibility: hidden; /* Evita problemas de renderização no WebKit */
+    backface-visibility: hidden;
+    transform: translateZ(0); /* Força aceleração de hardware */
+}
+
+/* Melhora a renderização dos tiles do mapa */
+.leaflet-tile {
+    filter: inherit !important; /* Remove filtros que podem causar problemas */
+    -webkit-filter: none !important;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+/* Melhora a renderização dos controles */
+.leaflet-control {
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+}
+
+/* Indicador de carregamento do mapa */
+#map.map-loading {
+    position: relative;
+}
+
+#map.map-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.7) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 50 50"><path fill="%23333" d="M25,5A20,20 0 1,1 5,25A20,20 0 0,1 25,5M25,0A25,25 0 1,0 25,50A25,25 0 0,0 25,0"><animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite"/></path></svg>') no-repeat center center;
+    background-size: 50px 50px;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+/* Melhora a renderização dos tiles durante o zoom */
+.leaflet-zoom-anim .leaflet-tile,
+.leaflet-pan-anim .leaflet-tile {
+    transition: none;
+}
+
+/* Corrige problemas de renderização em navegadores WebKit */
+.leaflet-container {
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
 }
 
 /* Estilos para o Leaflet */

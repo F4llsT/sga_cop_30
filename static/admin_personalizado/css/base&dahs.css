@@ -17,6 +17,7 @@
     --color-events: #8b5cf6;
     --color-notification: #f59e0b;
     --color-passe-facil: #22c55e;
+    --color-avisos: #ef4444;
 
     --radius-md: 8px;
     --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
@@ -142,6 +143,8 @@ canvas { max-width: 100%; height: auto !important; }
 .agenda-shortcut { border-color: var(--color-events); } .agenda-shortcut i, .agenda-shortcut h3 { color: var(--color-events); }
 .notifications-shortcut { border-color: var(--color-notification); } .notifications-shortcut i, .notifications-shortcut h3 { color: var(--color-notification); }
 .passe-facil-shortcut { border-color: var(--color-passe-facil); } .passe-facil-shortcut i, .passe-facil-shortcut h3 { color: var(--color-passe-facil); }
+.avisos-shortcut { border-color: var(--color-avisos); } .avisos-shortcut i, .avisos-shortcut h3 { color: var(--color-avisos); }
+
 
 /* ===== MENU MOBILE ===== */
 .mobile-nav { position: fixed; top: 0; right: 0; width: 280px; height: 100%; background-color: var(--sidebar-bg); color: var(--sidebar-text); box-shadow: -4px 0 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; padding: 1.5rem; transform: translateX(100%); transition: transform 0.3s ease-in-out; z-index: 100; }

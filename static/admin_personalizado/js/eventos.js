@@ -4,11 +4,13 @@
  * Versão: 1.0.0
  */
 
-// Variável global para controle de estado do mapa
-let mapaInicializado = false;
+// Verifica se a variável já foi declarada
+if (typeof mapaInicializado === 'undefined') {
+    var mapaInicializado = false;
+}
 
 // Inicialização quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', () => {
+const init = () => {
     // Elementos do DOM
     const formEvento = document.getElementById('form-evento');
     const listaEventos = document.getElementById('lista-eventos');
@@ -39,22 +41,100 @@ document.addEventListener('DOMContentLoaded', () => {
     let eventoEditando = null;
 
     // Inicialização
-    initMapa();
-    carregarEventos();
-    configurarEventos();
+    const init = () => {
+        // Espera um pouco para garantir que o DOM esteja totalmente carregado
+        setTimeout(() => {
+            initMapa();
+            carregarEventos();
+            configurarEventos();
+            
+            // Redesenha o mapa quando a aba se tornar visível
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && mapa) {
+                    setTimeout(() => {
+                        mapa.invalidateSize({animate: true});
+                    }, 300);
+                }
+            });
+            
+            // Redesenha o mapa quando o usuário interagir com o painel
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.attributeName === 'class') {
+                        const isCollapsed = document.body.classList.contains('sidebar-collapse');
+                        if (mapa) {
+                            setTimeout(() => {
+                                mapa.invalidateSize({animate: true});
+                            }, 300);
+                        }
+                    }
+                });
+            });
+            
+            // Observa mudanças no body para detectar colapso/expansão do menu
+            observer.observe(document.body, {
+                attributes: true,
+                attributeFilter: ['class']
+            });
+            
+        }, 100);
+    };
+    
+    // Inicia a aplicação
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+    
+    // Redesenha o mapa quando o painel for expandido/recolhido
+    document.addEventListener('click', function(e) {
+        // Verifica se o clique foi em um botão que pode expandir/recolher o painel
+        const isToggleButton = e.target.matches('[data-widget="pushmenu"], [data-widget="pushmenu"] *');
+        
+        if (isToggleButton && mapa) {
+            // Pequeno atraso para permitir que a animação do painel seja concluída
+            setTimeout(() => {
+                if (mapa) {
+                    mapa.invalidateSize({animate: true});
+                }
+            }, 350);
+        }
+    });
 
     /**
      * Inicializa o mapa usando Leaflet
      */
     function initMapa() {
-        if (mapaInicializado) return;
+        // Verifica se o mapa já foi inicializado
+        if (mapaInicializado) {
+            // Se já estiver inicializado, apenas atualiza o tamanho
+            if (mapa) {
+                // Força um redesenho completo do mapa
+                setTimeout(() => {
+                    try {
+                        mapa.invalidateSize({animate: true, pan: false});
+                        // Força um redesenho dos tiles
+                        const zoom = mapa.getZoom();
+                        mapa.setZoom(zoom + 0.1, {animate: false});
+                        setTimeout(() => {
+                            mapa.setZoom(zoom, {animate: false});
+                        }, 10);
+                    } catch (e) {
+                        console.warn('Erro ao redesenhar o mapa:', e);
+                    }
+                }, 100);
+            }
+            return;
+        }
 
         // Coordenadas padrão (Belém do Pará)
         const latPadrao = -1.4558;
         const lngPadrao = -48.5039;
         
         try {
-            if (!document.getElementById('map')) {
+            const mapElement = document.getElementById('map');
+            if (!mapElement) {
                 console.error('Elemento do mapa não encontrado');
                 return;
             }
@@ -65,49 +145,102 @@ document.addEventListener('DOMContentLoaded', () => {
                 mapa.remove();
             }
 
-            // Inicializa o mapa com configurações otimizadas
-            mapa = L.map('map', {
-                zoomControl: false,
-                preferCanvas: true,
-                tap: false,
-                zoomSnap: 0.1,
-                zoomDelta: 0.1,
-                wheelPxPerZoomLevel: 60
-            }).setView([latPadrao, lngPadrao], 13);
+            // Garante que o contêiner do mapa esteja visível
+            mapElement.style.visibility = 'hidden';
             
-            // Adiciona o tile layer (OpenStreetMap)
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors',
-                maxZoom: 19,
-                minZoom: 2,
-                noWrap: true,
-                updateWhenIdle: true
-            }).addTo(mapa);
-            
-            // Adiciona controles de zoom
-            L.control.zoom({
-                position: 'topright',
-                zoomInTitle: 'Aproximar',
-                zoomOutTitle: 'Afastar'
-            }).addTo(mapa);
-            
-            // Configura o marcador inicial
-            configurarMarcador(latPadrao, lngPadrao);
-            
-            // Adiciona um marcador quando o mapa é clicado
-            mapa.on('click', function(e) {
-                const {lat, lng} = e.latlng;
-                configurarMarcador(lat, lng);
-                atualizarCoordenadas(lat, lng);
-            });
-            
-            // Ajusta o mapa quando a janela for redimensionada
-            window.addEventListener('resize', debounce(() => {
-                if (mapa) mapa.invalidateSize({animate: true});
-            }, 250));
-            
-            mapaInicializado = true;
-            console.log('Mapa inicializado com sucesso');
+            // Pequeno atraso para garantir que o DOM esteja pronto
+            setTimeout(() => {
+                try {
+                    // Inicializa o mapa com configurações otimizadas
+                    mapa = L.map('map', {
+                        zoomControl: false,
+                        preferCanvas: true,
+                        tap: false,
+                        zoomSnap: 0.1,
+                        zoomDelta: 0.1,
+                        wheelPxPerZoomLevel: 60,
+                        renderer: L.canvas(),
+                        zoom: 13,
+                        center: [latPadrao, lngPadrao]
+                    });
+                    
+                    // Adiciona o tile layer (OpenStreetMap) com configurações otimizadas
+                    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap contributors',
+                        maxZoom: 19,
+                        minZoom: 2,
+                        noWrap: true,
+                        updateWhenIdle: false, // Atualiza imediatamente
+                        reuseTiles: true,     // Reutiliza tiles para melhor desempenho
+                        updateWhenZooming: false, // Evita atualização durante o zoom
+                        updateInterval: 100,   // Intervalo de atualização em ms
+                        zIndex: 1
+                    }).addTo(mapa);
+                    
+                    // Força o carregamento dos tiles
+                    tileLayer.on('loading', function() {
+                        // Adiciona uma classe de carregamento
+                        const mapElement = document.getElementById('map');
+                        if (mapElement) {
+                            mapElement.classList.add('map-loading');
+                        }
+                    });
+                    
+                    tileLayer.on('load', function() {
+                        // Remove a classe de carregamento quando os tiles forem carregados
+                        const mapElement = document.getElementById('map');
+                        if (mapElement) {
+                            mapElement.classList.remove('map-loading');
+                        }
+                    });
+                    
+                    // Adiciona controles de zoom
+                    L.control.zoom({
+                        position: 'topright',
+                        zoomInTitle: 'Aproximar',
+                        zoomOutTitle: 'Afastar'
+                    }).addTo(mapa);
+                    
+                    // Configura o marcador inicial
+                    configurarMarcador(latPadrao, lngPadrao);
+                    
+                    // Adiciona um marcador quando o mapa é clicado
+                    mapa.on('click', function(e) {
+                        const {lat, lng} = e.latlng;
+                        configurarMarcador(lat, lng);
+                        atualizarCoordenadas(lat, lng);
+                    });
+                    
+                    // Ajusta o mapa quando a janela for redimensionada
+                    const resizeObserver = new ResizeObserver(debounce(() => {
+                        if (mapa) {
+                            setTimeout(() => {
+                                mapa.invalidateSize({animate: true});
+                            }, 100);
+                        }
+                    }, 250));
+                    
+                    // Observa mudanças no contêiner do mapa
+                    resizeObserver.observe(mapElement);
+                    
+                    // Torna o mapa visível após a inicialização
+                    mapElement.style.visibility = 'visible';
+                    
+                    // Força um redesenho do mapa
+                    setTimeout(() => {
+                        if (mapa) {
+                            mapa.invalidateSize({animate: true});
+                        }
+                    }, 300);
+                    
+                    mapaInicializado = true;
+                    console.log('Mapa inicializado com sucesso');
+                    
+                } catch (error) {
+                    console.error('Erro ao inicializar o mapa:', error);
+                    mapElement.style.visibility = 'visible';
+                }
+            }, 100);
             
         } catch (error) {
             console.error('Erro ao inicializar o mapa:', error);
@@ -148,17 +281,12 @@ document.addEventListener('DOMContentLoaded', () => {
      * Carrega a lista de eventos
      */
     async function carregarEventos() {
-        const tabelaEventos = document.getElementById('tabela-eventos');
         const loadingRow = document.getElementById('loading-row');
         const mensagemSemDados = document.getElementById('sem-dados');
         
-        if (!tabelaEventos || !loadingRow) {
-            console.error('Elementos da tabela não encontrados');
-            return;
-        }
-        
         try {
-            loadingRow.classList.remove('d-none');
+            // Mostra o indicador de carregamento
+            if (loadingRow) loadingRow.classList.remove('d-none');
             if (mensagemSemDados) mensagemSemDados.classList.add('d-none');
             
             console.log('Buscando eventos...');
@@ -179,89 +307,170 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (data && typeof data === 'object' && data.results) {
                 eventos = Array.isArray(data.results) ? data.results : [data.results];
             } else if (data && typeof data === 'object') {
-                eventos = [data]; // Se for um único objeto, coloca em um array
+                eventos = [data];
             }
             
             console.log('Eventos processados:', eventos);
             
-            const tbody = tabelaEventos.querySelector('tbody');
-            if (!tbody) {
-                console.error('Elemento tbody não encontrado');
-                return;
-            }
-            
-            tbody.innerHTML = '';
-            
-            if (!eventos || eventos.length === 0) {
-                console.log('Nenhum evento encontrado');
-                if (mensagemSemDados) mensagemSemDados.classList.remove('d-none');
-                return;
-            }
-            
-            // Adiciona cada evento à tabela
-            eventos.forEach(evento => {
-                if (!evento) return; // Pula itens nulos ou indefinidos
-                
-                const tr = document.createElement('tr');
-                let dataInicio = null;
-                let dataFormatada = 'Não definido';
-                
-                try {
-                    dataInicio = evento.start_time ? new Date(evento.start_time) : null;
-                    if (dataInicio && !isNaN(dataInicio.getTime())) {
-                        dataFormatada = `${dataInicio.toLocaleDateString()} ${dataInicio.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
-                    }
-                } catch (e) {
-                    console.error('Erro ao formatar data:', e);
-                }
-                
-                tr.innerHTML = `
-                    <td>${evento.titulo || 'Sem título'}</td>
-                    <td>${evento.local || '—'}</td>
-                    <td>${evento.palestrante || '—'}</td>
-                    <td>${dataFormatada}</td>
-                    <td>${evento.importante ? '<span class="badge bg-success">Sim</span>' : '<span class="badge bg-secondary">Não</span>'}</td>
-                    <td class="text-center">
-                        <div class="btn-group btn-group-sm" role="group" aria-label="Ações">
-                            <button type="button" class="btn btn-outline-primary" onclick="carregarEventoParaEdicao(${evento.id || '0'})">
-                                <i class="fas fa-edit"></i> Editar
-                            </button>
-                            <button type="button" class="btn btn-outline-danger" onclick="confirmarExclusao(${evento.id || '0'})">
-                                <i class="fas fa-trash"></i> Excluir
-                            </button>
-                        </div>
-                    </td>
-                `;
-                
-                tbody.appendChild(tr);
-            });
+            // Inicializa a tabela com os dados
+            inicializarDataTable(eventos);
             
         } catch (error) {
             console.error('Erro ao carregar eventos:', error);
             mostrarAlerta(`Erro ao carregar eventos: ${error.message}`, 'error');
+            
+            // Mostra mensagem de erro na tabela
+            if (mensagemSemDados) {
+                mensagemSemDados.textContent = 'Erro ao carregar os eventos';
+                mensagemSemDados.classList.remove('d-none');
+            }
         } finally {
-            loadingRow.classList.add('d-none');
+            // Esconde o indicador de carregamento
+            if (loadingRow) loadingRow.classList.add('d-none');
         }
     }
-
+    
     /**
-     * Configura os eventos do formulário
+     * Inicializa o DataTables com os dados fornecidos
      */
-    function configurarEventos() {
-        // Evento de submit do formulário
-        formEvento?.addEventListener('submit', handleSubmit);
+    function inicializarDataTable(dados) {
+        // Destrói a tabela existente se já estiver inicializada
+        if ($.fn.DataTable.isDataTable('#tabela-eventos')) {
+            $('#tabela-eventos').DataTable().destroy();
+            $('#tabela-eventos tbody').empty();
+        }
+
+        // Se não houver dados, mostra mensagem
+        if (!dados || dados.length === 0) {
+            $('#sem-dados').removeClass('d-none');
+            $('#loading-row').addClass('d-none');
+            return null;
+        }
+
+        // Inicializa a tabela
+        const table = $('#tabela-eventos').DataTable({
+            data: dados,
+            columns: [
+                { 
+                    data: 'titulo',
+                    render: function(data) {
+                        return data || 'Sem título';
+                    }
+                },
+                { 
+                    data: 'local',
+                    render: function(data) {
+                        return data || '—';
+                    }
+                },
+                { 
+                    data: 'palestrante',
+                    render: function(data) {
+                        return data || '—';
+                    }
+                },
+                { 
+                    data: 'start_time',
+                    render: function(data) {
+                        if (!data) return '—';
+                        try {
+                            const date = new Date(data);
+                            return isNaN(date.getTime()) ? '—' : 
+                                `${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+                        } catch (e) {
+                            console.error('Erro ao formatar data:', e);
+                            return '—';
+                        }
+                    }
+                },
+                { 
+                    data: 'importante',
+                    className: 'text-center',
+                    render: function(data) {
+                        return data ? 
+                            '<span class="badge bg-success">Sim</span>' : 
+                            '<span class="badge bg-secondary">Não</span>';
+                    }
+                },
+                {
+                    data: 'id',
+                    className: 'text-center',
+                    orderable: false,
+                    render: function(data, type, row) {
+                        return `
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary btn-editar" data-id="${data}">
+                                    <i class="fas fa-edit"></i> Editar
+                                </button>
+                                <button class="btn btn-outline-danger btn-excluir" data-id="${data}">
+                                    <i class="fas fa-trash"></i> Excluir
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            ],
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json',
+                processing: 'Processando...',
+                search: 'Buscar:',
+                lengthMenu: 'Mostrar _MENU_ registros por página',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                infoEmpty: 'Nenhum registro encontrado',
+                infoFiltered: '(filtrado de _MAX_ registros totais)',
+                zeroRecords: 'Nenhum registro encontrado',
+                emptyTable: 'Nenhum dado disponível na tabela',
+                paginate: {
+                    first: 'Primeiro',
+                    previous: 'Anterior',
+                    next: 'Próximo',
+                    last: 'Último'
+                }
+            },
+            responsive: true,
+            pageLength: 10,
+            lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],
+            columnDefs: [
+                { width: '20%', targets: [0, 2] },
+                { width: '15%', targets: [1, 3] },
+                { width: '10%', targets: [4, 5] }
+            ]
+        });
         
-        // Botão de limpar
-        btnLimpar?.addEventListener('click', limparFormulario);
+        // Configura os eventos da tabela
+        configurarEventosTabela();
         
-        // Botão de localização
-        btnLocalizar?.addEventListener('click', obterLocalizacao);
+        // Esconde o loading
+        const loadingRow = document.getElementById('loading-row');
+        if (loadingRow) loadingRow.classList.add('d-none');
         
-        // Botão de atualizar
-        btnAtualizar?.addEventListener('click', carregarEventos);
+        return table;
+    }
+    
+    /**
+     * Configura os eventos de clique na tabela
+     */
+    function configurarEventosTabela() {
+        // Remove event listeners antigos
+        $(document).off('click', '.btn-editar');
+        $(document).off('click', '.btn-excluir');
         
-        // Busca em tempo real
-        searchInput?.addEventListener('input', debounce(carregarEventos, 300));
+        // Adiciona os event listeners com delegação
+        $(document).on('click', '.btn-editar', function(e) {
+            e.preventDefault();
+            const eventoId = $(this).data('id');
+            if (eventoId) {
+                carregarEventoParaEdicao(eventoId);
+            }
+        });
+        
+        $(document).on('click', '.btn-excluir', function(e) {
+            e.preventDefault();
+            const eventoId = $(this).data('id');
+            if (eventoId) {
+                confirmarExclusao(eventoId);
+            }
+        });
     }
     
     /**
@@ -273,20 +482,41 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!validarFormulario()) return;
         
         try {
+            // Função para formatar data e hora no formato ISO 8601 com fuso horário
+            const formatarDataHora = (dataStr, horaStr) => {
+                // Cria um objeto Date com a data e hora fornecidas
+                const [ano, mes, dia] = dataStr.split('-').map(Number);
+                const [hora, minuto] = horaStr.split(':').map(Number);
+                const dataHora = new Date(ano, mes - 1, dia, hora, minuto, 0);
+                
+                // Formata a data no formato ISO 8601
+                const pad = num => String(num).padStart(2, '0');
+                const tzOffset = -dataHora.getTimezoneOffset();
+                const sign = tzOffset >= 0 ? '+' : '-';
+                const tzHours = pad(Math.floor(Math.abs(tzOffset) / 60));
+                const tzMinutes = pad(Math.abs(tzOffset) % 60);
+                
+                return `${dataHora.getFullYear()}-${pad(dataHora.getMonth() + 1)}-${pad(dataHora.getDate())}T` +
+                       `${pad(dataHora.getHours())}:${pad(dataHora.getMinutes())}:00${sign}${tzHours}:${tzMinutes}`;
+            };
+            
             const eventoData = {
                 titulo: inputTitulo.value.trim(),
                 descricao: inputDescricao.value.trim(),
                 local: inputLocal.value.trim(),
                 palestrante: inputPalestrante?.value.trim() || '',
-                start_time: `${inputDataInicio.value}T${inputHoraInicio.value}:00`,
-                end_time: `${inputDataFim.value}T${inputHoraFim.value}:00`,
-                tags: inputTags?.value.trim() || '',
+                start_time: formatarDataHora(inputDataInicio.value, inputHoraInicio.value),
+                end_time: formatarDataHora(inputDataFim.value, inputHoraFim.value),
+                // Garante que tags seja sempre uma string, mesmo se for um array
+                tags: Array.isArray(inputTags?.value) ? inputTags.value[0] : (inputTags?.value.trim() || ''),
                 importante: inputImportante.checked,
                 ...(inputLatitude?.value && inputLongitude?.value && {
                     latitude: parseFloat(inputLatitude.value),
                     longitude: parseFloat(inputLongitude.value)
                 })
             };
+            
+            console.log('Dados a serem enviados:', JSON.stringify(eventoData, null, 2));
 
             const url = eventoEditando ? `/meu-admin/api/eventos/${eventoEditando}/` : '/meu-admin/api/eventos/';
             const method = eventoEditando ? 'PUT' : 'POST';
@@ -317,7 +547,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             if (!response.ok) {
-                throw new Error(data.detail || data.message || `Erro ${response.status}: ${response.statusText}`);
+                let errorMessage = 'Ocorreu um erro ao processar sua solicitação';
+                
+                if (data.detail) {
+                    errorMessage = data.detail;
+                } else if (data.message) {
+                    errorMessage = data.message;
+                } else if (data.errors) {
+                    // Se houver erros de validação, formata a mensagem
+                    const errorMessages = [];
+                    for (const [field, errors] of Object.entries(data.errors)) {
+                        errorMessages.push(`${field}: ${errors.join(', ')}`);
+                    }
+                    errorMessage = `Erro de validação: ${errorMessages.join('; ')}`;
+                } else if (response.status === 400) {
+                    errorMessage = 'Dados inválidos. Verifique as informações fornecidas.';
+                } else if (response.status === 403) {
+                    errorMessage = 'Você não tem permissão para realizar esta ação';
+                } else if (response.status === 404) {
+                    errorMessage = 'Recurso não encontrado';
+                } else if (response.status === 500) {
+                    errorMessage = 'Erro interno do servidor. Tente novamente mais tarde.';
+                }
+                
+                throw new Error(errorMessage);
             }
             
             mostrarAlerta(
@@ -375,21 +628,32 @@ document.addEventListener('DOMContentLoaded', () => {
      * Valida o formulário antes do envio
      */
     function validarFormulario() {
-        const camposObrigatorios = [
-            { campo: inputTitulo, mensagem: 'Por favor, preencha o título do evento' },
-            { campo: inputDataInicio, mensagem: 'Por favor, selecione a data de início' },
-            { campo: inputHoraInicio, mensagem: 'Por favor, selecione o horário de início' },
-            { campo: inputLocal, mensagem: 'Por favor, informe o local do evento' }
-        ];
-
-        for (const { campo, mensagem } of camposObrigatorios) {
-            if (!campo?.value?.trim()) {
-                mostrarAlerta(mensagem, 'error');
-                campo.focus();
-                return false;
-            }
+        if (!inputTitulo.value.trim()) {
+            mostrarAlerta('Por favor, preencha o título do evento', 'error');
+            inputTitulo.focus();
+            return false;
         }
+
+        if (!inputLocal.value.trim()) {
+            mostrarAlerta('Por favor, preencha o local do evento', 'error');
+            inputLocal.focus();
+            return false;
+        }
+
+        if (!inputDataInicio.value || !inputHoraInicio.value || !inputDataFim.value || !inputHoraFim.value) {
+            mostrarAlerta('Por favor, preencha todas as datas e horários', 'error');
+            return false;
+        }
+
+        // Validação de datas
+        const dataInicio = new Date(`${inputDataInicio.value}T${inputHoraInicio.value}:00`);
+        const dataFim = new Date(`${inputDataFim.value}T${inputHoraFim.value}:00`);
         
+        if (dataFim <= dataInicio) {
+            mostrarAlerta('A data/hora de término deve ser posterior à data/hora de início', 'error');
+            return false;
+        }
+
         return true;
     }
     
@@ -504,7 +768,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Erro ao carregar o evento');
             }
             
-            const evento = await response.json();
+            // A API pode retornar { success, evento: {...} } ou o objeto do evento diretamente
+            const data = await response.json();
+            const evento = data && data.evento ? data.evento : data;
+            
+            // Normaliza campos de data/hora quando o backend envia {data,inicio,fim}
+            const startIso = evento.start_time || (evento.data && evento.inicio ? `${evento.data}T${evento.inicio}:00` : null);
+            const endIso = evento.end_time || (evento.data && evento.fim ? `${evento.data}T${evento.fim}:00` : null);
             
             // Preenche o formulário com os dados do evento
             if (eventoIdInput) eventoIdInput.value = evento.id;
@@ -512,21 +782,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (inputDescricao) inputDescricao.value = evento.descricao || '';
             
             // Formata as datas
-            if (evento.start_time) {
-                const dataInicio = new Date(evento.start_time);
+            if (startIso) {
+                const dataInicio = new Date(startIso);
                 if (inputDataInicio) inputDataInicio.value = dataInicio.toISOString().split('T')[0];
                 if (inputHoraInicio) inputHoraInicio.value = dataInicio.toTimeString().substring(0, 5);
             }
             
-            if (evento.end_time) {
-                const dataFim = new Date(evento.end_time);
+            if (endIso) {
+                const dataFim = new Date(endIso);
                 if (inputDataFim) inputDataFim.value = dataFim.toISOString().split('T')[0];
                 if (inputHoraFim) inputHoraFim.value = dataFim.toTimeString().substring(0, 5);
             }
             
             if (inputLocal) inputLocal.value = evento.local || '';
             if (inputPalestrante) inputPalestrante.value = evento.palestrante || '';
-            if (inputTags) inputTags.value = evento.tags ? evento.tags.join(',') : '';
+            if (inputTags) inputTags.value = Array.isArray(evento.tags) ? evento.tags.join(',') : (evento.tags || evento.tema || '');
             if (inputImportante) inputImportante.checked = evento.importante || false;
             
             // Atualiza o mapa se as coordenadas existirem
@@ -572,18 +842,24 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `${inputDataFim.value}T${inputHoraFim.value}:00`
             : null;
         
+        // Monta payload, evitando enviar campos opcionais vazios
         const dadosEvento = {
             titulo: inputTitulo ? inputTitulo.value : '',
-            descricao: inputDescricao ? inputDescricao.value : '',
             start_time: dataInicio,
             end_time: dataFim,
             local: inputLocal ? inputLocal.value : '',
-            palestrante: inputPalestrante ? inputPalestrante.value : '',
-            tags: inputTags ? inputTags.value.split(',').map(tag => tag.trim()) : [],
             importante: inputImportante ? inputImportante.checked : false,
-            latitude: inputLatitude ? parseFloat(inputLatitude.value) : null,
-            longitude: inputLongitude ? parseFloat(inputLongitude.value) : null
         };
+        const desc = inputDescricao ? inputDescricao.value : '';
+        if (desc !== '') dadosEvento.descricao = desc;
+        const pales = inputPalestrante ? inputPalestrante.value : '';
+        if (pales !== '') dadosEvento.palestrante = pales;
+        const tagsStr = inputTags ? inputTags.value.split(',').map(t => t.trim()).filter(Boolean).join(',') : '';
+        if (tagsStr !== '') dadosEvento.tags = tagsStr;
+        const lat = inputLatitude ? parseFloat(inputLatitude.value) : NaN;
+        const lng = inputLongitude ? parseFloat(inputLongitude.value) : NaN;
+        if (Number.isFinite(lat)) dadosEvento.latitude = lat;
+        if (Number.isFinite(lng)) dadosEvento.longitude = lng;
         
         try {
             const response = await fetch(url, {
@@ -600,7 +876,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             
             if (!response.ok) {
-                throw new Error(data.detail || 'Erro ao salvar o evento');
+                let msg = data && (data.detail || data.message);
+                if (!msg && data && data.errors) {
+                    const parts = [];
+                    for (const [field, errors] of Object.entries(data.errors)) {
+                        parts.push(`${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`);
+                    }
+                    msg = parts.length ? `Dados inválidos: ${parts.join('; ')}` : 'Dados inválidos';
+                }
+                throw new Error(msg || 'Erro ao salvar o evento');
             }
             
             mostrarAlerta(
@@ -627,7 +911,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnAtualizar) {
         btnAtualizar.addEventListener('click', carregarEventos);
     }
-});
+} // Fecha a função init
+
+// Inicializa a aplicação
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 
 /**
  * Obtém o valor de um cookie pelo nome
@@ -659,44 +950,106 @@ function debounce(func, wait) {
     };
 }
 
-/**
- * Função para inicializar o DataTables
- */
+// Atualizando a função initDataTable
 function initDataTable() {
     if (typeof $ !== 'undefined' && $.fn.DataTable) {
-        $('#tabela-eventos').DataTable({
-            language: {
-                url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/pt-BR.json'
-            },
-            responsive: true,
-            order: [[3, 'asc']], // Ordena pela coluna de data
-            columnDefs: [
-                { orderable: false, targets: [5] } // Desabilita ordenação na coluna de ações
-            ]
-        });
+        // Inicializa a tabela de eventos com DataTables
+        function inicializarTabela() {
+            // Destrói a tabela existente se já tiver sido inicializada
+            if ($.fn.DataTable.isDataTable('#tabela-eventos')) {
+                tabelaEventos.destroy();
+                $('#tabela-eventos').empty();
+            }
+            
+            // Função para renderizar células com truncagem
+            const renderWithTooltip = (data, type, row) => {
+                if (type === 'display' && data && data.length > 30) {
+                    return `<span class="text-truncate" style="display: inline-block; max-width: 100%;" title="${data.replace(/"/g, '&quot;')}">${data.substring(0, 30)}...</span>`;
+                }
+                return data;
+            };
+
+            // Inicializa a tabela com as configurações
+            tabelaEventos = $('#tabela-eventos').DataTable({
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json',
+                    processing: 'Processando...',
+                    search: 'Buscar:',
+                    lengthMenu: 'Mostrar _MENU_ registros por página',
+                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+                    infoEmpty: 'Nenhum registro encontrado',
+                    infoFiltered: '(filtrado de _MAX_ registros totais)',
+                    infoPostFix: '',
+                    loadingRecords: 'Carregando...',
+                    zeroRecords: 'Nenhum registro encontrado',
+                    emptyTable: 'Nenhum dado disponível na tabela',
+                    paginate: {
+                        first: 'Primeiro',
+                        previous: 'Anterior',
+                        next: 'Próximo',
+                        last: 'Último'
+                    }
+                },
+                processing: true,
+                serverSide: false,
+                responsive: true,
+                order: [[3, 'asc']], // Ordena por data/hora por padrão
+                pageLength: 10,
+                lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],
+                columnDefs: [
+                    { 
+                        targets: [0, 1, 2], // Aplica a colunas Título, Local e Palestrante
+                        render: renderWithTooltip,
+                        className: 'text-truncate-cell'
+                    },
+                    { 
+                        orderable: false, 
+                        targets: [5] // Coluna de ações
+                    },
+                    { 
+                        className: 'text-center', 
+                        targets: [3, 4, 5] // Centraliza Data/Hora, Importante e Ações
+                    }
+                ],
+                initComplete: function() {
+                    $('#tabela-eventos').removeClass('dataTable-loading');
+                },
+                drawCallback: function() {
+                    $('.dataTables_paginate > .pagination').addClass('pagination-sm');
+                    $('.dataTables_length select').addClass('form-control-sm');
+                    $('.dataTables_filter input').addClass('form-control-sm');
+                },
+                createdRow: function(row, data, dataIndex) {
+                    $('td', row).css('white-space', 'nowrap')
+                                .css('overflow', 'hidden')
+                                .css('text-overflow', 'ellipsis');
+                }
+            });
+            
+            // Aplica a pesquisa personalizada
+            $('#search-input').keyup(function() {
+                tabelaEventos.search($(this).val()).draw();
+            });
+        }
+        
+        inicializarTabela();
     }
 }
 
-// Inicializa o DataTables quando o DOM estiver pronto
-document.addEventListener('DOMContentLoaded', function() {
-    // Inicializa o DataTables
-    initDataTable();
-    
-    // Adiciona estilos para o fade-out do alerta
-    const style = document.createElement('style');
-    style.textContent = `
-        .fade-out {
-            opacity: 0;
-            transition: opacity 0.3s ease-in-out;
-        }
-        .alert-message {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1050;
-            max-width: 400px;
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        }
-    `;
-    document.head.appendChild(style);
-});
+// Adiciona estilos para o fade-out do alerta
+const style = document.createElement('style');
+style.textContent = `
+    .fade-out {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+    }
+    .alert-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1050;
+        max-width: 400px;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+`;
+document.head.appendChild(style);
