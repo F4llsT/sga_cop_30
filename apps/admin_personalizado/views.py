@@ -315,7 +315,12 @@ def enviar_notificacao(request):
     Permissões requeridas:
     - Acesso restrito a gerentes e superusuários
     """
-    ultimas_notificacoes = NotificacaoPersonalizada.objects.order_by('-data_criacao')[:10]
+    from apps.notificacoes.models import Notificacao, NotificacaoUsuario
+    from django.contrib.auth import get_user_model
+    
+    User = get_user_model()
+    # Remove o limitador para que o DataTables faça a paginação corretamente
+    ultimas_notificacoes = Notificacao.objects.order_by('-criada_em')
     
     if request.method == 'POST':
         # Processar o formulário
@@ -337,12 +342,24 @@ def enviar_notificacao(request):
                 messages.error(request, erro)
         else:
             try:
-                notificacao = NotificacaoPersonalizada.objects.create(
+                # Obter o tipo da notificação do formulário
+                tipo = request.POST.get('tipo', 'info')
+                
+                # Obter todos os usuários ativos
+                usuarios = User.objects.filter(is_active=True)
+                
+                # Criar uma única notificação
+                notificacao = Notificacao.objects.create(
                     titulo=titulo,
                     mensagem=mensagem,
+                    tipo=tipo,
                     criado_por=request.user
                 )
-                messages.success(request, 'Notificação agendada com sucesso!')
+                
+                # Adicionar todos os usuários ativos à notificação
+                notificacao.adicionar_usuarios(usuarios)
+                
+                messages.success(request, f'Notificação criada com sucesso para {usuarios.count()} usuários ativos!')
                 return redirect('admin_personalizado:enviar_notificacao')
                 
             except Exception as e:
@@ -354,7 +371,7 @@ def enviar_notificacao(request):
     # Se for GET ou se houver erros no POST, mostra o formulário
     context = {
         'title': 'Enviar Notificação',
-        'opts': NotificacaoPersonalizada._meta,
+        'opts': Notificacao._meta,
         'has_view_permission': True,
         'has_add_permission': True,
         'has_change_permission': True,
@@ -368,6 +385,7 @@ def enviar_notificacao(request):
         'show_save_and_add_another': False,
         'show_save_and_continue': False,
         'show_close': True,
+        'total_usuarios': User.objects.filter(is_active=True).count(),
     }
     
     return render(
@@ -386,6 +404,8 @@ def enviar_notificacao_ajax(request):
     Permissões requeridas:
     - Acesso restrito a gerentes e superusuários
     """
+    from apps.notificacoes.models import Notificacao, NotificacaoUsuario
+    
     if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'status': 'error', 'message': 'Requisição inválida'}, status=400)
     
@@ -402,30 +422,27 @@ def enviar_notificacao_ajax(request):
         usuarios = User.objects.filter(is_active=True)
         total_usuarios = usuarios.count()
         
+        # Obtém o tipo da notificação do formulário
+        tipo = request.POST.get('tipo', 'info')
+        
         # Usa transação atômica para garantir que todas as notificações sejam criadas
         with transaction.atomic():
-            notificacoes = [
-                Notificacao(
-                    usuario=usuario,
-                    titulo='Nova notificação',
-                    mensagem=mensagem,
-                    tipo='info',
-                    criado_por=request.user
-                )
-                for usuario in usuarios
-            ]
+            # Cria uma única notificação
+            notificacao = Notificacao.objects.create(
+                titulo='Nova notificação',
+                mensagem=mensagem,
+                tipo=tipo,
+                criado_por=request.user
+            )
             
-            notificacoes_criadas = Notificacao.objects.bulk_create(notificacoes)
-            
-            # Atualiza o campo criado_por para todas as notificações
-            Notificacao.objects.filter(
-                id__in=[n.id for n in notificacoes_criadas]
-            ).update(criado_por=request.user)
+            # Adiciona todos os usuários ativos à notificação
+            notificacao.adicionar_usuarios(usuarios)
         
         return JsonResponse({
             'status': 'success',
-            'message': f'Notificação enviada para {len(notificacoes_criadas)} usuários',
-            'total_usuarios': total_usuarios
+            'message': f'Notificação criada para {total_usuarios} usuários ativos',
+            'total_usuarios': total_usuarios,
+            'notificacao_id': notificacao.id
         })
         
     except Exception as e:

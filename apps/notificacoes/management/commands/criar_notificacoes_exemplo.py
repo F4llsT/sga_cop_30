@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from apps.notificacoes.models import Notificacao
+from django.utils import timezone
+from apps.notificacoes.models import Notificacao, NotificacaoUsuario
 
 User = get_user_model()
 
@@ -8,21 +9,21 @@ class Command(BaseCommand):
     help = 'Cria notificações de exemplo para demonstração'
 
     def handle(self, *args, **options):
-        # Busca o primeiro usuário ou cria um se não existir
-        user, created = User.objects.get_or_create(
-            email='admin@cop30.com',
-            defaults={
-                'nome': 'Administrador',
-                'is_staff': True,
-                'is_superuser': True
-            }
-        )
+        # Busca todos os usuários ativos
+        usuarios_ativos = User.objects.filter(is_active=True)
         
-        if created:
-            user.set_password('admin123')
-            user.save()
+        if not usuarios_ativos.exists():
+            # Se não houver usuários ativos, cria um admin padrão
+            admin_user = User.objects.create_user(
+                email='admin@cop30.com',
+                nome='Administrador',
+                password='admin123',
+                is_staff=True,
+                is_superuser=True
+            )
+            usuarios_ativos = [admin_user]
             self.stdout.write(
-                self.style.SUCCESS(f'Usuário {user.email} criado com sucesso!')
+                self.style.SUCCESS(f'Usuário admin@cop30.com criado com sucesso!')
             )
 
         # Cria notificações de exemplo
@@ -59,23 +60,47 @@ class Command(BaseCommand):
             }
         ]
 
-        # Remove notificações existentes do usuário
-        Notificacao.objects.filter(usuario=user).delete()
-
-        # Cria as novas notificações
-        for notif_data in notificacoes_exemplo:
-            Notificacao.objects.create(
-                usuario=user,
-                **notif_data
+        total_notificacoes = 0
+        total_usuarios = 0
+        
+        for usuario in usuarios_ativos:
+            # Remove notificações existentes do usuário
+            NotificacaoUsuario.objects.filter(usuario=usuario).delete()
+            
+            # Cria as novas notificações para cada usuário
+            for notif_data in notificacoes_exemplo:
+                # Cria a notificação
+                notificacao = Notificacao.objects.create(
+                    titulo=notif_data['titulo'],
+                    mensagem=notif_data['mensagem'],
+                    tipo=notif_data['tipo'],
+                    criado_por=usuario
+                )
+                
+                # Cria o relacionamento com o usuário
+                NotificacaoUsuario.objects.create(
+                    notificacao=notificacao,
+                    usuario=usuario,
+                    lida=notif_data['lida'],
+                    lida_em=timezone.now() if notif_data['lida'] else None
+                )
+            
+            total_usuarios += 1
+            total_notificacoes += len(notificacoes_exemplo)
+            
+            self.stdout.write(
+                self.style.SUCCESS(f'Criadas {len(notificacoes_exemplo)} notificações para {usuario.email}')
             )
-
-        self.stdout.write(
-            self.style.SUCCESS(f'Criadas {len(notificacoes_exemplo)} notificações de exemplo para {user.email}')
-        )
         
-        # Mostra estatísticas
-        total = Notificacao.objects.filter(usuario=user).count()
-        nao_lidas = Notificacao.objects.filter(usuario=user, lida=False).count()
+        # Mostra estatísticas gerais
+        self.stdout.write('\n' + '='*50)
+        self.stdout.write(self.style.SUCCESS('Resumo da operação:'))
+        self.stdout.write(f'Total de usuários processados: {total_usuarios}')
+        self.stdout.write(f'Total de notificações criadas: {total_notificacoes}')
         
-        self.stdout.write(f'Total de notificações: {total}')
-        self.stdout.write(f'Notificações não lidas: {nao_lidas}')
+        # Estatísticas gerais
+        total_geral = Notificacao.objects.count()
+        nao_lidas_geral = NotificacaoUsuario.objects.filter(lida=False).count()
+        
+        self.stdout.write(f'\nTotal geral de notificações no sistema: {total_geral}')
+        self.stdout.write(f'Total de notificações não lidas: {nao_lidas_geral}')

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -14,15 +15,14 @@ class Notificacao(models.Model):
         ('error', 'Erro'),
     ]
     
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notificacoes')
+    usuarios = models.ManyToManyField(User, through='NotificacaoUsuario', related_name='notificacoes')
     titulo = models.CharField(max_length=200)
     mensagem = models.TextField()
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, default='info')
-    lida = models.BooleanField(default=False)
     criada_em = models.DateTimeField(auto_now_add=True)
-    lida_em = models.DateTimeField(null=True, blank=True)
+    criado_por = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='notificacoes_sistema_criadas')
     evento = models.ForeignKey(Event, on_delete=models.CASCADE, null=True, blank=True, related_name='notificacoes_evento')
-    data_expiracao = models.DateTimeField('Data de Expiração',null=True,blank=True,help_text='Data em que a notificação será considerada expirada')
+    data_expiracao = models.DateTimeField('Data de Expiração', null=True, blank=True, help_text='Data em que a notificação será considerada expirada')
     class Meta:
         ordering = ['-criada_em']
         verbose_name = 'Notificação'
@@ -35,13 +35,59 @@ class Notificacao(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.titulo} - {self.usuario.nome}"
+        return f"{self.titulo} - {self.criado_por.get_full_name() if self.criado_por else 'Sistema'}"
     
-    def marcar_como_lida(self):
-        if not self.lida:
-            self.lida = True
-            self.lida_em = timezone.now()
-            self.save()
+    def marcar_como_lida(self, usuario):
+        """Marca a notificação como lida para um usuário específico"""
+        try:
+            notificacao_usuario = self.notificacao_usuario.get(usuario=usuario)
+            if not notificacao_usuario.lida:
+                notificacao_usuario.lida = True
+                notificacao_usuario.lida_em = timezone.now()
+                notificacao_usuario.save()
+                return True
+            return False
+        except NotificacaoUsuario.DoesNotExist:
+            return False
+    
+    def esta_lida_por(self, usuario):
+        """Verifica se a notificação foi lida por um usuário específico"""
+        try:
+            return self.notificacao_usuario.get(usuario=usuario).lida
+        except NotificacaoUsuario.DoesNotExist:
+            return False
+    
+    def get_quantidade_usuarios(self):
+        """Retorna o número de usuários que receberam esta notificação"""
+        return self.usuarios.count()
+    
+    def get_quantidade_lidas(self):
+        """Retorna quantos usuários já leram esta notificação"""
+        return self.notificacao_usuario.filter(lida=True).count()
+    
+    def adicionar_usuarios(self, usuarios):
+        """Adiciona múltiplos usuários a esta notificação"""
+        notificacoes_usuarios = [
+            NotificacaoUsuario(notificacao=self, usuario=usuario)
+            for usuario in usuarios
+        ]
+        NotificacaoUsuario.objects.bulk_create(notificacoes_usuarios, ignore_conflicts=True)
+
+
+class NotificacaoUsuario(models.Model):
+    """Modelo intermediário para relacionamento muitos-para-muitos entre Notificacao e User"""
+    notificacao = models.ForeignKey(Notificacao, on_delete=models.CASCADE, related_name='notificacao_usuario')
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notificacoes_usuario')
+    lida = models.BooleanField(default=False)
+    lida_em = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ('notificacao', 'usuario')
+        verbose_name = 'Notificação do Usuário'
+        verbose_name_plural = 'Notificações dos Usuários'
+    
+    def __str__(self):
+        return f"{self.usuario} - {self.notificacao.titulo}"
 
 # apps/notificacoes/models.py
     def save(self, *args, **kwargs):

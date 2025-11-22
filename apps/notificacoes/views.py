@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from datetime import timedelta
 import json
-from .models import Notificacao
+from .models import Notificacao, NotificacaoUsuario
 
 @login_required
 def listar_notificacoes(request):
@@ -13,32 +13,34 @@ def listar_notificacoes(request):
     # Calcular o limite de 10 horas atrás
     dez_horas_atras = timezone.now() - timedelta(hours=10)
     
-    # Filtrar notificações do usuário com menos de 10 horas
-    notificacoes = Notificacao.objects.filter(
-        usuario=request.user,
-        criada_em__gte=dez_horas_atras
-    ).order_by('-criada_em')  # Ordena do mais recente para o mais antigo
+    # Obter as notificações do usuário com menos de 10 horas
+    notificacoes_usuario = request.user.notificacoes_usuario.filter(
+        notificacao__criada_em__gte=dez_horas_atras
+    ).select_related('notificacao').order_by('-notificacao__criada_em')
     
-    # Contar notificações não lidas (apenas as últimas 10 horas)
-    nao_lidas = notificacoes.filter(lida=False).count()
-    
-    data = {
-        'notificacoes': [],
-        'total': notificacoes.count(),
-        'nao_lidas': nao_lidas
-    }
-    
-    for notif in notificacoes:
-        data['notificacoes'].append({
+    # Preparar a lista de notificações com status de leitura
+    notificacoes_data = []
+    for rel_usuario in notificacoes_usuario:
+        notif = rel_usuario.notificacao
+        notificacoes_data.append({
             'id': notif.id,
             'titulo': notif.titulo,
             'mensagem': notif.mensagem,
             'tipo': notif.tipo,
-            'lida': notif.lida,
-            'tempo': notif.tempo_decorrido,
+            'lida': rel_usuario.lida,
+            'tempo': rel_usuario.tempo_decorrido if hasattr(rel_usuario, 'tempo_decorrido') else 'agora mesmo',
             'criada_em': notif.criada_em.isoformat(),
             'evento_id': notif.evento.id if notif.evento else None
         })
+    
+    # Contar notificações não lidas
+    nao_lidas = sum(1 for n in notificacoes_data if not n['lida'])
+    
+    data = {
+        'notificacoes': notificacoes_data,
+        'total': len(notificacoes_data),
+        'nao_lidas': nao_lidas
+    }
     
     return JsonResponse(data)
 
@@ -48,13 +50,19 @@ def listar_notificacoes(request):
 def marcar_todas_como_lidas(request):
     """Marca todas as notificações do usuário como lidas"""
     try:
-        notificacoes_nao_lidas = Notificacao.objects.filter(
-            usuario=request.user, 
+        # Atualiza todas as notificações não lidas do usuário
+        notificacoes_nao_lidas = NotificacaoUsuario.objects.filter(
+            usuario=request.user,
             lida=False
         )
         
         count = notificacoes_nao_lidas.count()
-        notificacoes_nao_lidas.update(lida=True)
+        
+        # Atualiza o status para lido e define a data/hora atual
+        notificacoes_nao_lidas.update(
+            lida=True,
+            lida_em=timezone.now()
+        )
         
         return JsonResponse({
             'success': True,
@@ -73,20 +81,26 @@ def marcar_todas_como_lidas(request):
 def marcar_como_lida(request, notificacao_id):
     """Marca uma notificação específica como lida"""
     try:
-        notificacao = Notificacao.objects.get(
-            id=notificacao_id,
+        # Obtém a relação de notificação do usuário
+        notificacao_usuario = NotificacaoUsuario.objects.get(
+            notificacao_id=notificacao_id,
             usuario=request.user
         )
-        notificacao.marcar_como_lida()
+        
+        # Marca como lida se ainda não estiver
+        if not notificacao_usuario.lida:
+            notificacao_usuario.lida = True
+            notificacao_usuario.lida_em = timezone.now()
+            notificacao_usuario.save()
         
         return JsonResponse({
             'success': True,
             'message': 'Notificação marcada como lida'
         })
-    except Notificacao.DoesNotExist:
+    except NotificacaoUsuario.DoesNotExist:
         return JsonResponse({
             'success': False,
-            'message': 'Notificação não encontrada'
+            'message': 'Notificação não encontrada ou você não tem permissão para acessá-la'
         }, status=404)
     except Exception as e:
         return JsonResponse({

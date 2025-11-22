@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from apps.notificacoes.models import Notificacao
+from apps.notificacoes.models import Notificacao, NotificacaoUsuario
 
 User = get_user_model()
 
@@ -35,13 +35,14 @@ class Command(BaseCommand):
             return
             
         for user in users:
-            notificacoes = Notificacao.objects.filter(usuario=user)
+            # Obtém as notificações do usuário através do modelo NotificacaoUsuario
+            notificacoes_usuario = NotificacaoUsuario.objects.filter(usuario=user)
             
             if apenas_nao_lidas:
-                notificacoes = notificacoes.filter(lida=False)
+                notificacoes_usuario = notificacoes_usuario.filter(lida=False)
                 
-            total = notificacoes.count()
-            nao_lidas = notificacoes.filter(lida=False).count()
+            total = notificacoes_usuario.count()
+            nao_lidas = notificacoes_usuario.filter(lida=False).count()
             
             self.stdout.write(f"\nUsuário: {user.email}")
             self.stdout.write(f"- Total de notificações: {total}")
@@ -50,8 +51,11 @@ class Command(BaseCommand):
             # Mostrar detalhes das notificações recentes (últimas 5)
             if total > 0:
                 self.stdout.write("\n  Últimas notificações:")
-                for notif in notificacoes.order_by('-criada_em')[:5]:
-                    status = "[LIDA]" if notif.lida else "[NÃO LIDA]"
-                    self.stdout.write(f"  - {notif.titulo} {status} ({notif.criada_em.strftime('%d/%m/%Y %H:%M')})")
-        
+                for rel_usuario in notificacoes_usuario.select_related('notificacao').order_by('-notificacao__criada_em')[:5]:
+                    notif = rel_usuario.notificacao
+                    status = 'NÃO LIDA' if not rel_usuario.lida else 'LIDA'
+                    self.stdout.write(f"  - {notif.titulo} ({status}) - {notif.criada_em.strftime('%d/%m/%Y %H:%M')}")
+                    if rel_usuario.lida and rel_usuario.lida_em:
+                        self.stdout.write(f"    Lida em: {rel_usuario.lida_em.strftime('%d/%m/%Y %H:%M')}")
+
         self.stdout.write(self.style.SUCCESS('\nVerificação de notificações concluída!'))
