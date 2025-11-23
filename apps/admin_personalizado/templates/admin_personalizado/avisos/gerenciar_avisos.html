@@ -129,5 +129,15 @@
 
 {% block extra_js %}
 {{ block.super }}
+<script>
+    // Configuração global do DataTables
+    $(document).ready(function() {
+        $.extend(true, $.fn.dataTable.defaults, {
+            language: {
+                url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/pt-BR.json'
+            }
+        });
+    });
+</script>
 <script src="{% static 'admin_personalizado/js/avisos.js' %}"></script>
 {% endblock %}

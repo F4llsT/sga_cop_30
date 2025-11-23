@@ -205,16 +205,18 @@ if (listaAvisosAtivos) {
                     return;
                 }
 
-                const response = await fetch(`${BASE_URL}/api/avisos/${avisoId}/excluir/`, {
-                    method: 'POST',  // Alterado de DELETE para POST
+                const response = await fetch(`${BASE_URL}/avisos/${avisoId}/excluir/`, {
+                    method: 'POST',
                     headers: {
                         'X-CSRFToken': csrftoken,
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
                     }
                 });
 
                 if (!response.ok) {
-                    throw new Error('Erro ao excluir aviso');
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Erro HTTP: ${response.status}`);
                 }
 
                 const result = await response.json();
@@ -225,6 +227,7 @@ if (listaAvisosAtivos) {
                     throw new Error(result.message || 'Erro ao excluir aviso');
                 }
             } 
+            
             else if (target.classList.contains('pin-btn')) {
                 const response = await fetch(`${BASE_URL}/avisos/${avisoId}/fixar/`, {
                     method: 'POST',

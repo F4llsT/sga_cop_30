@@ -941,16 +941,12 @@ def avisos_admin(request):
 
 
 @require_http_methods(["POST", "DELETE"])
+@login_required
+@staff_required
 def excluir_aviso(request, aviso_id):
     """
     Move um aviso para o histórico (desativa).
     """
-    if not request.user.is_authenticated or not request.user.is_staff:
-        return JsonResponse(
-            {'success': False, 'message': 'Acesso não autorizado'}, 
-            status=403
-        )
-    
     try:
         aviso = get_object_or_404(Aviso, id=aviso_id)
         aviso.ativo = False
