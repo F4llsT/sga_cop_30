@@ -1,3 +1,6 @@
+// Adiciona suporte a URL base dinâmica
+const BASE_URL = window.location.pathname.includes('meu-admin') ? '/meu-admin' : '';
+
 document.addEventListener('DOMContentLoaded', () => {
     const formAviso = document.getElementById('form-aviso');
     const listaAvisosAtivos = document.getElementById('lista-avisos-ativos');
@@ -6,70 +9,91 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNÇÕES DE RENDERIZAÇÃO ---
     const renderizarAvisos = (avisosAtivos, avisosHistorico) => {
-        // Renderizar avisos ativos
-        listaAvisosAtivos.innerHTML = '';
-        if (avisosAtivos.length === 0) {
-            listaAvisosAtivos.innerHTML = '<p class="empty-state">Nenhum aviso ativo no momento.</p>';
-        } else {
-            avisosAtivos.forEach(aviso => {
-                listaAvisosAtivos.appendChild(criarCardAviso(aviso));
-            });
-        }
+        try {
+            // Renderizar avisos ativos
+            if (listaAvisosAtivos) {
+                listaAvisosAtivos.innerHTML = '';
+                if (!avisosAtivos || avisosAtivos.length === 0) {
+                    listaAvisosAtivos.innerHTML = '<p class="empty-state">Nenhum aviso ativo no momento.</p>';
+                } else {
+                    avisosAtivos.forEach(aviso => {
+                        const card = criarCardAviso(aviso);
+                        if (card) listaAvisosAtivos.appendChild(card);
+                    });
+                }
+            }
 
-        // Renderizar histórico
-        listaHistorico.innerHTML = '';
-        if (avisosHistorico.length === 0) {
-            listaHistorico.innerHTML = '<p class="empty-state">Nenhum aviso no histórico.</p>';
-        } else {
-            avisosHistorico.forEach(aviso => {
-                listaHistorico.appendChild(criarItemHistorico(aviso));
-            });
+            // Renderizar histórico
+            if (listaHistorico) {
+                listaHistorico.innerHTML = '';
+                if (!avisosHistorico || avisosHistorico.length === 0) {
+                    listaHistorico.innerHTML = '<p class="empty-state">Nenhum aviso no histórico.</p>';
+                } else {
+                    avisosHistorico.forEach(aviso => {
+                        const item = criarItemHistorico(aviso);
+                        if (item) listaHistorico.appendChild(item);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Erro ao renderizar avisos:', error);
         }
     };
 
     // --- FUNÇÕES DE CRIAÇÃO DE ELEMENTOS ---
     const criarCardAviso = (aviso) => {
-        const card = document.createElement('div');
-        card.className = `notice-card ${aviso.nivel}`;
-        card.dataset.id = aviso.id;
+        if (!aviso) return null;
         
-        const dataExpiracao = aviso.data_expiracao ? 
-            new Date(aviso.data_expiracao).toLocaleString('pt-BR') : 
-            'Não expira';
-        
-        card.innerHTML = `
-            <div class="notice-content">
-                <h4>${aviso.titulo}</h4>
-                <p>${aviso.mensagem}</p>
-                <span class="notice-info">Expira em: ${dataExpiracao}</span>
-            </div>
-            <div class="notice-actions">
-                <button class="pin-btn ${aviso.fixo_no_topo ? 'pinned' : ''}" 
-                        title="Fixar no topo" 
-                        data-id="${aviso.id}">
-                    <i class="fa-solid fa-thumbtack"></i>
-                </button>
-                <button class="delete-btn" title="Remover" data-id="${aviso.id}">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </div>
-        `;
-        return card;
+        try {
+            const card = document.createElement('div');
+            card.className = `notice-card ${aviso.nivel || 'info'}`;
+            card.dataset.id = aviso.id;
+            
+            const dataExpiracao = aviso.data_expiracao ? 
+                new Date(aviso.data_expiracao).toLocaleString('pt-BR') : 
+                'Não expira';
+            
+            card.innerHTML = `
+                <div class="notice-content">
+                    <h4>${aviso.titulo || 'Sem título'}</h4>
+                    <p>${aviso.mensagem || 'Sem mensagem'}</p>
+                    <span class="notice-info">Expira em: ${dataExpiracao}</span>
+                </div>
+                <div class="notice-actions">
+                    <button class="pin-btn ${aviso.fixo_no_topo ? 'pinned' : ''}" 
+                            title="Fixar no topo" 
+                            data-id="${aviso.id}">
+                        <i class="fa-solid fa-thumbtack"></i>
+                    </button>
+                    <button class="delete-btn" title="Excluir" data-id="${aviso.id}">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            return card;
+        } catch (error) {
+            console.error('Erro ao criar card de aviso:', error);
+            return null;
+        }
     };
 
     const criarItemHistorico = (aviso) => {
-        const item = document.createElement('div');
-        item.className = 'history-item';
+        if (!aviso) return null;
         
-        const dataExpiracao = aviso.data_expiracao ? 
-            new Date(aviso.data_expiracao).toLocaleDateString('pt-BR') : 
-            'Desativado manualmente';
-        
-        item.innerHTML = `
-            <span><strong>${aviso.titulo}</strong> - <em>${aviso.mensagem}</em></span>
-            <span class="notice-info">Expirou em: ${dataExpiracao}</span>
-        `;
-        return item;
+        try {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            item.innerHTML = `
+                <span class="history-title">${aviso.titulo || 'Sem título'}</span>
+                <span class="history-date">
+                    ${new Date(aviso.data_criacao).toLocaleString('pt-BR')}
+                </span>
+            `;
+            return item;
+        } catch (error) {
+            console.error('Erro ao criar item de histórico:', error);
+            return null;
+        }
     };
 
     // --- FUNÇÃO PARA OBTER CSRF TOKEN ---
@@ -93,19 +117,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- FUNÇÃO PARA CARREGAR AVISOS VIA API ---
     const carregarAvisos = async () => {
         try {
-            console.log('Carregando avisos de: /meu-admin/api/avisos/');
-            const response = await fetch('/meu-admin/api/avisos/');
+            console.log('Carregando avisos...');
+            const response = await fetch(`${BASE_URL}/meu-admin/api/avisos/`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
             
             if (!response.ok) {
                 throw new Error(`Erro HTTP: ${response.status}`);
             }
-            const data = await response.json();
             
-            if (data.success) {
+            const data = await response.json();
+            console.log('Dados recebidos:', data);
+            
+            if (data && data.avisos_ativos !== undefined && data.avisos_historico !== undefined) {
                 renderizarAvisos(data.avisos_ativos, data.avisos_historico);
+            } else {
+                console.error('Formato de dados inesperado:', data);
+                alert('Erro: Formato de dados inesperado ao carregar avisos.');
             }
         } catch (error) {
             console.error('Erro ao carregar avisos:', error);
+            alert('Não foi possível carregar os avisos. Por favor, tente novamente mais tarde.');
         }
     };
 
@@ -114,172 +149,112 @@ document.addEventListener('DOMContentLoaded', () => {
         formAviso.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const formData = new FormData(formAviso);
-            const submitButton = formAviso.querySelector('.btn-publicar');
-            
-            // Desabilitar botão durante o envio
-            submitButton.disabled = true;
-            submitButton.textContent = 'Publicando...';
-            
             try {
-                // Convert FormData to plain object
-                const formDataObj = {};
-                formData.forEach((value, key) => {
-                    formDataObj[key] = value;
-                });
+                const formData = new FormData(formAviso);
+                const data = {
+                    titulo: formData.get('titulo'),
+                    mensagem: formData.get('mensagem'),
+                    nivel: formData.get('nivel'),
+                    data_expiracao: formData.get('data_expiracao') || null,
+                    fixo_no_topo: formData.get('fixo_no_topo') === 'on'
+                };
 
-                // Send as JSON - Using the correct URL pattern
-                const response = await fetch('/meu-admin/api/avisos/', {
+                const response = await fetch(`${BASE_URL}/meu-admin/api/avisos/`, {
                     method: 'POST',
                     headers: {
-                        'X-CSRFToken': csrftoken,
                         'Content-Type': 'application/json',
+                        'X-CSRFToken': csrftoken,
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify(formDataObj)
+                    body: JSON.stringify(data)
                 });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Limpar formulário
+
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
+
+                const result = await response.json();
+                if (result.success) {
                     formAviso.reset();
-                    selectImportancia.className = '';
-                    
-                    // Carregar avisos iniciais
                     await carregarAvisos();
-                    
-                    // Reset form and UI state
-                    document.getElementById('aviso-titulo').value = '';
-                    document.getElementById('aviso-mensagem').value = '';
-                    document.getElementById('aviso-importancia').value = 'info';
-                    document.getElementById('aviso-expiracao').value = '';
-                    document.getElementById('aviso-horario').value = '';
-                    document.getElementById('aviso-fixo').checked = false;
-                    
-                    // Mostrar mensagem de sucesso
-                    alert('Aviso publicado com sucesso!');
+                    alert('Aviso salvo com sucesso!');
                 } else {
-                    alert('Erro ao publicar aviso: ' + data.message);
+                    throw new Error(result.message || 'Erro ao salvar o aviso');
                 }
             } catch (error) {
-                console.error('Erro:', error);
-                alert('Erro ao publicar aviso. Tente novamente.');
-            } finally {
-                // Reabilitar botão
-                submitButton.disabled = false;
-                submitButton.textContent = 'Publicar Aviso';
+                console.error('Erro ao salvar aviso:', error);
+                alert(`Erro ao salvar aviso: ${error.message}`);
             }
         });
     }
 
-    // --- EVENT LISTENER PARA AÇÕES DOS AVISOS ---
+    // --- EVENT LISTENER PARA AÇÕES NOS AVISOS ---
     if (listaAvisosAtivos) {
         listaAvisosAtivos.addEventListener('click', async (e) => {
             const target = e.target.closest('button');
             if (!target) return;
             
-            const card = target.closest('.notice-card');
-            const id = card.dataset.id;
-            
-            if (target.classList.contains('pin-btn')) {
-                try {
-                    const response = await fetch(`/meu-admin/avisos/${id}/fixar/`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': csrftoken,
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({})
-                    });
+            try {
+                const avisoId = target.dataset.id;
+                if (!avisoId) return;
 
-                    if (!response.ok) {
-                        throw new Error(`Erro HTTP! status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        // Atualiza o estado visual do botão
-                        target.classList.toggle('pinned');
-                        // Recarrega a lista para garantir que os itens fixos fiquem no topo
-                        await carregarAvisos();
-                    } else {
-                        throw new Error(data.message || 'Erro ao atualizar o estado de fixo');
-                    }
-                } catch (error) {
-                    console.error('Erro ao fixar/desafixar aviso:', error);
-                    // Mostra mensagem de erro
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'alert alert-danger';
-                    errorDiv.textContent = `Erro ao atualizar o aviso: ${error.message}`;
-                    document.querySelector('.avisos-container').prepend(errorDiv);
-                    // Remove a mensagem de erro após 5 segundos
-                    setTimeout(() => errorDiv.remove(), 5000);
-                }
-            } else if (target.classList.contains('delete-btn')) {
-                if (!confirm('Tem certeza que deseja mover este aviso para o histórico?')) {
-                    return;
-                }
-                
-                try {
-                    if (!confirm('Tem certeza que deseja mover este aviso para o histórico?')) {
+                if (target.classList.contains('delete-btn')) {
+                    if (!confirm('Tem certeza que deseja excluir este aviso?')) {
                         return;
                     }
 
-                    const response = await fetch(`/meu-admin/avisos/${id}/excluir/`, {
-                        method: 'POST',
+                    const response = await fetch(`${BASE_URL}/meu-admin/api/avisos/${avisoId}/`, {
+                        method: 'DELETE',
                         headers: {
                             'X-CSRFToken': csrftoken,
-                            'Content-Type': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({})
+                        }
                     });
 
                     if (!response.ok) {
-                        throw new Error(`Erro HTTP! status: ${response.status}`);
+                        throw new Error('Erro ao excluir aviso');
                     }
 
-                    const data = await response.json();
-                    
-                    if (data.success) {
+                    const result = await response.json();
+                    if (result.success) {
                         await carregarAvisos();
-                        // Show success message using a more elegant notification if available
-                        const successDiv = document.createElement('div');
-                        successDiv.className = 'alert alert-success';
-                        successDiv.textContent = 'Aviso movido para o histórico com sucesso!';
-                        document.querySelector('.avisos-container').prepend(successDiv);
-                        // Remove the message after 3 seconds
-                        setTimeout(() => successDiv.remove(), 3000);
+                        alert('Aviso excluído com sucesso!');
                     } else {
-                        throw new Error(data.message || 'Erro desconhecido ao excluir aviso');
+                        throw new Error(result.message || 'Erro ao excluir aviso');
                     }
-                } catch (error) {
-                    console.error('Erro ao excluir aviso:', error);
-                    // Show error message in the UI
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'alert alert-danger';
-                    errorDiv.textContent = `Erro ao excluir aviso: ${error.message}`;
-                    document.querySelector('.avisos-container').prepend(errorDiv);
-                    // Remove the error message after 5 seconds
-                    setTimeout(() => errorDiv.remove(), 5000);
+                } 
+                else if (target.classList.contains('pin-btn')) {
+                    const response = await fetch(`${BASE_URL}/meu-admin/avisos/${avisoId}/fixar/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': csrftoken,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Erro ao fixar/desfixar aviso');
+                    }
+
+                    const result = await response.json();
+                    if (result.success) {
+                        await carregarAvisos();
+                    } else {
+                        throw new Error(result.message || 'Erro ao fixar/desfixar aviso');
+                    }
                 }
+            } catch (error) {
+                console.error('Erro ao processar ação:', error);
+                alert(`Erro: ${error.message}`);
             }
         });
     }
 
-    // --- EVENT LISTENER PARA MUDANÇA DE IMPORTÂNCIA ---
-    if (selectImportancia) {
-        selectImportancia.addEventListener('change', (e) => {
-            selectImportancia.className = '';
-            selectImportancia.classList.add(e.target.value);
-        });
-    }
-
-    // --- VERIFICAÇÃO DE EXPIRAÇÃO A CADA 30 SEGUNDOS ---
-    setInterval(() => {
+    // --- INICIALIZAÇÃO ---
+    if (window.location.pathname.includes('avisos')) {
         carregarAvisos();
-    }, 30000);
+        
+        // Atualiza a cada 30 segundos
+        setInterval(carregarAvisos, 30000);
+    }
 });

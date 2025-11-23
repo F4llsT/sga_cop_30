@@ -1008,8 +1008,8 @@ def avisos_api(request):
         return JsonResponse({
             'success': True,
             'avisos_ativos': [serialize_aviso(aviso) for aviso in avisos_ativos],
-            'historico_avisos': [serialize_aviso(aviso) for aviso in historico_avisos]
-        }, encoder=DjangoJSONEncoder)
+            'avisos_historico': [serialize_aviso(aviso) for aviso in historico_avisos]
+        })
     
     elif request.method == 'POST':
         try:
