@@ -40,6 +40,9 @@ const init = () => {
     let marcador;
     let eventoEditando = null;
 
+    // Evita erro caso haja chamadas antigas
+    function configurarEventos() {}
+
     // Inicialização
     const init = () => {
         // Espera um pouco para garantir que o DOM esteja totalmente carregado
@@ -289,28 +292,32 @@ const init = () => {
             if (loadingRow) loadingRow.classList.remove('d-none');
             if (mensagemSemDados) mensagemSemDados.classList.add('d-none');
             
-            console.log('Buscando eventos...');
-            const response = await fetch('/meu-admin/api/eventos/');
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Erro HTTP ${response.status}: ${errorText}`);
-            }
-            
-            const data = await response.json();
-            console.log('Resposta da API:', data);
-            
-            // Garante que eventos seja um array
-            let eventos = [];
-            if (Array.isArray(data)) {
-                eventos = data;
-            } else if (data && typeof data === 'object' && data.results) {
-                eventos = Array.isArray(data.results) ? data.results : [data.results];
-            } else if (data && typeof data === 'object') {
-                eventos = [data];
-            }
-            
-            console.log('Eventos processados:', eventos);
+            console.log('Buscando eventos (todas as páginas)...');
+
+            // Busca paginada da API e agrega todos os resultados para DataTables client-side
+            const eventos = [];
+            let page = 1;
+            const perPage = 100; // traz 100 por página para reduzir requisições
+            let totalPages = 1;
+
+            do {
+                const url = `/meu-admin/api/eventos/?page=${page}&per_page=${perPage}`;
+                const response = await fetch(url);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro HTTP ${response.status}: ${errorText}`);
+                }
+                const data = await response.json();
+                if (data && Array.isArray(data.results)) {
+                    eventos.push(...data.results);
+                } else if (Array.isArray(data)) {
+                    eventos.push(...data);
+                }
+                totalPages = Number(data?.num_pages) || 1;
+                page += 1;
+            } while (page <= totalPages);
+
+            console.log(`Eventos agregados: ${eventos.length}`);
             
             // Inicializa a tabela com os dados
             inicializarDataTable(eventos);
@@ -411,25 +418,28 @@ const init = () => {
                 }
             ],
             language: {
-                url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json',
+                search: 'Pesquisar:',
+                searchPlaceholder: 'Pesquisar eventos...',
+                lengthMenu: 'Mostrar _MENU_ itens por página',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ itens',
+                infoEmpty: 'Nenhum item encontrado',
+                infoFiltered: '(filtrado de _MAX_ itens no total)',
+                loadingRecords: 'Carregando...',
                 processing: 'Processando...',
-                search: 'Buscar:',
-                lengthMenu: 'Mostrar _MENU_ registros por página',
-                info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-                infoEmpty: 'Nenhum registro encontrado',
-                infoFiltered: '(filtrado de _MAX_ registros totais)',
-                zeroRecords: 'Nenhum registro encontrado',
-                emptyTable: 'Nenhum dado disponível na tabela',
+                zeroRecords: 'Nenhum registro correspondente encontrado',
+                emptyTable: 'Nenhum registro encontrado',
                 paginate: {
-                    first: 'Primeiro',
-                    previous: 'Anterior',
-                    next: 'Próximo',
-                    last: 'Último'
+                    first: 'Primeira',
+                    last: 'Última',
+                    next: 'Próxima',
+                    previous: 'Anterior'
                 }
             },
             responsive: true,
+            paging: true,
+            pagingType: 'simple_numbers',
             pageLength: 10,
-            lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],
+            lengthMenu: [10, 25, 50, 100],
             columnDefs: [
                 { width: '20%', targets: [0, 2] },
                 { width: '15%', targets: [1, 3] },
@@ -950,89 +960,142 @@ function debounce(func, wait) {
     };
 }
 
-// Atualizando a função initDataTable
+// (init duplicado removido)
+
+// Configuração do DataTable
 function initDataTable() {
     if (typeof $ !== 'undefined' && $.fn.DataTable) {
-        // Inicializa a tabela de eventos com DataTables
-        function inicializarTabela() {
-            // Destrói a tabela existente se já tiver sido inicializada
-            if ($.fn.DataTable.isDataTable('#tabela-eventos')) {
-                tabelaEventos.destroy();
-                $('#tabela-eventos').empty();
+        // Função para renderizar células com truncagem
+        const renderWithTooltip = (data, type, row) => {
+            if (type === 'display' && data && data.length > 30) {
+                return `<span class="text-truncate" style="display: inline-block; max-width: 100%;" title="${data.replace(/"/g, '&quot;')}">${data.substring(0, 30)}...</span>`;
             }
-            
-            // Função para renderizar células com truncagem
-            const renderWithTooltip = (data, type, row) => {
-                if (type === 'display' && data && data.length > 30) {
-                    return `<span class="text-truncate" style="display: inline-block; max-width: 100%;" title="${data.replace(/"/g, '&quot;')}">${data.substring(0, 30)}...</span>`;
-                }
-                return data;
-            };
+            return data;
+        };
 
-            // Inicializa a tabela com as configurações
-            tabelaEventos = $('#tabela-eventos').DataTable({
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Portuguese-Brasil.json',
-                    processing: 'Processando...',
-                    search: 'Buscar:',
-                    lengthMenu: 'Mostrar _MENU_ registros por página',
-                    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-                    infoEmpty: 'Nenhum registro encontrado',
-                    infoFiltered: '(filtrado de _MAX_ registros totais)',
-                    infoPostFix: '',
-                    loadingRecords: 'Carregando...',
-                    zeroRecords: 'Nenhum registro encontrado',
-                    emptyTable: 'Nenhum dado disponível na tabela',
-                    paginate: {
-                        first: 'Primeiro',
-                        previous: 'Anterior',
-                        next: 'Próximo',
-                        last: 'Último'
-                    }
-                },
-                processing: true,
-                serverSide: false,
-                responsive: true,
-                order: [[3, 'asc']], // Ordena por data/hora por padrão
-                pageLength: 10,
-                lengthMenu: [[5, 10, 25, 50, -1], [5, 10, 25, 50, 'Todos']],
-                columnDefs: [
-                    { 
-                        targets: [0, 1, 2], // Aplica a colunas Título, Local e Palestrante
-                        render: renderWithTooltip,
-                        className: 'text-truncate-cell'
-                    },
-                    { 
-                        orderable: false, 
-                        targets: [5] // Coluna de ações
-                    },
-                    { 
-                        className: 'text-center', 
-                        targets: [3, 4, 5] // Centraliza Data/Hora, Importante e Ações
-                    }
-                ],
-                initComplete: function() {
-                    $('#tabela-eventos').removeClass('dataTable-loading');
-                },
-                drawCallback: function() {
-                    $('.dataTables_paginate > .pagination').addClass('pagination-sm');
-                    $('.dataTables_length select').addClass('form-control-sm');
-                    $('.dataTables_filter input').addClass('form-control-sm');
-                },
-                createdRow: function(row, data, dataIndex) {
-                    $('td', row).css('white-space', 'nowrap')
-                                .css('overflow', 'hidden')
-                                .css('text-overflow', 'ellipsis');
-                }
-            });
-            
-            // Aplica a pesquisa personalizada
-            $('#search-input').keyup(function() {
-                tabelaEventos.search($(this).val()).draw();
-            });
+        // Destrói a tabela existente se já tiver sido inicializada
+        if ($.fn.DataTable.isDataTable('#tabela-eventos')) {
+            $('#tabela-eventos').DataTable().destroy();
         }
-        
-        inicializarTabela();
+
+        // Inicializa a tabela com as configurações
+        tabelaEventos = $('#tabela-eventos').DataTable({
+            responsive: true,
+            language: {
+                search: 'Pesquisar:',
+                searchPlaceholder: 'Pesquisar eventos...',
+                lengthMenu: 'Mostrar _MENU_ itens por página',
+                info: 'Mostrando _START_ a _END_ de _TOTAL_ itens',
+                infoEmpty: 'Nenhum item encontrado',
+                infoFiltered: '(filtrado de _MAX_ itens no total)',
+                paginate: {
+                    first: 'Primeira',
+                    last: 'Última',
+                    next: 'Próxima',
+                    previous: 'Anterior'
+                },
+                emptyTable: 'Nenhum registro encontrado',
+                zeroRecords: 'Nenhum registro correspondente encontrado'
+            },
+            order: [[3, 'asc']], // Ordena pela data/hora (coluna 4, índice 3)
+            pageLength: 10,
+            lengthMenu: [10, 25, 50, 100],
+            dom: "<'row'<'col-sm-12 col-md-6'l><'col-sm-12 col-md-6'f>>" +
+                 "<'row'<'col-sm-12'tr>>" +
+                 "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            processing: true,
+            serverSide: false,
+            paging: true,
+            pagingType: 'simple_numbers',
+            retrieve: true,
+            destroy: true,
+            columns: [
+                { 
+                    data: 'titulo',
+                    render: renderWithTooltip
+                },
+                { 
+                    data: 'local',
+                    render: renderWithTooltip
+                },
+                { 
+                    data: 'palestrante',
+                    render: renderWithTooltip
+                },
+                { 
+                    data: 'start_time',
+                    render: function(data, type, row) {
+                        return moment(data).format('DD/MM/YYYY HH:mm');
+                    }
+                },
+                { 
+                    data: 'importante',
+                    render: function(data) {
+                        return data ? '<i class="fas fa-star text-warning"></i>' : '';
+                    }
+                },
+                {
+                    data: null,
+                    orderable: false,
+                    render: function(data, type, row) {
+                        return `
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-primary btn-editar" data-id="${row.id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger btn-excluir" data-id="${row.id}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            ],
+            columnDefs: [
+                { 
+                    className: 'text-truncate-cell',
+                    targets: [0, 1, 2]
+                },
+                { 
+                    className: 'text-center', 
+                    targets: [3, 4, 5]
+                }
+            ],
+            initComplete: function() {
+                $('.dataTables_length select').addClass('form-control-sm form-select');
+                $('.dataTables_filter input').addClass('form-control-sm');
+                
+                // Adiciona eventos aos botões de ação
+                $('#tabela-eventos').on('click', '.btn-editar', function() {
+                    const id = $(this).data('id');
+                    carregarEventoParaEdicao(id);
+                });
+                
+                $('#tabela-eventos').on('click', '.btn-excluir', function() {
+                    const id = $(this).data('id');
+                    confirmarExclusaoEvento(id);
+                });
+            },
+            drawCallback: function() {
+                // Atualiza a contagem de itens exibidos
+                const api = this.api();
+                const total = api.data().count();
+                const filtered = api.page.info().recordsDisplay;
+                
+                if (filtered === 0) {
+                    $('.dataTables_info').html('Nenhum registro encontrado');
+                } else {
+                    const pageInfo = api.page.info();
+                    const start = pageInfo.start + 1;
+                    const end = Math.min(pageInfo.end, filtered);
+                    
+                    $('.dataTables_info').html(
+                        `Mostrando ${start} a ${end} de ${filtered} itens` +
+                        (filtered < total ? ` (filtrado de ${total} itens no total)` : '')
+                    );
+                }
+            }
+        });
     }
 }
 
