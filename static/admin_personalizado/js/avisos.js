@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
-                    const response = await fetch(`${BASE_URL}/meu-admin/api/avisos/${avisoId}/`, {
+                    const response = await fetch(`${BASE_URL}/api/avisos/${avisoId}/excluir/`, {
                         method: 'DELETE',
                         headers: {
                             'X-CSRFToken': csrftoken,
@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } 
                 else if (target.classList.contains('pin-btn')) {
-                    const response = await fetch(`${BASE_URL}/meu-admin/avisos/${avisoId}/fixar/`, {
+                    const response = await fetch(`${BASE_URL}/avisos/${avisoId}/fixar/`, {
                         method: 'POST',
                         headers: {
                             'X-CSRFToken': csrftoken,
