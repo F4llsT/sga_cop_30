@@ -940,7 +940,7 @@ def avisos_admin(request):
     return render(request, 'admin_personalizado/avisos/gerenciar_avisos.html', context)
 
 
-@require_http_methods(["POST"])
+@require_http_methods(["POST", "DELETE"])
 def excluir_aviso(request, aviso_id):
     """
     Move um aviso para o histórico (desativa).
@@ -966,7 +966,6 @@ def excluir_aviso(request, aviso_id):
             'success': False,
             'message': f'Erro ao mover aviso para o histórico: {str(e)}'
         }, status=500)
-
 
 @staff_required
 @require_http_methods(["GET", "POST"])

@@ -188,67 +188,69 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- EVENT LISTENER PARA AÇÕES NOS AVISOS ---
-    if (listaAvisosAtivos) {
-        listaAvisosAtivos.addEventListener('click', async (e) => {
-            const target = e.target.closest('button');
-            if (!target) return;
-            
-            try {
-                const avisoId = target.dataset.id;
-                if (!avisoId) return;
+// ... código anterior ...
 
-                if (target.classList.contains('delete-btn')) {
-                    if (!confirm('Tem certeza que deseja excluir este aviso?')) {
-                        return;
-                    }
+// --- EVENT LISTENER PARA AÇÕES NOS AVISOS ---
+if (listaAvisosAtivos) {
+    listaAvisosAtivos.addEventListener('click', async (e) => {
+        const target = e.target.closest('button');
+        if (!target) return;
+        
+        try {
+            const avisoId = target.dataset.id;
+            if (!avisoId) return;
 
-                    const response = await fetch(`${BASE_URL}/api/avisos/${avisoId}/excluir/`, {
-                        method: 'DELETE',
-                        headers: {
-                            'X-CSRFToken': csrftoken,
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Erro ao excluir aviso');
-                    }
-
-                    const result = await response.json();
-                    if (result.success) {
-                        await carregarAvisos();
-                        alert('Aviso excluído com sucesso!');
-                    } else {
-                        throw new Error(result.message || 'Erro ao excluir aviso');
-                    }
-                } 
-                else if (target.classList.contains('pin-btn')) {
-                    const response = await fetch(`${BASE_URL}/avisos/${avisoId}/fixar/`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': csrftoken,
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Erro ao fixar/desfixar aviso');
-                    }
-
-                    const result = await response.json();
-                    if (result.success) {
-                        await carregarAvisos();
-                    } else {
-                        throw new Error(result.message || 'Erro ao fixar/desfixar aviso');
-                    }
+            if (target.classList.contains('delete-btn')) {
+                if (!confirm('Tem certeza que deseja excluir este aviso?')) {
+                    return;
                 }
-            } catch (error) {
-                console.error('Erro ao processar ação:', error);
-                alert(`Erro: ${error.message}`);
+
+                const response = await fetch(`${BASE_URL}/api/avisos/${avisoId}/excluir/`, {
+                    method: 'POST',  // Alterado de DELETE para POST
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao excluir aviso');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    await carregarAvisos();
+                    alert('Aviso excluído com sucesso!');
+                } else {
+                    throw new Error(result.message || 'Erro ao excluir aviso');
+                }
+            } 
+            else if (target.classList.contains('pin-btn')) {
+                const response = await fetch(`${BASE_URL}/avisos/${avisoId}/fixar/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrftoken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Erro ao fixar/desfixar aviso');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    await carregarAvisos();
+                } else {
+                    throw new Error(result.message || 'Erro ao fixar/desfixar aviso');
+                }
             }
-        });
-    }
+        } catch (error) {
+            console.error('Erro ao processar ação:', error);
+            alert(`Erro: ${error.message}`);
+        }
+    });
+}
 
     // --- INICIALIZAÇÃO ---
     if (window.location.pathname.includes('avisos')) {
