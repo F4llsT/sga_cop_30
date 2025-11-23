@@ -118,7 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const carregarAvisos = async () => {
         try {
             console.log('Carregando avisos...');
-            const response = await fetch(`${BASE_URL}/meu-admin/api/avisos/`, {
+            const response = await fetch(`${BASE_URL}/api/avisos/`, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     fixo_no_topo: formData.get('fixo_no_topo') === 'on'
                 };
 
-                const response = await fetch(`${BASE_URL}/meu-admin/api/avisos/`, {
+                const response = await fetch(`${BASE_URL}/api/avisos/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
