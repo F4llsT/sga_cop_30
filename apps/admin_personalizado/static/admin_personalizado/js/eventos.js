@@ -5,6 +5,9 @@
  * incluindo validação de formulário, integração com mapa e manipulação de eventos.
  */
 
+// Configura a URL base dinâmica para funcionar tanto localmente quanto no PythonAnywhere
+const BASE_URL = window.location.pathname.includes('meu-admin') ? '/meu-admin' : '';
+
 document.addEventListener('DOMContentLoaded', function() {
     // Elementos do DOM
     const formEvento = document.getElementById('form-evento');
@@ -92,8 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * Carrega a lista de palestrantes via AJAX
      */
     function carregarPalestrantes() {
-        // Simulação de chamada AJAX - substitua pela sua rota real
-        fetch('/api/palestrantes/')
+        // Busca a lista de palestrantes
+        fetch(`${BASE_URL}/api/palestrantes/`)
             .then(response => response.json())
             .then(palestrantes => {
                 // Limpa o select
@@ -134,8 +137,8 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
         
-        // Simulação de chamada AJAX - substitua pela sua rota real
-        fetch('/api/eventos/')
+        // Busca a lista de eventos
+        fetch(`${BASE_URL}/api/eventos/`)
             .then(response => response.json())
             .then(eventos => {
                 if (eventos.length === 0) {
@@ -231,8 +234,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} eventoId - ID do evento a ser editado
      */
     function editarEvento(eventoId) {
-        // Simulação de chamada AJAX - substitua pela sua rota real
-        fetch(`/api/eventos/${eventoId}/`)
+        // Busca os detalhes de um evento específico
+        fetch(`${BASE_URL}/api/eventos/${eventoId}/`)
             .then(response => response.json())
             .then(evento => {
                 // Preenche o formulário com os dados do evento
@@ -335,8 +338,8 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {string} eventoId - ID do evento a ser excluído
      */
     function excluirEvento(eventoId) {
-        // Simulação de chamada AJAX - substitua pela sua rota real
-        fetch(`/api/eventos/${eventoId}/`, {
+        // Exclui um evento
+        fetch(`${BASE_URL}/api/eventos/${eventoId}/`, {
             method: 'DELETE',
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
@@ -389,8 +392,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Determina o método HTTP e a URL
             const metodo = eventoEditando ? 'PUT' : 'POST';
             const url = eventoEditando 
-                ? `/api/eventos/${eventoEditando}/` 
-                : '/api/eventos/';
+                ? `${BASE_URL}/api/eventos/${eventoEditando}/` 
+                : `${BASE_URL}/api/eventos/`;
             
             // Envia os dados
             fetch(url, {
