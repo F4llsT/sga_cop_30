@@ -4,14 +4,6 @@
  * Versão: 3.1 - Corrigido problema do Chart.js
  */
 
-
-
-
-
-
-
-
-
 class PasseFacilAdmin {
     constructor() {
         this.elements = this.initializeElements();
@@ -614,21 +606,86 @@ class PasseFacilAdmin {
         return `${code.substring(0, maxLength / 2)}...${code.substring(code.length - (maxLength / 2) + 3)}`;
     }
 
-    
     /**
-     * Trunca códigos longos para exibição
+     * Inicializa o gráfico - VERSÃO CORRIGIDA
      */
-    truncateCode(code, maxLength = 20) {
-        if (!code) return '';
-        if (code.length <= maxLength) return code;
-        return `${code.substring(0, maxLength / 2)}...${code.substring(code.length - (maxLength / 2) + 3)}`;
+    initChart() {
+        const { elements, state } = this;
+        
+        // Evita inicialização duplicada
+        if (state.chartInitialized) {
+            console.log('Gráfico já foi inicializado');
+            return;
+        }
+        
+        if (!elements.miniChart) {
+            console.error('Elemento do gráfico não encontrado');
+            return;
+        }
+        
+        // Procura pelo canvas dentro do container
+        let canvas = elements.miniChart.querySelector('canvas');
+        
+        if (!canvas) {
+            console.log('Canvas não encontrado, o gráfico pode não ter sido criado pelo template ainda');
+            // Tenta novamente após um pequeno delay
+            setTimeout(() => this.initChart(), 200);
+            return;
+        }
+        
+        // Destrói o gráfico existente, se houver
+        if (state.chart) {
+            state.chart.destroy();
+            state.chart = null;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error('Não foi possível obter o contexto 2D do canvas');
+            return;
+        }
+        
+        // Marca como inicializado
+        state.chartInitialized = true;
+        
+        // Dados mockados para teste (substituir com dados reais do template)
+        state.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+                datasets: [{
+                    label: 'Validações',
+                    data: [12, 19, 3, 5, 2, 3, 10],
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1,
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        mode: 'index',
+                        intersect: false
+                    }
+                },
+                scales: {
+                    y: { display: false },
+                    x: { display: false }
+                },
+                elements: {
+                    point: { radius: 0 }
+                }
+            }
+        });
+        
+        console.log('Gráfico inicializado com sucesso');
     }
-
- 
-
-
-
-    
 
     /**
      * Atualiza a data e hora no cabeçalho
@@ -737,7 +794,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Expõe a instância globalmente se necessário para depuração
     window.passeFacilAdmin = app;
 });
-
-
-
-

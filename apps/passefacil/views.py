@@ -60,19 +60,28 @@ def validar_qr_code(request):
         validacao.save()
         
         # Cria notificação para o usuário
-        notificacao = Notificacao.objects.create(
-            usuario=user,
-            titulo='Passe Fácil Validado',
-            mensagem=f'Seu código foi validado em {timezone.localtime().strftime("%d/%m/%Y %H:%M")} (IP: {ip_address})',
-            tipo='success'
-        )
-        
-        # Envia notificação push se o usuário estiver online
-        send_push_to_user(
-            user_external_id=str(user.id),
-            title='Passe Fácil Validado',
-            message=f'Seu código foi validado em {timezone.localtime().strftime("%d/%m/%Y %H:%M")}'
-        )
+        try:
+            notificacao = Notificacao.objects.create(
+                titulo='Passe Fácil Validado',
+                mensagem=f'Seu código foi validado em {timezone.localtime().strftime("%d/%m/%Y %H:%M")} (IP: {ip_address})',
+                tipo='success',
+                criado_por=request.user if request.user.is_authenticated else None
+            )
+            
+            # Adiciona o usuário à notificação
+            notificacao.usuarios.add(user)
+            
+            # Envia notificação push se o usuário estiver online
+            try:
+                send_push_to_user(
+                    user_external_id=str(user.id),
+                    title='Passe Fácil Validado',
+                    message=f'Seu código foi validado em {timezone.localtime().strftime("%d/%m/%Y %H:%M")}'
+                )
+            except Exception as push_error:
+                logger.warning(f"Erro ao enviar notificação push: {push_error}")
+        except Exception as notif_error:
+            logger.warning(f"Erro ao criar notificação: {notif_error}")
         
         return JsonResponse({
             'valido': True,

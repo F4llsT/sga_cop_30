@@ -31,28 +31,62 @@
       </div>
     </header>
 
-
-    <!-- Conteúdo Principal -->
-    <main class="passefacil-main">
-      <!-- Resumo Estatístico -->
-      <div class="stats-container">
-        <div class="stat-card">
-          <div class="stat-icon">
-            <i class="icon-chart-line"></i>
-          </div>
-          <div class="stat-info">
-            <div class="card-header-row">
-              <h3>{{ period_label|default:"Últimos 7 dias" }}</h3>
-              <div class="charts-toolbar">
-                <a href="?period=7d" class="btn btn-small{% if period == '7d' %} active{% endif %}"{% if period == '7d' %} aria-current="page"{% endif %}>7 dias</a>
-                <a href="?period=30d" class="btn btn-small{% if period == '30d' %} active{% endif %}"{% if period == '30d' %} aria-current="page"{% endif %}>30 dias</a>
-                <a href="?period=all" class="btn btn-small{% if period == 'all' %} active{% endif %}"{% if period == 'all' %} aria-current="page"{% endif %}>Desde sempre</a>
-              </div>
-            </div>
-            <div class="mini-chart" id="miniChart"></div>
-          </div>
+    <!-- Cards de Estatísticas -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <i class="fa-solid fa-qrcode"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ total_validacoes }}</h3>
+          <p>Total de Validações</p>
+          <span class="stat-period">Hoje</span>
         </div>
       </div>
+      <div class="stat-card success">
+        <div class="stat-icon">
+          <i class="fa-solid fa-check-circle"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ validas }}</h3>
+          <p>Passes Válidos</p>
+          <span class="stat-period">Hoje</span>
+        </div>
+      </div>
+      <div class="stat-card error">
+        <div class="stat-icon">
+          <i class="fa-solid fa-times-circle"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ invalidas }}</h3>
+          <p>Passes Inválidos</p>
+          <span class="stat-period">Hoje</span>
+        </div>
+      </div>
+      <div class="stat-card info">
+        <div class="stat-icon">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ total_usuarios }}</h3>
+          <p>Usuários Ativos</p>
+          <span class="stat-period">Total</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfico de Validações -->
+    <div class="chart-container">
+      <div class="chart-header">
+        <h3>Validações - {{ period_label }}</h3>
+        <div class="charts-toolbar">
+          <a href="?period=7d" class="btn btn-small{% if period == '7d' %} active{% endif %}"{% if period == '7d' %} aria-current="page"{% endif %}>7 dias</a>
+          <a href="?period=30d" class="btn btn-small{% if period == '30d' %} active{% endif %}"{% if period == '30d' %} aria-current="page"{% endif %}>30 dias</a>
+          <a href="?period=all" class="btn btn-small{% if period == 'all' %} active{% endif %}"{% if period == 'all' %} aria-current="page"{% endif %}>Desde sempre</a>
+        </div>
+      </div>
+      <div class="mini-chart" id="miniChart"></div>
+    </div>
       
       <!-- Tela de Listagem -->
       <section id="listView" class="view-content active">
@@ -265,8 +299,6 @@
     </div>
   </div>
   
-
-
   <!-- Dados para o gráfico -->
   <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -359,72 +391,71 @@
       new Chart(ctx, {
         type: 'line',
         data: chartData,
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: 'bottom',
-                labels: {
-                  padding: 20,
-                  usePointStyle: true,
-                  pointStyle: 'circle'
-                }
-              },
-              tooltip: {
-                mode: 'index',
-                intersect: false,
-                backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                titleFont: { size: 14, weight: 'bold' },
-                bodyFont: { size: 13 },
-                padding: 12,
-                displayColors: true,
-                callbacks: {
-                  label: function(context) {
-                    return `${context.dataset.label}: ${context.raw}`;
-                  }
-                }
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                usePointStyle: true,
+                pointStyle: 'circle'
               }
             },
-            scales: {
-              x: {
-                grid: { display: false },
-                ticks: {
-                  maxRotation: 45,
-                  minRotation: 45
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleFont: { size: 14, weight: 'bold' },
+              bodyFont: { size: 13 },
+              padding: 12,
+              displayColors: true,
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${context.raw}`;
                 }
-              },
-              y: {
-                beginAtZero: true,
-                grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                ticks: { stepSize: 1 }
-              }
-            },
-            elements: {
-              point: {
-                radius: 0, // Remove os pontos da linha
-                hoverRadius: 0, // Remove o hover dos pontos
-                borderWidth: 0 // Remove a borda dos pontos
-              },
-              line: {
-                tension: 0.4,
-                borderWidth: 2,
-                fill: false
               }
             }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                maxRotation: 45,
+                minRotation: 45
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(0, 0, 0, 0.05)' },
+              ticks: { stepSize: 1 }
+            }
+          },
+          elements: {
+            point: {
+              radius: 0, // Remove os pontos da linha
+              hoverRadius: 0, // Remove o hover dos pontos
+              borderWidth: 0 // Remove a borda dos pontos
+            },
+            line: {
+              tension: 0.4,
+              borderWidth: 2,
+              fill: false
+            }
           }
-        });
-      } catch (error) {
-        console.error('Erro ao inicializar o gráfico:', error);
-        const container = document.getElementById('miniChart');
-        if (container) {
-          container.innerHTML = '<div class="error-message">Erro ao carregar o gráfico. Por favor, recarregue a página.</div>';
         }
+      });
+    } catch (error) {
+      console.error('Erro ao inicializar o gráfico:', error);
+      const container = document.getElementById('miniChart');
+      if (container) {
+        container.innerHTML = '<div class="error-message">Erro ao carregar o gráfico. Por favor, recarregue a página.</div>';
       }
-    });
+    }
+  });
   </script>
-
-
+  
   <!-- JavaScript da aplicação -->
   <script src="{% static 'admin_personalizado/js/passefacilADM.js' %}" defer></script>
 {% endblock %}
