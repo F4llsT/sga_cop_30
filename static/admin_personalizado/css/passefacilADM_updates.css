@@ -1,0 +1,108 @@
+/* Estilos para atualização da tabela de validações */
+
+/* Indicador de carregamento */
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    color: #666;
+    font-size: 14px;
+}
+
+.loading-indicator .icon-spinner {
+    animation: spin 1s linear infinite;
+    font-size: 16px;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Efeito de highlight na linha atualizada */
+.row-updated {
+    background-color: rgba(76, 175, 80, 0.1) !important;
+    border-left: 4px solid #4CAF50 !important;
+    animation: highlightPulse 2s ease-in-out;
+}
+
+@keyframes highlightPulse {
+    0% {
+        background-color: rgba(76, 175, 80, 0.3);
+        transform: scale(1.02);
+    }
+    50% {
+        background-color: rgba(76, 175, 80, 0.2);
+        transform: scale(1.01);
+    }
+    100% {
+        background-color: rgba(76, 175, 80, 0.1);
+        transform: scale(1);
+    }
+}
+
+/* Transição suave para as atualizações */
+#passesTableBody tr {
+    transition: all 0.3s ease;
+}
+
+/* Melhoria visual para o status badge */
+.status-badge.success {
+    animation: badgeSuccess 1s ease-in-out;
+}
+
+@keyframes badgeSuccess {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+    }
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    }
+}
+
+/* Indicador de atualização no contador */
+#recentValidationsCount {
+    transition: all 0.3s ease;
+}
+
+#recentValidationsCount.updated {
+    background-color: #4CAF50 !important;
+    color: white !important;
+    transform: scale(1.1);
+}
+
+/* Efeito de fade-in para novos itens na lista de validações */
+.validation-item {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsividade para o indicador de carregamento */
+@media (max-width: 768px) {
+    .loading-indicator {
+        padding: 15px;
+        font-size: 13px;
+    }
+    
+    .loading-indicator .icon-spinner {
+        font-size: 14px;
+    }
+}

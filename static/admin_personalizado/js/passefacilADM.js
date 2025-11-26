@@ -600,9 +600,149 @@ class PasseFacilAdmin {
                     elements.recentValidationsCount.textContent = current + 1;
                 }
             }
+            
+            // Recarrega a página para atualizar a tabela completa de validações
+            setTimeout(() => {
+                this.reloadValidationTable(code);
+            }, 1000);
+            
         } catch (e) {
             console.error('Erro ao atualizar a interface:', e);
         }
+    }
+
+    /**
+     * Recarrega a tabela de últimas validações via AJAX
+     */
+    async reloadValidationTable(code = null) {
+        try {
+            console.log('Recarregando tabela de validações...');
+            
+            // Mostra indicador de carregamento na tabela
+            if (this.elements.passesTableBody) {
+                const loadingRow = document.createElement('tr');
+                loadingRow.innerHTML = `
+                    <td colspan="3" class="text-center">
+                        <div class="loading-indicator">
+                            <i class="icon-spinner rotating"></i>
+                            <span>Atualizando tabela...</span>
+                        </div>
+                    </td>
+                `;
+                loadingRow.id = 'loading-row';
+                this.elements.passesTableBody.insertBefore(loadingRow, this.elements.passesTableBody.firstChild);
+            }
+            
+            // Faz uma requisição AJAX para obter o HTML atualizado da página
+            const response = await fetch(window.location.href, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Falha ao recarregar dados');
+            }
+            
+            const html = await response.text();
+            
+            // Cria um parser para extrair apenas a tabela de validações
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Encontra a tabela de validações no novo HTML
+            const newTableBody = doc.querySelector('#passesTableBody');
+            const newValidationsList = doc.querySelector('#validationsList');
+            const newValidationCount = doc.querySelector('#recentValidationsCount');
+            
+            // Remove o indicador de carregamento
+            const loadingRow = document.getElementById('loading-row');
+            if (loadingRow) {
+                loadingRow.remove();
+            }
+            
+            // Atualiza a tabela de passes se encontrada
+            if (newTableBody && this.elements.passesTableBody) {
+                this.elements.passesTableBody.innerHTML = newTableBody.innerHTML;
+                console.log('Tabela de passes atualizada');
+                
+                // Adiciona efeito de highlight na linha atualizada
+                if (code) {
+                    this.highlightUpdatedRow(code);
+                }
+            }
+            
+            // Atualiza a lista de validações se encontrada
+            if (newValidationsList && this.elements.validationsList) {
+                this.elements.validationsList.innerHTML = newValidationsList.innerHTML;
+                console.log('Lista de validações atualizada');
+            }
+            
+            // Atualiza o contador se encontrado
+            if (newValidationCount && this.elements.recentValidationsCount) {
+                this.elements.recentValidationsCount.textContent = newValidationCount.textContent;
+                
+                // Adiciona efeito de highlight no contador
+                this.elements.recentValidationsCount.classList.add('updated');
+                setTimeout(() => {
+                    this.elements.recentValidationsCount.classList.remove('updated');
+                }, 1000);
+                
+                console.log('Contador de validações atualizado');
+            }
+            
+            // Atualiza o contador de resultados da busca
+            if (this.elements.totalResults) {
+                const totalRows = this.elements.passesTableBody.querySelectorAll('tr:not(:empty)').length;
+                this.elements.totalResults.textContent = `${totalRows} resultado${totalRows !== 1 ? 's' : ''} encontrado${totalRows !== 1 ? 's' : ''}`;
+            }
+            
+        } catch (error) {
+            console.error('Erro ao recarregar tabela de validações:', error);
+            
+            // Remove o indicador de carregamento
+            const loadingRow = document.getElementById('loading-row');
+            if (loadingRow) {
+                loadingRow.remove();
+            }
+            
+            // Fallback: recarrega a página inteira
+            console.log('Fallback: recarregando página inteira...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+        }
+    }
+
+    /**
+     * Adiciona efeito de highlight na linha atualizada
+     */
+    highlightUpdatedRow(code) {
+        if (!this.elements.passesTableBody || !code) return;
+        
+        const rows = this.elements.passesTableBody.querySelectorAll('tr');
+        const inputCode = String(code).replace(/-/g, '').toLowerCase();
+        
+        rows.forEach(tr => {
+            const codeEl = tr.querySelector('.code-cell .code-value');
+            if (codeEl) {
+                const rowCode = (codeEl.textContent || '').trim().replace(/-/g, '').toLowerCase();
+                
+                if (rowCode === inputCode) {
+                    // Adiciona classe de highlight
+                    tr.classList.add('row-updated');
+                    
+                    // Remove o highlight após 3 segundos
+                    setTimeout(() => {
+                        tr.classList.remove('row-updated');
+                    }, 3000);
+                    
+                    return; // Para de procurar após encontrar
+                }
+            }
+        });
     }
 
     /**
