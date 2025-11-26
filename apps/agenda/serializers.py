@@ -5,8 +5,34 @@ from .models import Event
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
         model = Event
-        fields = '__all__'
+        fields = [
+            'id', 'titulo', 'descricao', 'local', 'palestrante',
+            'start_time', 'end_time', 'tags', 'importante',
+            'created_at', 'created_by', 'latitude', 'longitude'
+        ]
         read_only_fields = ('created_at', 'created_by')
+    
+    def to_representation(self, instance):
+        """Formata os dados para o frontend"""
+        data = super().to_representation(instance)
+        
+        # Formata as datas para ISO 8601
+        if instance.start_time:
+            data['start_time'] = instance.start_time.isoformat()
+        if instance.end_time:
+            data['end_time'] = instance.end_time.isoformat()
+        if instance.created_at:
+            data['created_at'] = instance.created_at.isoformat()
+            
+        # Garante que campos opcionais tenham valores padrão
+        data['palestrante'] = data.get('palestrante', '')
+        data['descricao'] = data.get('descricao', '')
+        data['tags'] = data.get('tags', 'sustentabilidade')
+        data['importante'] = data.get('importante', False)
+        data['latitude'] = data.get('latitude')
+        data['longitude'] = data.get('longitude')
+        
+        return data
     
     def validate(self, data):
         """

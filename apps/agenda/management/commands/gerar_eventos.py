@@ -3,6 +3,7 @@ import random
 from datetime import datetime, timedelta
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from django.db import models
 from apps.agenda.models import Event
 
 # Dados de exemplo para geração de eventos
@@ -160,8 +161,31 @@ class Command(BaseCommand):
                     created_by=usuario
                 )
                 
+                # Gera um número aleatório de favoritos (0 a 100)
+                num_favoritos = random.randint(0, 100)
+                
+                # Se houver favoritos para criar, busca usuários aleatórios
+                if num_favoritos > 0:
+                    usuarios = list(User.objects.filter(is_active=True))
+                    
+                    # Se não tiver usuários suficientes, usa o máximo possível
+                    if usuarios:
+                        # Limita ao número de usuários disponíveis
+                        num_favoritos = min(num_favoritos, len(usuarios))
+                        
+                        # Seleciona usuários aleatórios
+                        usuarios_selecionados = random.sample(usuarios, num_favoritos)
+                        
+                        # Cria os favoritos
+                        from apps.agenda.models import UserAgenda
+                        for user in usuarios_selecionados:
+                            UserAgenda.objects.get_or_create(
+                                user=user,
+                                event=evento
+                            )
+                
                 eventos_criados += 1
-                self.stdout.write(f"Evento criado: {evento.titulo} em {evento.start_time}")
+                self.stdout.write(f"Evento criado: {evento.titulo} em {evento.start_time} ({num_favoritos} favoritos)")
                 
             except Exception as e:
                 self.stderr.write(f"Erro ao criar evento {i+1}: {e}")
@@ -170,6 +194,29 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f'\nTotal de eventos criados com sucesso: {eventos_criados}/{quantidade}')
         )
+        
+        # Mostra estatísticas de favoritos
+        from apps.agenda.models import UserAgenda
+        total_favoritos = UserAgenda.objects.count()
+        eventos_com_favoritos = Event.objects.annotate(
+            num_favoritos=models.Count('agenda_usuarios')
+        ).filter(num_favoritos__gt=0).count()
+        
+        self.stdout.write(
+            self.style.SUCCESS(f'\n📊 Estatísticas de Favoritos:')
+        )
+        self.stdout.write(f'   • Total de favoritos criados: {total_favoritos}')
+        self.stdout.write(f'   • Eventos com favoritos: {eventos_com_favoritos}')
+        
+        if eventos_com_favoritos > 0:
+            # Mostra top 5 eventos mais favoritados
+            top_eventos = Event.objects.annotate(
+                num_favoritos=models.Count('agenda_usuarios')
+            ).filter(num_favoritos__gt=0).order_by('-num_favoritos')[:5]
+            
+            self.stdout.write(f'\n🏆 Top 5 Eventos Mais Favoritados:')
+            for i, evento in enumerate(top_eventos, 1):
+                self.stdout.write(f'   {i}. {evento.titulo}: {evento.num_favoritos} favoritos')
 
     def handle(self, *args, **options):
         quantidade = options['quantidade']

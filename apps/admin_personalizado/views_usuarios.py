@@ -203,6 +203,15 @@ def listar_usuarios(request):
             Q(pk=request.user.pk)  # Inclui o próprio gerente
         ).distinct()
     
+    # Aplica filtro de busca se houver
+    search_term = request.GET.get('search', '').strip()
+    if search_term:
+        usuarios = usuarios.filter(
+            Q(first_name__icontains=search_term) |
+            Q(last_name__icontains=search_term) |
+            Q(email__icontains=search_term)
+        )
+    
     # Paginação
     page = request.GET.get('page', 1)
     paginator = Paginator(usuarios, 10)  # 10 usuários por página
@@ -216,6 +225,9 @@ def listar_usuarios(request):
     
     context = {
         'object_list': usuarios_paginados,
+        'page_obj': usuarios_paginados,
+        'is_paginated': usuarios_paginados.has_other_pages(),
+        'paginator': paginator,
         'agora': timezone.now(),
         # Adicionando as variáveis usadas nos cards de estatística
         'total_usuarios': usuarios.count(),

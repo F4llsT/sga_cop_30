@@ -7,6 +7,7 @@
 {{ block.super }}
 <link rel="stylesheet" href="{% static 'admin_personalizado/css/passefacilADM.css' %}">
 <link rel="stylesheet" href="{% static 'admin_personalizado/css/usuario_list.css' %}">
+<link rel="stylesheet" href="{% static 'admin_personalizado/css/search_styles.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -54,12 +55,28 @@
     <!-- Tabela de Usuários -->
     <div class="table-container">
         <div class="search-container">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Pesquisar usuários...">
-                <i class="fas fa-search"></i>
-            </div>
+            <form method="GET" id="searchForm" class="search-form">
+                <div class="search-box">
+                    <input type="text" 
+                           id="searchInput" 
+                           name="search" 
+                           placeholder="Pesquisar usuários..."
+                           value="{{ request.GET.search|default:'' }}">
+                    <i class="fas fa-search"></i>
+                </div>
+                {% if request.GET.search %}
+                <button type="button" class="btn-clear-search" onclick="clearSearch()">
+                    <i class="fas fa-times"></i>
+                    Limpar
+                </button>
+                {% endif %}
+            </form>
             <div class="results-count">
-                <span id="totalResults">{{ object_list|length }}</span> resultados encontrados
+                {% if request.GET.search %}
+                    <span id="totalResults">{{ page_obj.paginator.count }}</span> resultados encontrados para "{{ request.GET.search }}"
+                {% else %}
+                    <span id="totalResults">{{ page_obj.paginator.count }}</span> usuários cadastrados
+                {% endif %}
             </div>
         </div>
         
@@ -168,6 +185,73 @@
             </table>
         </div>
     </div>
+
+    <!-- Paginação -->
+    {% if is_paginated %}
+    <div class="pagination-container">
+        <nav aria-label="Navegação de páginas">
+            <ul class="pagination">
+                <!-- Botão Anterior -->
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page={{ page_obj.previous_page_number }}" tabindex="-1" aria-disabled="false">
+                            <i class="fas fa-chevron-left"></i>
+                            <span>Anterior</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" tabindex="-1" aria-disabled="true">
+                            <i class="fas fa-chevron-left"></i>
+                            <span>Anterior</span>
+                        </span>
+                    </li>
+                {% endif %}
+
+                <!-- Números das páginas -->
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active" aria-current="page">
+                            <span class="page-link">{{ num }}</span>
+                        </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% elif num == page_obj.paginator.num_pages and num > page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                <!-- Botão Próximo -->
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?{% if request.GET.search %}search={{ request.GET.search }}&{% endif %}page={{ page_obj.next_page_number }}">
+                            <span>Próximo</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-disabled="true">
+                            <span>Próximo</span>
+                            <i class="fas fa-chevron-right"></i>
+                        </span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <!-- Informações da paginação -->
+        <div class="pagination-info">
+            <span class="text-muted">
+                Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }} usuários
+            </span>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Modal de Confirmação -->
@@ -193,39 +277,51 @@
 {% block extra_js %}
 {{ block.super }}
 <script>
- document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('searchInput');
-    const tableBody = document.querySelector('#usersTable tbody');
-    const rows = tableBody.getElementsByTagName('tr');
-    const resultsCount = document.getElementById('totalResults');
-
-    // Função para filtrar usuários
-    function filterUsers() {
-        const searchTerm = searchInput.value.toLowerCase();
-        let visibleCount = 0;
-
-        Array.from(rows).forEach(row => {
-            const userInfo = row.querySelector('.user-name, .user-email');
-            const userStatus = row.textContent.toLowerCase();
-            
-            if (userInfo && (userInfo.textContent.toLowerCase().includes(searchTerm) || 
-                userStatus.includes(searchTerm))) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-
-        // Atualiza o contador de resultados
-        resultsCount.textContent = visibleCount;
+    const searchForm = document.getElementById('searchForm');
+    
+    // Função para submeter a busca
+    function performSearch() {
+        const searchTerm = searchInput.value.trim();
+        
+        if (searchTerm) {
+            // Se há termo de busca, submete o formulário
+            searchForm.submit();
+        } else {
+            // Se o campo está vazio, limpa a busca (redireciona sem parâmetros)
+            const url = window.location.pathname;
+            window.location.href = url;
+        }
     }
-
-    // Adiciona o evento de input para filtrar em tempo real
-    searchInput.addEventListener('input', filterUsers);
-
-    // Inicializa a contagem de resultados
-    resultsCount.textContent = document.querySelectorAll('#usersTable tbody tr:not([style*="display: none"])').length;
+    
+    // Adiciona evento de input com debounce para evitar múltiplas requisições
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(performSearch, 500); // Espera 500ms após o usuário parar de digitar
+    });
+    
+    // Adiciona evento de submit ao formulário
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        performSearch();
+    });
+    
+    // Função para limpar a busca
+    window.clearSearch = function() {
+        searchInput.value = '';
+        const url = window.location.pathname;
+        window.location.href = url;
+    };
+    
+    // Adiciona suporte a Enter no campo de busca
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            performSearch();
+        }
+    });
 });
 
 // URL base para toggle status (será construída dinamicamente)

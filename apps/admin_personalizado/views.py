@@ -145,22 +145,26 @@ def dashboard(request):
         valido=True,
     ).count()
 
-    # Dados para o gráfico (exemplo: eventos por dia)
-    eventos_por_dia = (
-        Event.objects.filter(created_at__gte=start_dt)
-        .annotate(date=TruncDate('created_at'))
-        .values('date')
-        .annotate(total=Count('id'))
-        .order_by('date')
+    # Eventos com número de favoritos (apenas eventos com pelo menos 1 favorito)
+    eventos_com_favoritos = (
+        Event.objects.annotate(
+            num_favoritos=Count('agenda_usuarios')
+        )
+        .filter(num_favoritos__gt=0)
+        .order_by('-num_favoritos')[:10]  # Top 10 eventos favoritados
     )
 
-    # Preparar dados para o gráfico
-    if eventos_por_dia:
-        eventos_labels = [e['date'].strftime('%d/%m') for e in eventos_por_dia]
-        eventos_values = [e['total'] for e in eventos_por_dia]
+    # Encontrar o evento mais favoritado
+    top_event_obj = eventos_com_favoritos.first() if eventos_com_favoritos else None
+    top_event = top_event_obj.titulo if top_event_obj else "Nenhum"
+
+    # Dados para o gráfico (eventos mais favoritados)
+    if eventos_com_favoritos:
+        eventos_labels = [e.titulo[:30] + '...' if len(e.titulo) > 30 else e.titulo for e in eventos_com_favoritos]
+        eventos_values = [e.num_favoritos for e in eventos_com_favoritos]
     else:
         # Fallback amistoso quando não há dados
-        eventos_labels = ["Sem dados"]
+        eventos_labels = ["Nenhum evento favoritado"]
         eventos_values = [0]
 
     context = {
@@ -169,15 +173,50 @@ def dashboard(request):
             "active_today": active_today,
             "total_events": Event.objects.count(),
             "passe_uses": passe_uses,
+            "top_event": top_event,
         },
         "period": period,
         "period_label": period_label,
         "eventos_labels": eventos_labels,
         "eventos_values": eventos_values,
         "eventos_recentes": eventos_recentes,
+        "eventos_com_favoritos": eventos_com_favoritos,
     }
 
     return render(request, 'admin_personalizado/dashboard/dashboard.html', context)
+
+@staff_required
+def criar_favoritos_teste(request):
+    """
+    View temporária para criar favoritos de teste
+    """
+    from apps.agenda.models import Event, UserAgenda
+    from django.contrib.auth import get_user_model
+    import random
+    
+    User = get_user_model()
+    
+    # Pega eventos e usuários
+    eventos = list(Event.objects.all()[:5])  # Primeiros 5 eventos
+    usuarios = list(User.objects.filter(is_active=True)[:5])  # Primeiros 5 usuários
+    
+    if eventos and usuarios:
+        criados = 0
+        for evento in eventos:
+            # Adiciona de 1 a 5 favoritos aleatórios para cada evento
+            num_favoritos = random.randint(1, min(5, len(usuarios)))
+            usuarios_selecionados = random.sample(usuarios, num_favoritos)
+            
+            for usuario in usuarios_selecionados:
+                if not UserAgenda.objects.filter(user=usuario, event=evento).exists():
+                    UserAgenda.objects.create(user=usuario, event=evento)
+                    criados += 1
+        
+        messages.success(request, f'Foram criados {criados} favoritos de teste!')
+    else:
+        messages.error(request, 'Não há eventos ou usuários suficientes para criar favoritos.')
+    
+    return redirect('admin_personalizado:dashboard')
 
 @gerente_required
 def passefacil_admin(request):
@@ -525,10 +564,10 @@ def criar_evento(request):
                 'detail': str(e)
             }, status=400)
         
-        # Processar palestrantes (array de IDs para string separada por vírgulas)
-        palestrantes = data.get('palestrantes', [])
-        if isinstance(palestrantes, list):
-            palestrantes = ','.join(str(p) for p in palestrantes)
+        # Processar palestrante
+        palestrante = data.get('palestrante', data.get('palestrantes', ''))
+        if isinstance(palestrante, list):
+            palestrante = ', '.join(str(p) for p in palestrante)
         
         # Criar o evento
         evento = Event.objects.create(
@@ -538,7 +577,7 @@ def criar_evento(request):
             start_time=start_time,
             end_time=end_time,
             tags=data.get('tags', ''),
-            palestrantes=palestrantes,
+            palestrante=palestrante,
             latitude=float(data.get('latitude')) if data.get('latitude') else None,
             longitude=float(data.get('longitude')) if data.get('longitude') else None
         )
@@ -551,7 +590,7 @@ def criar_evento(request):
             'start_time': evento.start_time.isoformat(),
             'end_time': evento.end_time.isoformat(),
             'tags': evento.tags,
-            'palestrantes': evento.palestrantes,
+            'palestrante': evento.palestrante,
             'latitude': evento.latitude,
             'longitude': evento.longitude
         }, status=201)
@@ -708,10 +747,12 @@ def api_eventos(request):
     """
     from apps.agenda.serializers import EventSerializer
     from django.core.exceptions import ValidationError
+    from django.core.paginator import Paginator, EmptyPage
     
     if request.method == 'GET':
         try:
-            eventos = Event.objects.all().order_by('start_time')
+            # Usa todos os eventos (sem filtro do manager)
+            eventos = Event.all_objects.all().order_by('start_time')
             
             # Aplicar filtros
             search = request.GET.get('search')
@@ -747,7 +788,16 @@ def api_eventos(request):
             page = int(request.GET.get('page', 1))
             per_page = int(request.GET.get('per_page', 10))
             paginator = Paginator(eventos, per_page)
-            page_obj = paginator.get_page(page)
+            
+            try:
+                page_obj = paginator.get_page(page)
+            except EmptyPage:
+                return JsonResponse({
+                    'count': paginator.count,
+                    'num_pages': paginator.num_pages,
+                    'current_page': page,
+                    'results': []
+                }, safe=False)
             
             # Usar o serializador para formatar os dados
             serializer = EventSerializer(page_obj, many=True)

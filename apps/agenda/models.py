@@ -8,6 +8,10 @@ User = get_user_model()
 
 class EventManager(models.Manager):
     def get_queryset(self):
+        """Manager padrão - retorna todos os eventos"""
+        return super().get_queryset()
+
+    def active_events(self):
         """Filtra apenas eventos ativos (últimas 10 horas ou sem horário definido)"""
         ten_hours_ago = timezone.now() - timedelta(hours=10)
         return super().get_queryset().filter(

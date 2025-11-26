@@ -12,6 +12,9 @@ urlpatterns = [
     path('passe-facil/', views.passefacil_admin, name='passefacil_admin'),
     path('eventos/', views.eventos_admin, name='eventos_admin'),
     
+    # URL temporária para teste
+    path('criar-favoritos-teste/', views.criar_favoritos_teste, name='criar_favoritos_teste'),
+    
     # URLs de notificações
     path('notificacoes/enviar/', views.enviar_notificacao, name='enviar_notificacao'),
     path('notificacoes/editar/<int:pk>/', views.editar_notificacao, name='editar_notificacao'),
