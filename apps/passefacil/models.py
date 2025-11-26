@@ -44,7 +44,7 @@ class PasseFacil(models.Model):
 class ValidacaoQRCode(models.Model):
     passe_facil = models.ForeignKey(PasseFacil, on_delete=models.CASCADE, related_name='validacoes')
     codigo = models.CharField(max_length=36)
-    data_validacao = models.DateTimeField(auto_now_add=True)
+    data_validacao = models.DateTimeField(default=timezone.now)
     valido = models.BooleanField(default=False)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
 

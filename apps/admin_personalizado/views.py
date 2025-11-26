@@ -1038,6 +1038,16 @@ def avisos_api(request):
         ).order_by('-data_expiracao')
 
         def serialize_aviso(aviso):
+            # Verifica se criado_por existe antes de acessar
+            criado_por_nome = "Sistema"
+            if aviso.criado_por:
+                # Tenta usar get_full_name ou fallback para o campo 'nome' do modelo personalizado
+                criado_por_nome = (
+                    getattr(aviso.criado_por, 'get_full_name', lambda: None)() or 
+                    getattr(aviso.criado_por, 'nome', None) or 
+                    getattr(aviso.criado_por, 'username', 'Usuário')
+                )
+            
             return {
                 'id': aviso.id,
                 'titulo': aviso.titulo,
@@ -1047,7 +1057,7 @@ def avisos_api(request):
                 'data_expiracao': aviso.data_expiracao,
                 'fixo_no_topo': aviso.fixo_no_topo,
                 'ativo': aviso.ativo,
-                'criado_por': aviso.criado_por.get_full_name() or aviso.criado_por.username
+                'criado_por': criado_por_nome
             }
 
         return JsonResponse({
