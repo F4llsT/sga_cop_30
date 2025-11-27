@@ -1180,9 +1180,291 @@ def site_config(request):
     # Obter configurações do site como dicionário
     configuracoes = ConfiguracaoSite.objects.all()
     config_dict = {config.chave: config.valor for config in configuracoes}
-    
     return {
         'redes_sociais': redes_sociais,
         'contatos': contatos,
         'site_config': config_dict,
     }
+
+# =======================================================================
+# === VIEWS PARA GERENCIAMENTO DE CONTATOS E REDES SOCIAIS ===
+# =======================================================================
+
+from django.contrib.auth.decorators import login_required, permission_required
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.shortcuts import render
+from .models import RedeSocial, Contato, ConfiguracaoSite
+import json
+
+@login_required
+@permission_required('admin_personalizado.view_redesocial', raise_exception=True)
+def contatos_admin(request):
+    """View principal para gerenciamento de contatos e redes sociais"""
+    return render(request, 'admin_personalizado/contatos/gerenciar_contatos.html')
+
+# =======================================================================
+# === APIs para Redes Sociais ===
+# =======================================================================
+
+@login_required
+@require_http_methods(["GET", "POST"])
+@permission_required('admin_personalizado.view_redesocial', raise_exception=True)
+def api_redes_sociais(request):
+    """API para listar e criar redes sociais"""
+    if request.method == 'GET':
+        # Listar redes sociais
+        redes = RedeSocial.objects.all().order_by('ordem', 'nome')
+        data = []
+        for rede in redes:
+            data.append({
+                'id': rede.id,
+                'nome': rede.nome,
+                'icone': rede.icone,
+                'url': rede.url,
+                'ordem': rede.ordem,
+                'ativo': rede.ativo
+            })
+        return JsonResponse(data, safe=False)
+    
+    elif request.method == 'POST':
+        # Criar nova rede social
+        try:
+            data = json.loads(request.body)
+            rede = RedeSocial.objects.create(
+                nome=data['nome'],
+                icone=data['icone'],
+                url=data['url'],
+                ordem=data.get('ordem', 1),
+                ativo=data.get('ativo', True)
+            )
+            return JsonResponse({
+                'id': rede.id,
+                'nome': rede.nome,
+                'icone': rede.icone,
+                'url': rede.url,
+                'ordem': rede.ordem,
+                'ativo': rede.ativo
+            }, status=201)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+@login_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+@permission_required('admin_personalizado.change_redesocial', raise_exception=True)
+def api_rede_social_detalhe(request, pk):
+    """API para detalhes, atualização e exclusão de rede social"""
+    try:
+        rede = RedeSocial.objects.get(pk=pk)
+    except RedeSocial.DoesNotExist:
+        return JsonResponse({'error': 'Rede social não encontrada'}, status=404)
+    
+    if request.method == 'GET':
+        return JsonResponse({
+            'id': rede.id,
+            'nome': rede.nome,
+            'icone': rede.icone,
+            'url': rede.url,
+            'ordem': rede.ordem,
+            'ativo': rede.ativo,
+        })
+    
+    elif request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            rede.nome = data.get('nome', rede.nome)
+            rede.icone = data.get('icone', rede.icone)
+            rede.url = data.get('url', rede.url)
+            rede.ordem = data.get('ordem', rede.ordem)
+            rede.ativo = data.get('ativo', rede.ativo)
+            rede.save()
+            
+            return JsonResponse({
+                'id': rede.id,
+                'nome': rede.nome,
+                'icone': rede.icone,
+                'url': rede.url,
+                'ordem': rede.ordem,
+                'ativo': rede.ativo
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    elif request.method == 'DELETE':
+        rede.delete()
+        return JsonResponse({'message': 'Rede social excluída com sucesso'})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+@permission_required('admin_personalizado.view_contato', raise_exception=True)
+def api_contatos(request):
+    """API para listar e criar contatos"""
+    if request.method == 'GET':
+        # Listar contatos
+        contatos_list = Contato.objects.all().order_by('ordem', 'tipo_contato')
+        data = []
+        for contato in contatos_list:
+            data.append({
+                'id': contato.id,
+                'tipo_contato': contato.tipo_contato,
+                'icone': contato.icone,
+                'valor': contato.valor,
+                'ordem': contato.ordem,
+                'ativo': contato.ativo
+            })
+        return JsonResponse(data, safe=False)
+    
+    elif request.method == 'POST':
+        # Criar novo contato
+        try:
+            data = json.loads(request.body)
+            contato = Contato.objects.create(
+                tipo_contato=data['tipo_contato'],
+                icone=data['icone'],
+                valor=data['valor'],
+                ordem=data.get('ordem', 1),
+                ativo=data.get('ativo', True)
+            )
+            return JsonResponse({
+                'id': contato.id,
+                'tipo_contato': contato.tipo_contato,
+                'icone': contato.icone,
+                'valor': contato.valor,
+                'ordem': contato.ordem,
+                'ativo': contato.ativo
+            }, status=201)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+@permission_required('admin_personalizado.change_contato', raise_exception=True)
+def api_contato_detalhe(request, pk):
+    """API para detalhes, atualização e exclusão de contato"""
+    try:
+        contato = Contato.objects.get(pk=pk)
+    except Contato.DoesNotExist:
+        return JsonResponse({'error': 'Contato não encontrado'}, status=404)
+    
+    if request.method == 'GET':
+        return JsonResponse({
+            'id': contato.id,
+            'tipo_contato': contato.tipo_contato,
+            'icone': contato.icone,
+            'valor': contato.valor,
+            'ordem': contato.ordem,
+            'ativo': contato.ativo,
+        })
+    
+    elif request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            contato.tipo_contato = data.get('tipo_contato', contato.tipo_contato)
+            contato.icone = data.get('icone', contato.icone)
+            contato.valor = data.get('valor', contato.valor)
+            contato.ordem = data.get('ordem', contato.ordem)
+            contato.ativo = data.get('ativo', contato.ativo)
+            contato.save()
+            
+            return JsonResponse({
+                'id': contato.id,
+                'tipo_contato': contato.tipo_contato,
+                'icone': contato.icone,
+                'valor': contato.valor,
+                'ordem': contato.ordem,
+                'ativo': contato.ativo
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    elif request.method == 'DELETE':
+        contato.delete()
+        return JsonResponse({'message': 'Contato excluído com sucesso'})
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+@permission_required('admin_personalizado.view_configuracaosite', raise_exception=True)
+def api_configuracoes_site(request):
+    """API para listar e criar configurações do site"""
+    if request.method == 'GET':
+        # Listar configurações
+        configs = ConfiguracaoSite.objects.all().order_by('chave')
+        data = []
+        for config in configs:
+            data.append({
+                'id': config.id,
+                'chave': config.chave,
+                'valor': config.valor,
+                'descricao': config.descricao,
+            })
+        return JsonResponse(data, safe=False)
+    
+    elif request.method == 'POST':
+        # Criar nova configuração
+        try:
+            data = json.loads(request.body)
+            config, created = ConfiguracaoSite.objects.get_or_create(
+                chave=data['chave'],
+                defaults={
+                    'valor': data['valor'],
+                    'descricao': data.get('descricao', '')
+                }
+            )
+            
+            if not created:
+                # Se já existe, atualiza
+                config.valor = data['valor']
+                config.descricao = data.get('descricao', config.descricao)
+                config.save()
+            
+            return JsonResponse({
+                'id': config.id,
+                'chave': config.chave,
+                'valor': config.valor,
+                'descricao': config.descricao
+            }, status=201 if created else 200)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+@login_required
+@require_http_methods(["GET", "PUT", "DELETE"])
+@permission_required('admin_personalizado.change_configuracaosite', raise_exception=True)
+def api_configuracao_detalhe(request, pk):
+    """API para detalhes, atualização e exclusão de configuração"""
+    try:
+        config = ConfiguracaoSite.objects.get(pk=pk)
+    except ConfiguracaoSite.DoesNotExist:
+        return JsonResponse({'error': 'Configuração não encontrada'}, status=404)
+    
+    if request.method == 'GET':
+        return JsonResponse({
+            'id': config.id,
+            'chave': config.chave,
+            'valor': config.valor,
+            'descricao': config.descricao,
+        })
+    
+    elif request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            config.chave = data.get('chave', config.chave)
+            config.valor = data.get('valor', config.valor)
+            config.descricao = data.get('descricao', config.descricao)
+            config.save()
+            
+            return JsonResponse({
+                'id': config.id,
+                'chave': config.chave,
+                'valor': config.valor,
+                'descricao': config.descricao
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    elif request.method == 'DELETE':
+        config.delete()
+        return JsonResponse({'message': 'Configuração excluída com sucesso'})

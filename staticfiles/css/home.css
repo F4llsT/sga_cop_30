@@ -432,8 +432,41 @@ h1.logo-text {
 .main-footer {
     background-color: var(--dark-blue); color: var(--light-blue-bg);
     padding: 3rem 1.5rem; font-size: 0.9rem;
+    position: relative; /* Footer no fluxo normal do documento */
+    margin-top: auto; /* Empurra para baixo com flexbox */
+    opacity: 0; /* Invisível inicialmente */
+    transform: translateY(20px); /* Levemente deslocado para baixo */
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out; /* Animação suave */
+    pointer-events: none; /* Não interagível quando escondido */
 }
-.footer-content-wrapper { display: flex; flex-direction: column; gap: 2rem; max-width: 800px; margin: 0 auto; }
+
+/* Classe para mostrar o footer quando rolar para baixo */
+.main-footer.visible {
+    opacity: 1; /* Torna visível */
+    transform: translateY(0); /* Posição normal */
+    pointer-events: auto; /* Permite interação */
+}
+
+/* Garante que o body tenha altura mínima da tela */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+/* Garante que o conteúdo principal ocupe o espaço disponível */
+main {
+    flex: 1; /* Ocupa o espaço restante */
+    padding-bottom: 0; /* Sem padding extra, o footer cuidará do espaço */
+}
+
+/* Para páginas sem a tag main, usa o conteúdo direto */
+body > :not(header):not(footer):not(.main-footer):not(nav):not(.overlay) {
+    flex: 1;
+}
+
+.footer-content-wrapper { display: flex; flex-direction: column; gap: 3rem; max-width: 1000px; margin: 0 auto; }
 .footer-logo { display: flex; align-items: center; gap: 0.5rem; color: var(--white-bg); }
 .footer-logo i { font-size: 1.5rem; }
 .footer-logo h3 { font-size: 1.5rem; margin: 0; }
@@ -444,7 +477,16 @@ h1.logo-text {
 .social-icons { display: flex; gap: 1rem; font-size: 1.25rem; }
 .social-icons a { color: var(--white-bg); }
 @media (min-width: 768px) {
-    .footer-content-wrapper { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+    .footer-content-wrapper { 
+        flex-direction: row; 
+        justify-content: space-between; 
+        align-items: flex-start; 
+        gap: 4rem; /* Aumentado o espaçamento entre colunas */
+    }
+    .footer-content-wrapper > div {
+        flex: 1;
+        min-width: 0; /* Evita que as colunas estourem */
+    }
 }
 
 /* ===== MODAL DE NOTIFICAÇÃO ===== */
@@ -1092,7 +1134,9 @@ h1.logo-text {
         overflow: hidden;
         display: -webkit-box;
         -webkit-line-clamp: 2;
+        line-clamp: 2; /* Propriedade padrão para compatibilidade */
         -webkit-box-orient: vertical;
+        box-orient: vertical; /* Propriedade padrão */
         white-space: normal;
         line-height: 1.4;
     }

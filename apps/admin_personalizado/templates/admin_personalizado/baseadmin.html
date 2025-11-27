@@ -46,13 +46,34 @@
 
     <!-- Seus scripts personalizados -->
     <script src="{% static 'admin_personalizado/js/scripts.js' %}"></script>
-
-
-        <!-- No cabeçalho do seu template base -->
-
     
     <!-- DataTables i18n - Português -->
-    <script type="text/javascript" src="https://cdn.datatables.net/plug-ins/1.11.5/i18n/pt-BR.json"></script>
+    <script>
+        // Tradução DataTables em Português
+        const dataTablePtBr = {
+            "sEmptyTable": "Nenhum registro encontrado",
+            "sInfo": "Mostrando de _START_ até _END_ de _TOTAL_ registros",
+            "sInfoEmpty": "Mostrando 0 até 0 de 0 registros",
+            "sInfoFiltered": "(Filtrados de _MAX_ registros)",
+            "sInfoPostFix": "",
+            "sInfoThousands": ".",
+            "sLengthMenu": "_MENU_ resultados por página",
+            "sLoadingRecords": "Carregando...",
+            "sProcessing": "Processando...",
+            "sZeroRecords": "Nenhum registro encontrado",
+            "sSearch": "Pesquisar",
+            "oPaginate": {
+                "sNext": "Próximo",
+                "sPrevious": "Anterior",
+                "sFirst": "Primeiro",
+                "sLast": "Último"
+            },
+            "oAria": {
+                "sSortAscending": ": Ordenar colunas de forma ascendente",
+                "sSortDescending": ": Ordenar colunas de forma descendente"
+            }
+        };
+    </script>
     {% block extra_css %}{% endblock %}
 
 </head>
@@ -92,6 +113,7 @@
                 <a href="{% url 'admin_personalizado:enviar_notificacao' %}"  class="nav-link"><i class="fa-solid fa-bullhorn"></i><span>Notificações</span></a>
                 <a href="{% url 'admin_personalizado:avisos_admin' %}" class="nav-link"><i class="fa-solid fa-triangle-exclamation"></i><span>Avisos</span></a>
                 <a href="{% url 'admin_personalizado:passefacil_admin' %}" class="nav-link"><i class="fa-solid fa-ticket"></i><span>Meu Passe Fácil</span></a>
+                <a href="{% url 'admin_personalizado:contatos_admin' %}" class="nav-link"><i class="fa-solid fa-address-book"></i><span>Contatos e Redes</span></a>
                
             </nav>
             <div class="sidebar-footer">
@@ -122,6 +144,8 @@
         <a href="{% url 'admin_personalizado:avisos_admin' %}" class="nav-link"><i class="fa-solid fa-triangle-exclamation"></i><span>Avisos</span></a>
         <a href="{% url 'admin_personalizado:passefacil_admin' %}" class="nav-link"><i class="fa-solid fa-ticket"></i><span>Meu Passe Fácil</span></a>
         <hr class="nav-divider">
+        <a href="{% url 'admin_personalizado:contatos_admin' %}" class="nav-link"><i class="fa-solid fa-address-book"></i><span>Contatos e Redes</span></a>
+               
         <a href="{% url 'home' %}" class="nav-link"><i class="fa-solid fa-arrow-right-from-bracket"></i><span>Voltar ao Site</span></a>
     </nav>  
     <div class="overlay" id="admin-overlay"></div>

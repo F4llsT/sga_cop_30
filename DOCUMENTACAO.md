@@ -341,6 +341,47 @@ python manage.py apagar_usuarios_teste --prefixo demo
 python manage.py apagar_usuarios_teste --confirmar
 ```
 
+### ⚙️ Configuração do Site
+
+#### `configurar_site.py`
+Configura dados iniciais do site (redes sociais, contatos, configurações).
+
+```bash
+# Executar configuração inicial
+python manage.py configurar_site
+```
+
+**Funcionalidades:**
+- Cria redes sociais pré-definidas com ícones Font Awesome
+- Configura tipos de contato padrão (Email, Telefone, WhatsApp, Endereço)
+- Define configurações básicas do site (título, descrição, SEO)
+- Safe para execução múltipla (não duplica dados existentes)
+
+**Redes Sociais Criadas:**
+- **X (Twitter)**: `fa-brands fa-x-twitter`
+- **Instagram**: `fa-brands fa-instagram`
+- **LinkedIn**: `fa-brands fa-linkedin-in`
+- **Facebook**: `fa-brands fa-facebook`
+- **YouTube**: `fa-brands fa-youtube`
+
+**Contatos Criados:**
+- **E-mail**: `fa-solid fa-envelope` → contato@cop30.com.br
+- **Telefone**: `fa-solid fa-phone` → (81) 1234-5678
+- **WhatsApp**: `fa-brands fa-whatsapp` → (81) 98765-4321
+- **Endereço**: `fa-solid fa-location-dot` → Recife, PE - Brasil
+
+**Configurações Criadas:**
+- `SITE_TITULO`: COP30 - Conferência das Nações Unidas sobre Mudanças Climáticas
+- `SITE_DESCRICAO`: Sistema de Gestão de Acessos para a COP30
+- `SITE_KEYWORDS`: COP30, clima, sustentabilidade, conferência, ONU
+- `FOOTER_COPYRIGHT`: &copy; 2025 COP30. Todos os direitos reservados.
+- `CONTATO_EMAIL`: contato@cop30.com.br
+
+**Uso Recomendado:**
+- Executar após as migrações iniciais
+- Executar novamente para resetar dados padrão
+- Pode ser executado múltiplas vezes sem duplicar dados
+
 ---
 
 ## 🌐 Views e URLs

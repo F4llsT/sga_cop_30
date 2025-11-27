@@ -1,0 +1,287 @@
+{% extends 'admin_personalizado/baseadmin.html' %}
+{% load static %}
+
+{% block title %}Gerenciar Contatos e Redes Sociais - Painel Admin{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin_personalizado/css/contatos.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="contatos-container">
+    <header class="main-header">
+        <h2>Gerenciar Contatos e Redes Sociais</h2>
+        <div class="user-area">
+            <span>{{ request.user.nome|default:request.user.email }}</span>
+            <i class="fa-solid fa-user-shield"></i>
+        </div>
+    </header>
+
+    <!-- Abas para separar contatos e redes sociais -->
+    <div class="tabs-container">
+        <div class="tabs-header">
+            <button class="tab-btn active" data-tab="redes-sociais">
+                <i class="fa-brands fa-hashtag"></i>
+                Redes Sociais
+            </button>
+            <button class="tab-btn" data-tab="contatos">
+                <i class="fa-solid fa-address-book"></i>
+                Contatos
+            </button>
+            <button class="tab-btn" data-tab="configuracoes">
+                <i class="fa-solid fa-cog"></i>
+                Configurações
+            </button>
+        </div>
+
+        <!-- Conteúdo das Abas -->
+        <div class="tabs-content">
+            <!-- Aba de Redes Sociais -->
+            <div class="tab-pane active" id="redes-sociais">
+                <section class="manage-section card">
+                    <div class="section-header">
+                        <h3>Redes Sociais</h3>
+                        <button class="btn-primary" id="btn-add-rede">
+                            <i class="fa-solid fa-plus"></i>
+                            Nova Rede Social
+                        </button>
+                    </div>
+
+                    <!-- Formulário de Redes Sociais -->
+                    <form id="form-rede-social" class="form-hidden">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" id="rede-id">
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="rede-tipo">Tipo de Rede Social</label>
+                                <select id="rede-tipo" name="tipo" required>
+                                    <option value="">Selecione uma rede...</option>
+                                    <option value="x">X (Twitter)</option>
+                                    <option value="instagram">Instagram</option>
+                                    <option value="linkedin">LinkedIn</option>
+                                    <option value="facebook">Facebook</option>
+                                    <option value="youtube">YouTube</option>
+                                    <option value="outro">Outro</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="rede-nome-group" style="display: none;">
+                                <label for="rede-nome">Nome da Rede</label>
+                                <input type="text" id="rede-nome" name="nome" placeholder="Ex: TikTok">
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="rede-icone-group" style="display: none;">
+                            <label for="rede-icone">Ícone (Font Awesome)</label>
+                            <input type="text" id="rede-icone" name="icone" placeholder="Ex: fa-brands fa-tiktok">
+                            <small>Use classes do Font Awesome (ex: fa-brands fa-tiktok, fa-solid fa-globe)</small>
+                        </div>
+
+                        <!-- Campos ocultos para redes pré-definidas -->
+                        <input type="hidden" id="rede-nome-hidden" name="nome_hidden">
+                        <input type="hidden" id="rede-icone-hidden" name="icone_hidden">
+
+                        <div class="form-group">
+                            <label for="rede-url">URL da Rede Social</label>
+                            <input type="url" id="rede-url" name="url" placeholder="https://facebook.com/sua-pagina" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="rede-ordem">Ordem de Exibição</label>
+                                <input type="number" id="rede-ordem" name="ordem" min="1" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="rede-ativo">Status</label>
+                                <select id="rede-ativo" name="ativo">
+                                    <option value="true">Ativo</option>
+                                    <option value="false">Inativo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                <i class="fa-solid fa-save"></i>
+                                Salvar Rede Social
+                            </button>
+                            <button type="button" class="btn-secondary" id="btn-cancelar-rede">
+                                <i class="fa-solid fa-times"></i>
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Lista de Redes Sociais -->
+                    <div class="items-list" id="lista-redes-sociais">
+                        <div class="loading">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                            Carregando redes sociais...
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Aba de Contatos -->
+            <div class="tab-pane" id="contatos">
+                <section class="manage-section card">
+                    <div class="section-header">
+                        <h3>Informações de Contato</h3>
+                        <button class="btn-primary" id="btn-add-contato">
+                            <i class="fa-solid fa-plus"></i>
+                            Novo Contato
+                        </button>
+                    </div>
+
+                    <!-- Formulário de Contatos -->
+                    <form id="form-contato" class="form-hidden">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" id="contato-id">
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contato-tipo">Tipo de Contato</label>
+                                <select id="contato-tipo" name="tipo_contato" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="email">E-mail</option>
+                                    <option value="telefone">Telefone</option>
+                                    <option value="whatsapp">WhatsApp</option>
+                                    <option value="endereco">Endereço</option>
+                                    <option value="outro">Outro</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="contato-nome-group" style="display: none;">
+                                <label for="contato-nome">Nome do Contato</label>
+                                <input type="text" id="contato-nome" name="nome" placeholder="Ex: Skype">
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="contato-icone-group" style="display: none;">
+                            <label for="contato-icone">Ícone (Font Awesome)</label>
+                            <input type="text" id="contato-icone" name="icone" placeholder="Ex: fa-brands fa-skype">
+                            <small>Use classes do Font Awesome (ex: fa-brands fa-skype, fa-solid fa-globe)</small>
+                        </div>
+
+                        <!-- Campos ocultos para contatos pré-definidos -->
+                        <input type="hidden" id="contato-nome-hidden" name="nome_hidden">
+                        <input type="hidden" id="contato-icone-hidden" name="icone_hidden">
+
+                        <div class="form-group">
+                            <label for="contato-valor">Valor do Contato</label>
+                            <input type="text" id="contato-valor" name="valor" placeholder="Ex: contato@exemplo.com" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contato-ordem">Ordem de Exibição</label>
+                                <input type="number" id="contato-ordem" name="ordem" min="1" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="contato-ativo">Status</label>
+                                <select id="contato-ativo" name="ativo">
+                                    <option value="true">Ativo</option>
+                                    <option value="false">Inativo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                <i class="fa-solid fa-save"></i>
+                                Salvar Contato
+                            </button>
+                            <button type="button" class="btn-secondary" id="btn-cancelar-contato">
+                                <i class="fa-solid fa-times"></i>
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Lista de Contatos -->
+                    <div class="items-list" id="lista-contatos">
+                        <div class="loading">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                            Carregando contatos...
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Aba de Configurações -->
+            <div class="tab-pane" id="configuracoes">
+                <section class="manage-section card">
+                    <div class="section-header">
+                        <h3>Configurações do Site</h3>
+                        <button class="btn-primary" id="btn-add-config">
+                            <i class="fa-solid fa-plus"></i>
+                            Nova Configuração
+                        </button>
+                    </div>
+
+                    <!-- Formulário de Configurações -->
+                    <form id="form-configuracao" class="form-hidden">
+                        {% csrf_token %}
+                        <input type="hidden" name="id" id="config-id">
+                        
+                        <div class="form-group">
+                            <label for="config-chave">Chave da Configuração</label>
+                            <input type="text" id="config-chave" name="chave" placeholder="Ex: FOOTER_COPYRIGHT" required>
+                            <small>Use chaves únicas e descritivas (ex: FOOTER_COPYRIGHT, CONTACT_EMAIL)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="config-valor">Valor da Configuração</label>
+                            <textarea id="config-valor" name="valor" rows="3" placeholder="Ex: © 2025 COP30. Todos os direitos reservados." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="config-descricao">Descrição</label>
+                            <textarea id="config-descricao" name="descricao" rows="2" placeholder="Descreva para que serve esta configuração..."></textarea>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary">
+                                <i class="fa-solid fa-save"></i>
+                                Salvar Configuração
+                            </button>
+                            <button type="button" class="btn-secondary" id="btn-cancelar-config">
+                                <i class="fa-solid fa-times"></i>
+                                Cancelar
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Lista de Configurações -->
+                    <div class="items-list" id="lista-configuracoes">
+                        <div class="loading">
+                            <i class="fa-solid fa-spinner fa-spin"></i>
+                            Carregando configurações...
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Preview -->
+    <div class="modal" id="preview-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Preview do Footer</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="footer-preview">
+                    <!-- Preview será gerado dinamicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script src="{% static 'admin_personalizado/js/contatos.js' %}"></script>
+{% endblock %}

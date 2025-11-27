@@ -76,7 +76,7 @@ python manage.py migrate
 python manage.py createsuperuser
 ```
 
-7. **Dados de teste:**
+7. Dados de teste:
 ```bash
 python manage.py criar_usuarios_teste --quantidade 100
 python manage.py gerar_eventos --quantidade 10
@@ -86,12 +86,17 @@ python manage.py criar_notificacoes_exemplo
 python manage.py criar_avisos_coop30 10
 ```
 
-8. **Iniciar servidor:**
+8. Configurar dados iniciais do site:
+```bash
+python manage.py configurar_site
+```
+
+9. Iniciar servidor:
 ```bash
 python manage.py runserver
 ```
 
-## 🌐 Acessos
+## Acessos
 
 ### Interfaces Web
 - **Dashboard Admin**: `http://127.0.0.1:8000/meu-admin/dashboard/`
@@ -167,6 +172,27 @@ python manage.py criar_notificacoes_exemplo
 # Enviar notificações pendentes
 python manage.py send_notifications
 ```
+
+### Configuração do Site
+```bash
+# Configurar dados iniciais (redes sociais, contatos, configurações)
+python manage.py configurar_site
+```
+
+**O que este comando faz:**
+- **Redes Sociais**: Cria X/Twitter, Instagram, LinkedIn, Facebook, YouTube
+- **Contatos**: Configura Email, Telefone, WhatsApp, Endereço
+- **Configurações**: Define título, descrição, keywords, copyright do site
+
+**Dados criados:**
+- 5 redes sociais com ícones Font Awesome
+- 4 tipos de contato com informações padrão
+- 5 configurações básicas do site
+
+**Uso recomendado:**
+- Executar após as migrações iniciais
+- Executar novamente para resetar dados padrão
+- Safe para execução múltipla (não duplica dados)
 
 ## 📊 Estrutura do Projeto
 

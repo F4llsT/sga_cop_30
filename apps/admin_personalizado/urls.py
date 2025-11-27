@@ -53,4 +53,19 @@ urlpatterns = [
     path('api/usuarios/<int:user_id>/toggle-status/', 
          views_usuarios.toggle_user_status, 
          name='toggle_user_status'),
+    
+    # URLs para gerenciamento de contatos e redes sociais
+    path('contatos/', views.contatos_admin, name='contatos_admin'),
+    
+    # APIs para Redes Sociais
+    path('api/redes-sociais/', views.api_redes_sociais, name='api_redes_sociais'),
+    path('api/redes-sociais/<int:pk>/', views.api_rede_social_detalhe, name='api_rede_social_detalhe'),
+    
+    # APIs para Contatos
+    path('api/contatos/', views.api_contatos, name='api_contatos'),
+    path('api/contatos/<int:pk>/', views.api_contato_detalhe, name='api_contato_detalhe'),
+    
+    # APIs para Configurações do Site
+    path('api/configuracoes-site/', views.api_configuracoes_site, name='api_configuracoes_site'),
+    path('api/configuracoes-site/<int:pk>/', views.api_configuracao_detalhe, name='api_configuracao_detalhe'),
 ]
