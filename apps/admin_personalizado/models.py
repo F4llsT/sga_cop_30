@@ -66,3 +66,49 @@ class NotificacaoPersonalizada(models.Model):
             self.status = 'erro'
             self.save()
             return False, f"Erro ao enviar notificações: {str(e)}"
+
+
+class RedeSocial(models.Model):
+    nome = models.CharField(max_length=50)
+    url = models.URLField(max_length=500)
+    icone = models.CharField(max_length=50, help_text="Classe do FontAwesome (ex: fa-brands fa-twitter)")
+    ativo = models.BooleanField(default=True)
+    ordem = models.PositiveIntegerField(default=0, help_text="Ordem de exibição")
+    
+    class Meta:
+        verbose_name = 'Rede Social'
+        verbose_name_plural = 'Redes Sociais'
+        ordering = ['ordem', 'nome']
+    
+    def __str__(self):
+        return self.nome
+
+
+class Contato(models.Model):
+    tipo_contato = models.CharField(max_length=50, help_text="Ex: Email, Telefone, Endereço")
+    valor = models.CharField(max_length=255, help_text="Ex: contato@cop30.com.br, (81) 1234-5678")
+    icone = models.CharField(max_length=50, help_text="Classe do FontAwesome (ex: fa-solid fa-envelope)")
+    ativo = models.BooleanField(default=True)
+    ordem = models.PositiveIntegerField(default=0, help_text="Ordem de exibição")
+    
+    class Meta:
+        verbose_name = 'Contato'
+        verbose_name_plural = 'Contatos'
+        ordering = ['ordem', 'tipo_contato']
+    
+    def __str__(self):
+        return f"{self.tipo_contato}: {self.valor}"
+
+
+class ConfiguracaoSite(models.Model):
+    chave = models.CharField(max_length=100, unique=True)
+    valor = models.TextField()
+    descricao = models.CharField(max_length=255, blank=True)
+    
+    class Meta:
+        verbose_name = 'Configuração do Site'
+        verbose_name_plural = 'Configurações do Site'
+        ordering = ['chave']
+    
+    def __str__(self):
+        return f"{self.chave}: {self.valor}"

@@ -175,6 +175,8 @@ TEMPLATES = [
                 'apps.core.context_processors.onesignal',
                 # Avisos ativos para templates
                 'apps.notificacoes.context_processors.avisos_ativos',
+                # Configurações do site para templates
+                'apps.admin_personalizado.views.site_config',
             ],
         },
     },

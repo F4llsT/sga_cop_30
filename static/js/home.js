@@ -465,4 +465,96 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Carrega as notificações ao carregar a página
     carregarNotificacoes();
+
+    // =======================================================================
+    // === LÓGICA DO FOOTER (APARECE AO ROLAR) ===
+    // =======================================================================
+    const footer = document.querySelector('.main-footer');
+    if (!footer) {
+        console.warn('Footer não encontrado');
+        return;
+    }
+    
+    let lastScrollY = window.scrollY;
+    let scrollThreshold = 50; // Reduzido para ativar mais cedo
+    let hideTimeout;
+    let isVisible = false;
+
+    // Função para mostrar/esconder o footer baseado no scroll
+    const handleFooterVisibility = () => {
+        const currentScrollY = window.scrollY;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // Debug: log para verificar valores
+        console.log('Scroll:', currentScrollY, 'Window Height:', windowHeight, 'Doc Height:', documentHeight);
+        
+        // Mostra o footer se rolar para baixo além do threshold
+        if (currentScrollY > scrollThreshold) {
+            if (!isVisible) {
+                footer.classList.add('visible');
+                isVisible = true;
+                console.log('Footer visível - scroll > threshold');
+            }
+            clearTimeout(hideTimeout);
+            
+            // Esconde o footer após parar de rolar por 4 segundos
+            hideTimeout = setTimeout(() => {
+                // Verifica se ainda não está no topo
+                if (window.scrollY > scrollThreshold) {
+                    footer.classList.remove('visible');
+                    isVisible = false;
+                    console.log('Footer escondido por timeout');
+                }
+            }, 4000);
+        } else {
+            // Esconde se estiver no topo da página
+            if (isVisible) {
+                footer.classList.remove('visible');
+                isVisible = false;
+                console.log('Footer escondido - topo da página');
+            }
+            clearTimeout(hideTimeout);
+        }
+        
+        // Mostra o footer permanentemente quando estiver próximo ao final
+        const scrollPosition = currentScrollY + windowHeight;
+        if (scrollPosition >= documentHeight - 150) {
+            if (!isVisible) {
+                footer.classList.add('visible');
+                isVisible = true;
+                clearTimeout(hideTimeout);
+                console.log('Footer visível - final da página');
+            }
+        }
+        
+        lastScrollY = currentScrollY;
+    };
+
+    // Adiciona o evento de scroll com throttle para performance
+    let ticking = false;
+    const scrollHandler = () => {
+        if (!ticking) {
+            requestAnimationFrame(() => {
+                handleFooterVisibility();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    };
+
+    // Adiciona o evento de scroll
+    window.addEventListener('scroll', scrollHandler, { passive: true });
+
+    // Verifica inicialmente se a página já tem scroll suficiente
+    setTimeout(() => {
+        handleFooterVisibility();
+    }, 100);
+
+    // Verifica também quando a página é redimensionada
+    window.addEventListener('resize', () => {
+        setTimeout(() => {
+            handleFooterVisibility();
+        }, 100);
+    }, { passive: true });
 });

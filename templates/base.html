@@ -196,22 +196,28 @@
             </div>
             <div class="footer-links">
                 <h4>Navegação</h4>
-                <a href="#">Home</a>
+                <a href="{% url 'home' %}">Home</a>
                 <a href="{% url 'agenda:mapa_eventos' %}">Mapa Interativo</a>
-                <a href="#">Notícias</a>
+                <a href="{% url 'passefacil:meu_qr_code' %}">Passe Fácil</a>
+                <a href="{% url 'agenda:agenda_oficial' %}">Agenda Oficial</a>
+                <a href="{% url 'agenda:agenda_pessoal' %}">Agenda Pessoal</a>
             </div>
             <div class="footer-socials">
                 <h4>Siga-nos</h4>
                 <div class="social-icons">
-                    <a href="#"><i class="fa-brands fa-x-twitter"></i></a>
-                    <a href="#"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+                    {% for rede in redes_sociais %}
+                    <a href="{{ rede.url }}" target="_blank" rel="noopener">
+                        <i class="{{ rede.icone }}"></i>
+                    </a>
+                    {% endfor %}
                 </div>
             </div>
             <div class="footer-info">
                 <h4>Contato</h4>
-                <p>contato@cop30.com.br</p>
-                <p>&copy; 2025 COP30. Todos os direitos reservados.</p>
+                {% for contato in contatos %}
+                <p><i class="{{ contato.icone }}"></i> {{ contato.valor }}</p>
+                {% endfor %}
+                <p>{{ site_config.FOOTER_COPYRIGHT|default:"&copy; 2025 COP30. Todos os direitos reservados." }}</p>
             </div>
         </div>
     </footer>    

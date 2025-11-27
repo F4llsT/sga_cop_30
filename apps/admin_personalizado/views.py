@@ -1162,3 +1162,27 @@ def fixar_aviso(request, aviso_id):
             'success': False,
             'message': f'Erro ao atualizar o status de fixação: {str(e)}'
         }, status=500)
+
+
+# Context processors para dados do site
+def site_config(request):
+    """
+    Context processor que disponibiliza dados do site para todos os templates.
+    """
+    from .models import RedeSocial, Contato, ConfiguracaoSite
+    
+    # Obter redes sociais ativas ordenadas
+    redes_sociais = RedeSocial.objects.filter(ativo=True).order_by('ordem', 'nome')
+    
+    # Obter contatos ativos ordenados
+    contatos = Contato.objects.filter(ativo=True).order_by('ordem', 'tipo_contato')
+    
+    # Obter configurações do site como dicionário
+    configuracoes = ConfiguracaoSite.objects.all()
+    config_dict = {config.chave: config.valor for config in configuracoes}
+    
+    return {
+        'redes_sociais': redes_sociais,
+        'contatos': contatos,
+        'site_config': config_dict,
+    }
